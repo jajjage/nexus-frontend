@@ -9,38 +9,65 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
-const mtnPlans = [
-  { plan: "1.5 GB", validity: "30 Days", price: "₦1,000" },
-  { plan: "2.5 GB", validity: "30 Days", price: "₦1,500" },
-  { plan: "5 GB", validity: "30 Days", price: "₦2,500" },
-  { plan: "10 GB", validity: "30 Days", price: "₦3,500" },
-  { plan: "20 GB", validity: "30 Days", price: "₦5,000" },
-];
+const pricingData = {
+  mtn: [
+    { plan: "1.5 GB", validity: "30 Days", price: "₦1,000" },
+    { plan: "2.5 GB", validity: "30 Days", price: "₦1,500" },
+    { plan: "5 GB", validity: "30 Days", price: "₦2,500" },
+    { plan: "10 GB", validity: "30 Days", price: "₦3,500" },
+    { plan: "20 GB", validity: "30 Days", price: "₦5,000" },
+  ],
+  glo: [
+    { plan: "1.8 GB", validity: "30 Days", price: "₦1,000" },
+    { plan: "3.6 GB", validity: "30 Days", price: "₦1,500" },
+    { plan: "7.5 GB", validity: "30 Days", price: "₦2,500" },
+    { plan: "12.5 GB", validity: "30 Days", price: "₦3,500" },
+    { plan: "25 GB", validity: "30 Days", price: "₦5,000" },
+  ],
+  airtel: [
+    { plan: "1.5 GB", validity: "30 Days", price: "₦1,000" },
+    { plan: "3 GB", validity: "30 Days", price: "₦1,500" },
+    { plan: "6 GB", validity: "30 Days", price: "₦2,500" },
+    { plan: "11 GB", validity: "30 Days", price: "₦3,500" },
+    { plan: "22 GB", validity: "30 Days", price: "₦5,000" },
+  ],
+};
 
-const gloPlans = [
-  { plan: "1.8 GB", validity: "30 Days", price: "₦1,000" },
-  { plan: "3.6 GB", validity: "30 Days", price: "₦1,500" },
-  { plan: "7.5 GB", validity: "30 Days", price: "₦2,500" },
-  { plan: "12.5 GB", validity: "30 Days", price: "₦3,500" },
-  { plan: "25 GB", validity: "30 Days", price: "₦5,000" },
-];
-
-const airtelPlans = [
-  { plan: "1.5 GB", validity: "30 Days", price: "₦1,000" },
-  { plan: "3 GB", validity: "30 Days", price: "₦1,500" },
-  { plan: "6 GB", validity: "30 Days", price: "₦2,500" },
-  { plan: "11 GB", validity: "30 Days", price: "₦3,500" },
-  { plan: "22 GB", validity: "30 Days", price: "₦5,000" },
-];
+function PricingTable({
+  plans,
+}: {
+  plans: { plan: string; validity: string; price: string }[];
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Plan</TableHead>
+          <TableHead>Validity</TableHead>
+          <TableHead className="text-right">Price</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {plans.map((plan) => (
+          <TableRow key={plan.plan}>
+            <TableCell>{plan.plan}</TableCell>
+            <TableCell>{plan.validity}</TableCell>
+            <TableCell className="text-right">{plan.price}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
 
 export function Pricing() {
   return (
     <section id="pricing" className="container py-20 md:py-32">
       <div className="text-center">
-        <h2 className="text-3xl md:text-4xl font-bold">
+        <h2 className="text-3xl font-bold md:text-4xl">
           Our Most Popular Data Plans
         </h2>
-        <p className="mt-4 text-lg text-muted-foreground">
+        <p className="text-muted-foreground mt-4 text-lg">
           Competitive pricing for all your data needs.
         </p>
       </div>
@@ -51,64 +78,13 @@ export function Pricing() {
           <TabsTrigger value="airtel">Airtel</TabsTrigger>
         </TabsList>
         <TabsContent value="mtn">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Plan</TableHead>
-                <TableHead>Validity</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mtnPlans.map((plan) => (
-                <TableRow key={plan.plan}>
-                  <TableCell>{plan.plan}</TableCell>
-                  <TableCell>{plan.validity}</TableCell>
-                  <TableCell className="text-right">{plan.price}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <PricingTable plans={pricingData.mtn} />
         </TabsContent>
         <TabsContent value="glo">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Plan</TableHead>
-                <TableHead>Validity</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {gloPlans.map((plan) => (
-                <TableRow key={plan.plan}>
-                  <TableCell>{plan.plan}</TableCell>
-                  <TableCell>{plan.validity}</TableCell>
-                  <TableCell className="text-right">{plan.price}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <PricingTable plans={pricingData.glo} />
         </TabsContent>
         <TabsContent value="airtel">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Plan</TableHead>
-                <TableHead>Validity</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {airtelPlans.map((plan) => (
-                <TableRow key={plan.plan}>
-                  <TableCell>{plan.plan}</TableCell>
-                  <TableCell>{plan.validity}</TableCell>
-                  <TableCell className="text-right">{plan.price}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <PricingTable plans={pricingData.airtel} />
         </TabsContent>
       </Tabs>
       <div className="mt-8 text-center">
