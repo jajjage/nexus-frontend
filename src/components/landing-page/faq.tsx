@@ -31,10 +31,10 @@ const faqItems = [
 export function FAQ() {
   return (
     <section id="faq" className="container py-20 md:py-32">
-      <div className="grid lg:grid-cols-2 gap-12">
+      <div className="grid gap-12 lg:grid-cols-2">
         <div>
-          <h2 className="text-3xl md:text-4xl font-bold">Got Questions?</h2>
-          <p className="mt-4 text-lg text-muted-foreground">
+          <h2 className="text-3xl font-bold md:text-4xl">Got Questions?</h2>
+          <p className="text-muted-foreground mt-4 text-lg">
             We've got answers. Check out our frequently asked questions below.
           </p>
         </div>

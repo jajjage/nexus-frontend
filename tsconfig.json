@@ -19,8 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"]
     },
+    "baseUrl": ".",
     "types": ["jest", "node"]
   },
   "include": [

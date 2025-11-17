@@ -1,0 +1,83 @@
+import apiClient from "@/lib/api-client";
+import {
+  ProfileResponse,
+  UpdateProfileRequest,
+  SetPinRequest,
+  PurchasesListResponse,
+  PurchaseResponse,
+  GetPurchasesParams,
+  TopupRequest,
+  TopupResponse,
+} from "@/types/user.types";
+import { ApiResponse } from "@/types/api.types";
+
+export const userService = {
+  // ============= Profile Methods =============
+
+  /**
+   * Get current user's profile
+   */
+  getProfile: async (): Promise<ProfileResponse> => {
+    const response = await apiClient.get<ProfileResponse>("/user/profile/me");
+    return response.data;
+  },
+
+  /**
+   * Update current user's profile
+   */
+  updateProfile: async (
+    data: UpdateProfileRequest
+  ): Promise<ProfileResponse> => {
+    const response = await apiClient.put<ProfileResponse>(
+      "/user/profile/me",
+      data
+    );
+    return response.data;
+  },
+
+  /**
+   * Set or update transaction PIN
+   */
+  setPin: async (data: SetPinRequest): Promise<ApiResponse> => {
+    const response = await apiClient.put<ApiResponse>(
+      "/user/profile/pin",
+      data
+    );
+    return response.data;
+  },
+
+  // ============= Purchase Methods =============
+
+  /**
+   * Get user's purchase history with filters
+   */
+  getPurchases: async (
+    params?: GetPurchasesParams
+  ): Promise<PurchasesListResponse> => {
+    const response = await apiClient.get<PurchasesListResponse>(
+      "/user/purchases",
+      { params }
+    );
+    return response.data;
+  },
+
+  /**
+   * Get single purchase by ID
+   */
+  getPurchaseById: async (id: string): Promise<PurchaseResponse> => {
+    const response = await apiClient.get<PurchaseResponse>(
+      `/user/purchases/${id}`
+    );
+    return response.data;
+  },
+
+  // ============= Topup Methods =============
+
+  /**
+   * Create a new topup/purchase request
+   */
+  createTopup: async (data: TopupRequest): Promise<TopupResponse> => {
+    const response = await apiClient.post<TopupResponse>("/user/topup", data);
+    return response.data;
+  },
+};
