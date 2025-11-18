@@ -1,13 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useLogin } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -17,6 +11,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
+import { useLogin } from "@/hooks/useAuth";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 const loginSchema = z.object({
   credentials: z.string().min(1, "Email or phone number is required"),
@@ -30,6 +31,7 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ role = "user" }: LoginFormProps) {
+  const [showPassword, setShowPassword] = useState(false);
   const loginMutation = useLogin();
   const {
     register,
@@ -45,7 +47,7 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
     },
   });
 
-  const onSubmit = (data: LoginFormValues) => {
+  const onSubmit = async (data: LoginFormValues) => {
     const { credentials, password } = data;
     const isEmail = credentials.includes("@");
 
@@ -134,12 +136,27 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
                 Forgot your password?
               </a>
             </div>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              {...passwordRegister}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                className="pr-10"
+                {...passwordRegister}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
             {errors.password && (
               <p className="text-sm text-red-500">{errors.password.message}</p>
             )}

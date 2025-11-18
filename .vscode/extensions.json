@@ -1,0 +1,25 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-azuretools.vscode-docker",
+    "ms-vscode.vscode-typescript-next",
+    "rangav.vscode-thunder-client",
+    "ms-postgresql.pg-adrian",
+    "mhutchie.git-graph",
+    "eamodio.gitlens",
+    "mikestead.dotenv",
+    "mtxr.sqltools-driver-pg",
+    "github.vscode-github-actions",
+    "ms-vscode.vscode-json",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense",
+    "github.copilot",
+    "ms-vscode.remote-containers",
+    "ms-vscode.remote-ssh",
+    "usernamehw.errorlens",
+    "gruntfuggly.todo-tree",
+    "redhat.vscode-yaml",
+    "ms-kubernetes-tools.vscode-kubernetes-tools"
+  ]
+}

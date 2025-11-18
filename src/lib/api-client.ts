@@ -1,9 +1,9 @@
+import { ApiResponse, ErrorResponse } from "@/types/api.types";
 import axios, {
+  AxiosError,
   AxiosInstance,
   InternalAxiosRequestConfig,
-  AxiosError,
 } from "axios";
-import { ApiResponse, ErrorResponse } from "@/types/api.types";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
@@ -45,10 +45,22 @@ apiClient.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // If error is 401, not a login attempt, and we haven't tried to refresh yet
+    // List of endpoints that should NOT trigger token refresh
+    const authEndpoints = [
+      "/auth/login",
+      "/auth/register",
+      "/auth/refresh",
+      "/password/forgot-password",
+      "/password/reset-password",
+    ];
+    const isAuthEndpoint = authEndpoints.some((endpoint) =>
+      originalRequest.url?.includes(endpoint)
+    );
+
+    // If error is 401, not an auth endpoint, and we haven't tried to refresh yet
     if (
       error.response?.status === 401 &&
-      originalRequest.url !== "/auth/login" &&
+      !isAuthEndpoint &&
       !originalRequest._retry
     ) {
       if (isRefreshing) {
@@ -70,12 +82,9 @@ apiClient.interceptors.response.use(
       try {
         // Attempt to refresh the token
         // The refresh token is automatically sent via cookies (withCredentials: true)
-        const response = await axios.post<ApiResponse<{ accessToken: string }>>(
-          `${BASE_URL}/auth/refresh`,
-          {},
-          {
-            withCredentials: true, // Send cookies (refresh token)
-          }
+        await apiClient.post<ApiResponse<{ accessToken: string }>>(
+          "/auth/refresh",
+          {}
         );
 
         // New access token is set in cookies by the backend

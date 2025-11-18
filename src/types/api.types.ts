@@ -27,7 +27,7 @@ export interface User {
   accountNumber: string;
   providerName: string;
   balance: string;
-  pin: string | null;
+  profilePictureUrl?: string;
   permissions?: string[]; // Optional permissions array
   createdAt: string;
   updatedAt: string;

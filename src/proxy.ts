@@ -1,31 +1,41 @@
+// src/proxy.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtDecode } from "jwt-decode";
+
+interface DecodedUser {
+  role: string;
+  exp: number;
+  // Add other properties from your JWT payload if needed
+}
 
 // Define the protected paths
 const protectedPaths = ["/dashboard", "/admin"];
 const authPaths = ["/login", "/register"];
 
-export async function proxy(request: NextRequest) {
+// CHANGED: Export as default function instead of named 'middleware'
+export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Get user cookie
-  const userCookie = request.cookies.get("user")?.value;
-  let user = null;
-  if (userCookie && userCookie !== "undefined") {
+  // Get accessToken cookie
+  const token = request.cookies.get("accessToken")?.value;
+  let decodedUser: DecodedUser | null = null;
+
+  if (token) {
     try {
-      user = JSON.parse(userCookie);
+      decodedUser = jwtDecode<DecodedUser>(token);
+      // Check if token is expired
+      if (Date.now() >= decodedUser.exp * 1000) {
+        decodedUser = null;
+      }
     } catch (error) {
-      // Invalid JSON in cookie, treat as unauthenticated
-      console.error("Invalid user cookie:", error);
-      // Optionally, delete the corrupted cookie
-      const response = NextResponse.redirect(new URL("/login", request.url));
-      response.cookies.delete("user");
-      return response;
+      console.error("Invalid token:", error);
+      decodedUser = null;
     }
   }
 
-  const isUserAuthenticated = !!user;
-  const userRole = user?.role;
+  const isUserAuthenticated = !!decodedUser;
+  const userRole = decodedUser?.role;
 
   // Check if the path is protected
   const isProtectedPath = protectedPaths.some((path) =>
@@ -42,10 +52,6 @@ export async function proxy(request: NextRequest) {
     if (userRole === "user" && pathname.startsWith("/admin")) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
-
-    // If user is an 'admin' and tries to access a user dashboard route
-    // (optional, maybe admins can see user dashboards?)
-    // For now, we'll allow it.
   }
 
   // If authenticated user tries to access login/register pages
@@ -62,7 +68,7 @@ export async function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-// See "Matching Paths" below to learn more
+// Matcher configuration remains the same
 export const config = {
   matcher: [
     /*
