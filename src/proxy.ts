@@ -1,7 +1,7 @@
 // src/proxy.ts
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { jwtDecode } from "jwt-decode";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 interface DecodedUser {
   role: string;
@@ -17,24 +17,33 @@ const authPaths = ["/login", "/register"];
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Get accessToken cookie
-  const token = request.cookies.get("accessToken")?.value;
+  // Get both accessToken and refreshToken cookies
+  const accessToken = request.cookies.get("accessToken")?.value;
+  const refreshToken = request.cookies.get("refreshToken")?.value;
+
   let decodedUser: DecodedUser | null = null;
 
-  if (token) {
+  if (accessToken) {
     try {
-      decodedUser = jwtDecode<DecodedUser>(token);
+      decodedUser = jwtDecode<DecodedUser>(accessToken);
       // Check if token is expired
       if (Date.now() >= decodedUser.exp * 1000) {
         decodedUser = null;
       }
     } catch (error) {
-      console.error("Invalid token:", error);
+      console.error("Invalid accessToken:", error);
       decodedUser = null;
     }
   }
 
-  const isUserAuthenticated = !!decodedUser;
+  // If accessToken is missing but refreshToken exists, allow through
+  // The client-side axios interceptor will handle the token refresh
+  const hasValidAccessToken = !!decodedUser;
+  const hasRefreshToken = !!refreshToken;
+
+  // User is authenticated if they have a valid accessToken OR a refreshToken
+  // (refreshToken means they can get a new accessToken)
+  const isUserAuthenticated = hasValidAccessToken || hasRefreshToken;
   const userRole = decodedUser?.role;
 
   // Check if the path is protected
@@ -49,7 +58,8 @@ export default function proxy(request: NextRequest) {
     }
 
     // If user is a 'user' and tries to access an admin route
-    if (userRole === "user" && pathname.startsWith("/admin")) {
+    // Only check role if we have a valid accessToken (decodedUser exists)
+    if (decodedUser && userRole === "user" && pathname.startsWith("/admin")) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
@@ -59,7 +69,9 @@ export default function proxy(request: NextRequest) {
     isUserAuthenticated &&
     authPaths.some((path) => pathname.startsWith(path))
   ) {
-    if (userRole === "admin") {
+    // If we don't have a decoded user, we can't determine role, so just redirect to dashboard
+    // The client-side will handle proper redirection based on actual role
+    if (decodedUser && userRole === "admin") {
       return NextResponse.redirect(new URL("/admin/dashboard", request.url));
     }
     return NextResponse.redirect(new URL("/dashboard", request.url));

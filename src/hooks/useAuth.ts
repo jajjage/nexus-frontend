@@ -22,6 +22,22 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+/**
+ * Helper to check if accessToken cookie exists
+ * Used to determine if we should refetch user profile
+ */
+function hasAccessToken(): boolean {
+  if (typeof window === "undefined") return false;
+  const value = `; ${document.cookie}`;
+  const parts = value.split("; accessToken=");
+  const exists = parts.length === 2;
+  console.log("[DEBUG] hasAccessToken:", {
+    exists,
+    allCookies: document.cookie,
+  });
+  return exists;
+}
+
 // Query Keys
 export const authKeys = {
   all: ["auth"] as const,
@@ -30,10 +46,27 @@ export const authKeys = {
 
 // Get user profile via API
 export const useCurrentUser = () => {
+  const shouldRefetch = !hasAccessToken();
+  console.log("[DEBUG] useCurrentUser mount - shouldRefetch:", shouldRefetch);
+
   return useQuery({
     queryKey: authKeys.currentUser(),
-    queryFn: authService.getProfile,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryFn: async () => {
+      console.log(
+        "[DEBUG] getProfile queryFn called, shouldRefetch:",
+        shouldRefetch
+      );
+      const result = await authService.getProfile(shouldRefetch);
+      console.log("[DEBUG] getProfile result:", result);
+      return result;
+    },
+    staleTime: 0, // Always refetch user on mount
+    // Smart refetch: only refetch on mount if accessToken is missing from cookies
+    // This ensures:
+    // 1. If accessToken was deleted (401 scenario), we trigger the refresh flow
+    // 2. If accessToken exists, we trust the cached data to avoid unnecessary requests
+    // The axios 401 interceptor will handle refresh if needed
+    refetchOnMount: shouldRefetch ? "always" : false,
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 1, // Retry once on failure
   });
@@ -42,7 +75,13 @@ export const useCurrentUser = () => {
 // Custom hook for authorization checks
 export const useAuth = () => {
   const queryClient = useQueryClient();
-  const { data: user, isLoading, isError, refetch } = useCurrentUser();
+  const {
+    data: user,
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useCurrentUser();
 
   // Handle the case where user is undefined (still loading)
   const safeUser = user || null;
@@ -68,7 +107,13 @@ export const useAuth = () => {
     isLoading,
     isError,
     refetch, // Include the refetch function to allow manual refresh
+    // `isAuthenticated` indicates that a user object exists and the account isn't suspended.
+    // Note: consumers should also respect `isAuthLoading` to avoid redirecting while a
+    // background refetch (which may trigger token refresh) is still in progress.
     isAuthenticated: !!safeUser && !isSuspended(safeUser),
+    // True while the currentUser query is loading or refetching. Consumers should wait
+    // for this to be false before making a redirect decision based on `isAuthenticated`.
+    isAuthLoading: isLoading || !!isFetching,
     isAdmin: isAdmin(safeUser),
     isSuspended: isSuspended(safeUser),
     isVerified: isVerified(safeUser),
@@ -135,12 +180,9 @@ export const useLogin = () => {
     mutationFn: (data: LoginRequest) => authService.login(data),
     onSuccess: async (data: any) => {
       const user = data.data?.user;
-      if (user) {
-        queryClient.setQueryData(authKeys.currentUser(), user);
-      } else {
-        queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
-      }
-      console.log("Login successful:", data);
+      // Invalidate the user query to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
+      console.log("Login successful, currentUser query invalidated:", data);
 
       // Clear registration credentials from sessionStorage (if coming from register flow)
       sessionStorage.removeItem("registrationPassword");

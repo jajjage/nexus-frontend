@@ -23,6 +23,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { useAuth, useLogout } from "@/hooks/useAuth";
 import { HomeIcon, LogOutIcon, SettingsIcon, UserIcon } from "lucide-react";
 
@@ -46,6 +47,14 @@ export default function DashboardLayout({
       .map((n) => n[0])
       .join("")
       .toUpperCase() || "";
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Spinner className="h-8 w-8" />
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>

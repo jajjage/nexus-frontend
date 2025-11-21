@@ -37,15 +37,29 @@ export const authService = {
   },
 
   // Get current user profile from the backend
-  getProfile: async (): Promise<User | null> => {
+  getProfile: async (forceRefresh?: boolean): Promise<User | null> => {
+    console.log("[DEBUG] getProfile() called, forceRefresh:", forceRefresh);
     try {
-      const response =
-        await apiClient.get<ApiResponse<User>>("/user/profile/me");
-      console.log("Fetched user profile:", response.data);
+      // Add timestamp to URL if forceRefresh is true to bypass HTTP caching
+      const url = forceRefresh
+        ? `/user/profile/me?t=${Date.now()}`
+        : "/user/profile/me";
+
+      const response = await apiClient.get<ApiResponse<User>>(url, {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
+      console.log("[DEBUG] getProfile() response received:", response.data);
       return response.data.data || null;
-    } catch (error) {
-      console.error("Failed to fetch user profile:", error);
-      return null;
+    } catch (error: any) {
+      console.log("[DEBUG] getProfile() error:", {
+        status: error.response?.status,
+        message: error.message,
+      });
+      throw error; // Re-throw so axios interceptor can handle 401
     }
   },
 

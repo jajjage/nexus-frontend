@@ -141,11 +141,10 @@ describe("Auth Hooks - FCM Integration", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      // Verify user was cached
-      expect(mockQueryClient.setQueryData).toHaveBeenCalledWith(
-        expect.any(Array),
-        mockUser
-      );
+      // Verify user query was invalidated (to refetch fresh data)
+      expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
+        queryKey: expect.arrayContaining(["auth", "current-user"]),
+      });
     });
 
     it("should redirect to user dashboard after login", async () => {
