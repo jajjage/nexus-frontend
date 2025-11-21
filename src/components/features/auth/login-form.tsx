@@ -15,6 +15,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useLogin } from "@/hooks/useAuth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -32,12 +33,14 @@ interface LoginFormProps {
 
 export function LoginForm({ role = "user" }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const searchParams = useSearchParams();
   const loginMutation = useLogin();
   const {
     register,
     handleSubmit,
     formState: { errors, isValid },
     trigger,
+    setValue,
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     mode: "onChange",
@@ -46,6 +49,68 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
       password: "",
     },
   });
+
+  // Pre-fill email and password from URL params and sessionStorage (when redirected from register)
+  useEffect(() => {
+    // Debug: Log what we're getting from searchParams
+    console.log("Login form mounted, searchParams:", {
+      email: searchParams.get("email"),
+      fromRegister: searchParams.get("fromRegister"),
+    });
+
+    const email = searchParams.get("email");
+    const fromRegister = searchParams.get("fromRegister");
+
+    // Fill email from URL param (has highest priority)
+    if (email) {
+      console.log("Setting email from URL param:", email);
+      setValue("credentials", email);
+    }
+
+    // If coming from register, also try to fill password from sessionStorage
+    if (fromRegister === "true") {
+      const storedPassword = sessionStorage.getItem("registrationPassword");
+      const storedEmail = sessionStorage.getItem("registrationEmail");
+
+      console.log("Coming from register, checking sessionStorage:", {
+        hasPassword: !!storedPassword,
+        hasEmail: !!storedEmail,
+      });
+
+      if (storedPassword) {
+        console.log("Setting password from sessionStorage");
+        setValue("password", storedPassword);
+      }
+      if (storedEmail && !email) {
+        console.log("Setting email from sessionStorage");
+        setValue("credentials", storedEmail);
+      }
+    }
+
+    // Also check sessionStorage even without fromRegister flag
+    // (in case user manually navigates to /login)
+    if (!email) {
+      const fallbackEmail = sessionStorage.getItem("registrationEmail");
+      if (fallbackEmail) {
+        console.log("Setting fallback email from sessionStorage");
+        setValue("credentials", fallbackEmail);
+      }
+    }
+
+    if (!searchParams.get("password")) {
+      const fallbackPassword = sessionStorage.getItem("registrationPassword");
+      if (fallbackPassword) {
+        console.log("Setting fallback password from sessionStorage");
+        setValue("password", fallbackPassword);
+      }
+    }
+
+    // Trigger validation after values are set
+    // Use setTimeout to ensure values are set before validation
+    setTimeout(() => {
+      trigger();
+    }, 100);
+  }, [searchParams, setValue, trigger]);
 
   const onSubmit = async (data: LoginFormValues) => {
     const { credentials, password } = data;
@@ -100,7 +165,7 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
       : "Enter your email or phone number below to login to your account";
 
   return (
-    <Card className="mx-auto w-full md:max-w-sm">
+    <Card className="mx-auto w-full max-w-xs sm:max-w-sm md:max-w-sm">
       <CardHeader>
         <CardTitle className="text-2xl">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>

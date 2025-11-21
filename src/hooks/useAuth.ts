@@ -9,7 +9,7 @@ import {
   isVerified,
 } from "@/lib/auth-utils";
 import { authService } from "@/services/auth.service";
-import { registerFcmToken } from "@/services/notification.service";
+import { syncFcmToken, unlinkFcmToken } from "@/services/notification.service";
 import {
   ForgotPasswordRequest,
   LoginRequest,
@@ -20,6 +20,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 // Query Keys
 export const authKeys = {
@@ -85,25 +86,42 @@ export const useRegister = () => {
 
   return useMutation({
     mutationFn: (data: RegisterRequest) => authService.register(data),
-    onSuccess: (data) => {
-      const user = data.data?.user;
-      if (user) {
-        // Manually set the user data in the cache for immediate access
-        queryClient.setQueryData(authKeys.currentUser(), user);
-      } else {
-        // Fallback to invalidation if user data is not in the response
-        queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
-      }
+    onSuccess: async (data) => {
+      // Note: Register endpoint does NOT return tokens (unlike login)
+      // User must login after registration to receive auth tokens
+      // Therefore, we redirect to login instead of dashboard
 
-      const role = user?.role;
-      if (role === "admin") {
-        router.push("/admin/dashboard");
+      // Show success message before redirecting
+      toast.success("Account created! Please login to continue.", {
+        description: "Your account has been created successfully.",
+      });
+
+      // Get the registered email and password from the mutation data
+      // We'll pass these to the login page so user can login immediately
+      const email = data.data?.user?.email;
+
+      // Note: Password is available in the original RegisterRequest but not in response
+      // We'll store it temporarily in sessionStorage for auto-fill (only for this flow)
+      // Get password from the original registration data by capturing it in the component
+
+      // Redirect to login page with pre-filled email
+      if (email) {
+        // Delay redirect to allow user to see the success toast
+        setTimeout(() => {
+          router.push(
+            `/login?email=${encodeURIComponent(email)}&fromRegister=true`
+          );
+        }, 1500);
       } else {
-        router.push("/dashboard");
+        setTimeout(() => {
+          router.push("/login");
+        }, 1500);
       }
     },
     onError: (error: AxiosError<any>) => {
-      console.error("Registration failed:", error.response?.data?.message);
+      const errorMsg = error.response?.data?.message || "Registration failed";
+      toast.error(errorMsg);
+      console.error("Registration failed:", errorMsg);
     },
   });
 };
@@ -123,10 +141,16 @@ export const useLogin = () => {
         queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
       }
       console.log("Login successful:", data);
-      // Fire-and-forget: Register FCM token in background
-      // Don't await or block login - if it fails, it's not critical
-      registerFcmToken("web").catch((err) => {
-        console.warn("FCM token registration failed (non-blocking):", err);
+
+      // Clear registration credentials from sessionStorage (if coming from register flow)
+      sessionStorage.removeItem("registrationPassword");
+      sessionStorage.removeItem("registrationEmail");
+
+      // Sync FCM token: Link this specific device to the user account
+      // Fire-and-forget: Don't await or block login - if it fails, it's not critical
+      // The sync function checks localStorage to avoid redundant API calls
+      syncFcmToken("web").catch((err: Error) => {
+        console.warn("FCM token sync failed after login (non-blocking):", err);
       });
 
       const role = user?.role;
@@ -150,7 +174,19 @@ export const useLogout = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => authService.logout(),
+    mutationFn: async () => {
+      // Unlink FCM token BEFORE logout to prevent next user from receiving alerts
+      // Fire-and-forget: Even if this fails, we should still logout
+      unlinkFcmToken().catch((err: Error) => {
+        console.warn(
+          "FCM token unlink failed during logout (non-blocking):",
+          err
+        );
+      });
+
+      // Call the logout endpoint
+      return authService.logout();
+    },
     onSuccess: () => {
       queryClient.clear(); // Clear all queries
       router.push("/login");

@@ -1,7 +1,7 @@
+import { QueryProvider } from "@/providers/query-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
 import type { Metadata } from "next";
 import "../styles/globals.css";
-import { ThemeProvider } from "@/providers/theme-provider";
-import { QueryProvider } from "@/providers/query-provider";
 
 export const metadata: Metadata = {
   title: "Nexus Data",

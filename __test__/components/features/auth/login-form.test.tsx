@@ -1,171 +1,311 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import "@testing-library/jest-dom";
 import { LoginForm } from "@/components/features/auth/login-form";
+import { useLogin } from "@/hooks/useAuth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AxiosError } from "axios";
+import "@testing-library/jest-dom";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import React from "react";
 
-// Mock next/navigation
+/**
+ * Mock dependencies
+ */
+jest.mock("@/hooks/useAuth");
 jest.mock("next/navigation", () => ({
   useRouter: () => ({
     push: jest.fn(),
   }),
 }));
 
-// Mock the auth hooks
-const mockLoginMutation = jest.fn();
-const mockUseLogin = jest.fn();
-
-jest.mock("@/hooks/useAuth", () => ({
-  useLogin: () => mockUseLogin(),
-}));
-
-const createTestQueryClient = () =>
-  new QueryClient({
+// Create a wrapper component that provides QueryClient
+const createWrapper = () => {
+  const queryClient = new QueryClient({
     defaultOptions: {
-      queries: {
-        retry: false,
-      },
+      queries: { retry: false },
+      mutations: { retry: false },
     },
   });
 
-describe("LoginForm", () => {
-  let queryClient: QueryClient;
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+};
 
-  beforeEach(() => {
-    queryClient = createTestQueryClient();
-    mockLoginMutation.mockClear();
-    mockUseLogin.mockClear();
-  });
-
-  const renderComponent = (loginHookValue: any) => {
-    mockUseLogin.mockReturnValue({
-      mutate: mockLoginMutation,
-      isPending: false,
-      isError: false,
-      error: null,
-      ...loginHookValue,
-    });
-
-    return render(
-      <QueryClientProvider client={queryClient}>
-        <LoginForm />
-      </QueryClientProvider>
-    );
+describe("LoginForm Component", () => {
+  const mockLoginMutation = {
+    mutate: jest.fn(),
+    isSuccess: false,
+    isError: false,
+    isPending: false,
+    error: null,
   };
 
-  it("renders the login form with all elements", () => {
-    renderComponent({});
-    expect(screen.getByRole("heading", { name: /login/i })).toBeInTheDocument();
-    expect(
-      screen.getByText(/enter your email or phone number below/i)
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText(/email or phone number/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /login/i })).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /forgot your password/i })
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /sign up/i })).toBeInTheDocument();
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useLogin as jest.Mock).mockReturnValue(mockLoginMutation);
   });
 
-  it("shows validation errors for empty fields on blur", async () => {
-    renderComponent({});
-    fireEvent.blur(screen.getByLabelText(/email or phone number/i));
-    fireEvent.blur(screen.getByLabelText(/password/i));
+  describe("Rendering and UI", () => {
+    it("should render login form with all required fields", () => {
+      render(<LoginForm />, { wrapper: createWrapper() });
 
-    await waitFor(() => {
+      expect(screen.getByText("Login")).toBeInTheDocument();
       expect(
-        screen.getByText("Email or phone number is required")
+        screen.getByText(/Enter your email or phone number below to login/i)
       ).toBeInTheDocument();
-      expect(screen.getByText("Password is required")).toBeInTheDocument();
+      expect(
+        screen.getByLabelText(/Email or Phone Number/i)
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText(/^Password$/i)).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Login/i })
+      ).toBeInTheDocument();
+    });
+
+    it("should render admin login form when role is admin", () => {
+      render(<LoginForm role="admin" />, { wrapper: createWrapper() });
+
+      expect(screen.getByText("Admin Login")).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          /Enter your credentials to access the admin dashboard/i
+        )
+      ).toBeInTheDocument();
+    });
+
+    it("should have forgot password link", () => {
+      render(<LoginForm />, { wrapper: createWrapper() });
+
+      const forgotLink = screen.getByText(/Forgot your password/i);
+      expect(forgotLink).toBeInTheDocument();
+    });
+
+    it("should have sign up link for user role", () => {
+      render(<LoginForm />, { wrapper: createWrapper() });
+
+      const signUpLink = screen.getByText(/Sign up/i);
+      expect(signUpLink).toBeInTheDocument();
+    });
+
+    it("should not have sign up link for admin role", () => {
+      render(<LoginForm role="admin" />, { wrapper: createWrapper() });
+
+      const signUpLink = screen.queryByText(/Sign up/i);
+      expect(signUpLink).not.toBeInTheDocument();
     });
   });
 
-  it("disables the submit button when form is invalid", () => {
-    renderComponent({});
-    expect(screen.getByRole("button", { name: /login/i })).toBeDisabled();
+  describe("Form Validation", () => {
+    it("should show error when credentials field is empty on blur", async () => {
+      const user = userEvent.setup();
+      render(<LoginForm />, { wrapper: createWrapper() });
+
+      const credentialsInput = screen.getByLabelText(/Email or Phone Number/i);
+      await user.click(credentialsInput);
+      await user.tab();
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Email or phone number is required/i)
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("should show error when password field is empty on blur", async () => {
+      const user = userEvent.setup();
+      render(<LoginForm />, { wrapper: createWrapper() });
+
+      const passwordInput = screen.getByLabelText(/^Password$/i);
+      await user.click(passwordInput);
+      await user.tab();
+
+      await waitFor(() => {
+        expect(screen.getByText(/Password is required/i)).toBeInTheDocument();
+      });
+    });
+
+    it("should disable login button when form is invalid", async () => {
+      render(<LoginForm />, { wrapper: createWrapper() });
+
+      const loginButton = screen.getByRole("button", { name: /Login/i });
+      expect(loginButton).toBeDisabled();
+    });
   });
 
-  it("enables the submit button when form is valid", async () => {
-    renderComponent({});
-    fireEvent.change(screen.getByLabelText(/email or phone number/i), {
-      target: { value: "test@example.com" },
+  describe("Form Submission", () => {
+    it("should submit form with email when credentials contain @", async () => {
+      const user = userEvent.setup();
+      render(<LoginForm />, { wrapper: createWrapper() });
+
+      const credentialsInput = screen.getByLabelText(/Email or Phone Number/i);
+      const passwordInput = screen.getByLabelText(/^Password$/i);
+      const loginButton = screen.getByRole("button", { name: /Login/i });
+
+      await user.type(credentialsInput, "test@example.com");
+      await user.type(passwordInput, "password123");
+      await user.click(loginButton);
+
+      await waitFor(() => {
+        expect(mockLoginMutation.mutate).toHaveBeenCalledWith({
+          email: "test@example.com",
+          password: "password123",
+        });
+      });
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: { value: "password123" },
-    });
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /login/i })).toBeEnabled();
-    });
-  });
+    it("should submit form with phone when credentials don't contain @", async () => {
+      const user = userEvent.setup();
+      render(<LoginForm />, { wrapper: createWrapper() });
 
-  it("calls the login mutation with email on submit", async () => {
-    renderComponent({});
-    const credentialsInput = screen.getByLabelText(/email or phone number/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole("button", { name: /login/i });
+      const credentialsInput = screen.getByLabelText(/Email or Phone Number/i);
+      const passwordInput = screen.getByLabelText(/^Password$/i);
+      const loginButton = screen.getByRole("button", { name: /Login/i });
 
-    fireEvent.change(credentialsInput, {
-      target: { value: "test@example.com" },
-    });
-    fireEvent.change(passwordInput, { target: { value: "password123" } });
+      await user.type(credentialsInput, "08012345678");
+      await user.type(passwordInput, "password123");
+      await user.click(loginButton);
 
-    await waitFor(() => expect(submitButton).toBeEnabled());
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockLoginMutation).toHaveBeenCalledWith({
-        email: "test@example.com",
-        password: "password123",
+      await waitFor(() => {
+        expect(mockLoginMutation.mutate).toHaveBeenCalledWith({
+          phone: "08012345678",
+          password: "password123",
+        });
       });
     });
   });
 
-  it("calls the login mutation with phone on submit", async () => {
-    renderComponent({});
-    const credentialsInput = screen.getByLabelText(/email or phone number/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole("button", { name: /login/i });
+  describe("Password Visibility Toggle", () => {
+    it("should toggle password visibility", async () => {
+      const user = userEvent.setup();
+      render(<LoginForm />, { wrapper: createWrapper() });
 
-    fireEvent.change(credentialsInput, { target: { value: "08012345678" } });
-    fireEvent.change(passwordInput, { target: { value: "password123" } });
+      const passwordInput = screen.getByLabelText(
+        /^Password$/i
+      ) as HTMLInputElement;
+      expect(passwordInput.type).toBe("password");
 
-    await waitFor(() => expect(submitButton).toBeEnabled());
-    fireEvent.click(submitButton);
+      // Find and click the toggle button
+      const toggleButton = screen.getByRole("button", {
+        name: /Show password/i,
+      });
 
-    await waitFor(() => {
-      expect(mockLoginMutation).toHaveBeenCalledWith({
-        phone: "08012345678",
-        password: "password123",
+      await user.click(toggleButton);
+
+      await waitFor(() => {
+        expect(passwordInput.type).toBe("text");
+      });
+
+      // Click again to hide
+      const hideButton = screen.getByRole("button", {
+        name: /Hide password/i,
+      });
+      await user.click(hideButton);
+
+      await waitFor(() => {
+        expect(passwordInput.type).toBe("password");
       });
     });
   });
 
-  it("shows a loading spinner and disables button when submitting", () => {
-    renderComponent({ isPending: true });
+  describe("Error Handling", () => {
+    it("should display error alert when login fails", async () => {
+      const errorMessage = "Invalid credentials";
+      (useLogin as jest.Mock).mockReturnValue({
+        ...mockLoginMutation,
+        isError: true,
+        error: {
+          response: {
+            data: {
+              message: errorMessage,
+            },
+          },
+        },
+      });
 
-    // Fill form to enable button initially
-    fireEvent.change(screen.getByLabelText(/email or phone number/i), {
-      target: { value: "test@example.com" },
-    });
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: { value: "password123" },
+      render(<LoginForm />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByText(errorMessage)).toBeInTheDocument();
+      });
     });
 
-    const submitButton = screen.getByRole("button", { name: /logging in.../i });
-    expect(submitButton).toBeInTheDocument();
-    expect(screen.getByText(/logging in.../i)).toBeInTheDocument();
-    expect(submitButton).toBeDisabled();
+    it("should show spinner when login is pending", async () => {
+      (useLogin as jest.Mock).mockReturnValue({
+        ...mockLoginMutation,
+        isPending: true,
+      });
+
+      const user = userEvent.setup();
+      render(<LoginForm />, { wrapper: createWrapper() });
+
+      const credentialsInput = screen.getByLabelText(/Email or Phone Number/i);
+      const passwordInput = screen.getByLabelText(/^Password$/i);
+
+      await user.type(credentialsInput, "test@example.com");
+      await user.type(passwordInput, "password123");
+
+      const loginButton = screen.getByRole("button", { name: /Logging in/i });
+      expect(loginButton).toBeDisabled();
+      expect(screen.getByText(/Logging in/i)).toBeInTheDocument();
+    });
   });
 
-  it("displays an error message on login failure", () => {
-    const error = {
-      response: { data: { message: "Invalid credentials" } },
-    } as AxiosError<any>;
+  describe("Autofill Handling", () => {
+    it("should handle autofill trigger", async () => {
+      render(<LoginForm />, { wrapper: createWrapper() });
 
-    renderComponent({ isError: true, error });
+      const credentialsInput = document.getElementById(
+        "credentials"
+      ) as HTMLInputElement;
+      const passwordInput = document.getElementById(
+        "password"
+      ) as HTMLInputElement;
 
-    expect(screen.getByText("Invalid credentials")).toBeInTheDocument();
+      // Simulate autofill
+      if (credentialsInput) {
+        credentialsInput.value = "test@example.com";
+        fireEvent.change(credentialsInput);
+      }
+
+      if (passwordInput) {
+        passwordInput.value = "password123";
+        fireEvent.change(passwordInput);
+      }
+
+      await waitFor(() => {
+        const loginButton = screen.getByRole("button", { name: /Login/i });
+        expect(loginButton).not.toBeDisabled();
+      });
+    });
+  });
+
+  describe("Accessibility", () => {
+    it("should have proper labels for form fields", () => {
+      render(<LoginForm />, { wrapper: createWrapper() });
+
+      expect(
+        screen.getByLabelText(/Email or Phone Number/i)
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText(/^Password$/i)).toBeInTheDocument();
+    });
+
+    it("should have aria-label for password toggle button", () => {
+      render(<LoginForm />, { wrapper: createWrapper() });
+
+      const toggleButton = screen.getByRole("button", {
+        name: /Show password/i,
+      });
+      expect(toggleButton).toHaveAttribute(
+        "aria-label",
+        expect.stringMatching(/Show password|Hide password/)
+      );
+    });
+
+    it("should have proper button role and text", () => {
+      render(<LoginForm />, { wrapper: createWrapper() });
+
+      expect(
+        screen.getByRole("button", { name: /Login/i })
+      ).toBeInTheDocument();
+    });
   });
 });

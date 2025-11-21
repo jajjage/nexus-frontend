@@ -1,9 +1,5 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useRegister } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,8 +10,18 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
+import { useRegister } from "@/hooks/useAuth";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+import { Eye, EyeOff } from "lucide-react";
+
+import { useState } from "react";
 
 const registerSchema = z
+
   .object({
     fullName: z.string().min(1, "Name is required"),
     email: z.string().email("Invalid email address"),
@@ -50,6 +56,8 @@ const registerSchema = z
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const registerMutation = useRegister();
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -68,7 +76,6 @@ export function RegisterForm() {
     handleSubmit,
     formState: { isValid, isSubmitting, errors },
   } = form;
-
   const onSubmit = (data: RegisterFormValues) => {
     const { confirmPassword, ...rest } = data;
     const dataToSend = {
@@ -77,11 +84,21 @@ export function RegisterForm() {
       phoneNumber: rest.phoneNumber,
       fullName: rest.fullName,
     };
+
+    // Store password in sessionStorage temporarily for auto-fill on login page
+    // This allows user to just click login without re-entering password
+    console.log("Storing credentials in sessionStorage:", {
+      email: rest.email,
+      passwordLength: rest.password.length,
+    });
+    sessionStorage.setItem("registrationPassword", rest.password);
+    sessionStorage.setItem("registrationEmail", rest.email);
+
     registerMutation.mutate(dataToSend);
   };
 
   return (
-    <Card className="mx-auto w-full md:max-w-sm">
+    <Card className="mx-auto w-full max-w-xs sm:max-w-sm md:max-w-sm">
       <CardHeader>
         <CardTitle className="text-2xl">Sign Up</CardTitle>
         <CardDescription>
@@ -125,18 +142,44 @@ export function RegisterForm() {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" {...register("password")} />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                {...register("password")}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute top-1/2 right-1 -translate-y-1/2"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff /> : <Eye />}
+              </Button>
+            </div>
             {errors.password && (
               <p className="text-sm text-red-500">{errors.password.message}</p>
             )}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              {...register("confirmPassword")}
-            />
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                {...register("confirmPassword")}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute top-1/2 right-1 -translate-y-1/2"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? <EyeOff /> : <Eye />}
+              </Button>
+            </div>
             {errors.confirmPassword && (
               <p className="text-sm text-red-500">
                 {errors.confirmPassword.message}
@@ -146,9 +189,16 @@ export function RegisterForm() {
           <Button
             type="submit"
             className="w-full"
-            disabled={!isValid || isSubmitting}
+            disabled={!isValid || registerMutation.isPending}
           >
-            {isSubmitting ? "Creating account..." : "Create an account"}
+            {registerMutation.isPending ? (
+              <div className="flex items-center gap-x-2">
+                <Spinner />
+                <span>Creating account...</span>
+              </div>
+            ) : (
+              "Create an account"
+            )}
           </Button>
         </form>
         <div className="mt-4 text-center text-sm">

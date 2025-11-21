@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
@@ -12,12 +11,13 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetTrigger,
   SheetTitle,
+  SheetTrigger,
 } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,8 +30,8 @@ export function Header() {
   ];
 
   return (
-    <header className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
-      <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6 lg:px-8">
+    <header className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-40 w-full border-b backdrop-blur">
+      <div className="flex h-16 items-center justify-between px-2 md:px-3 lg:px-4">
         <div className="flex shrink-0 items-center">
           <Link href="/" className="flex items-center space-x-2">
             <Image
@@ -71,10 +71,14 @@ export function Header() {
           <Button>Create Account</Button>
         </div>
 
-        <div className="shrink-0 md:hidden">
+        <div className="z-50 flex shrink-0 items-center md:hidden">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative z-50 h-10 w-10 p-2"
+              >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle Menu</span>
               </Button>
@@ -88,7 +92,7 @@ export function Header() {
                     onClick={() => setIsOpen(false)}
                   >
                     <Image
-                      src="/images/logo.png"
+                      src="/images/logo.svg"
                       alt="Nexus Data Sub"
                       width={32}
                       height={32}
