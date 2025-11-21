@@ -12,11 +12,11 @@ importScripts(
 // Initialize firebase app with the same config used client-side
 // Note: This config is public (NEXT_PUBLIC_* vars) so it's safe to include here
 firebase.initializeApp({
-  apiKey: "AIzaSyBNPBCS-IyOcQstSckLUtVNdfDpha5Bz3U",
-  authDomain: "nexus-1837e.firebaseapp.com",
-  projectId: "nexus-1837e",
-  messagingSenderId: "884447303295",
-  appId: "1:884447303295:web:81a0a7d45b2a5fa9b8d14a",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 });
 
 const messaging = firebase.messaging();
