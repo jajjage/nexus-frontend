@@ -98,7 +98,7 @@ export function RegisterForm() {
   };
 
   return (
-    <Card className="mx-auto w-full max-w-xs sm:max-w-sm md:max-w-sm">
+    <Card className="mx-auto w-full max-w-sm sm:max-w-md md:max-w-lg">
       <CardHeader>
         <CardTitle className="text-2xl">Sign Up</CardTitle>
         <CardDescription>

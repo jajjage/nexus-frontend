@@ -5,24 +5,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ForgotPasswordForm } from "@/components/features/auth/ForgotPasswordForm";
+import { ResetPasswordForm } from "@/components/features/auth/ResetPasswordForm";
 import Link from "next/link";
 
-export default function ForgotPasswordPage() {
+export default function ResetPasswordPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">
-            Forgot Your Password?
-          </CardTitle>
+          <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
           <CardDescription>
-            No problem. Enter your email address and we&apos;ll send you a link
-            to reset it.
+            Enter your new password below. Make sure it's strong and secure.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ForgotPasswordForm />
+          <ResetPasswordForm />
           <div className="mt-4 text-center text-sm">
             Remembered your password?{" "}
             <Link href="/login" className="font-medium underline">

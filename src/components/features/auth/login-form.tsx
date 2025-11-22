@@ -15,6 +15,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useLogin } from "@/hooks/useAuth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -165,7 +166,7 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
       : "Enter your email or phone number below to login to your account";
 
   return (
-    <Card className="mx-auto w-full max-w-xs sm:max-w-sm md:max-w-sm">
+    <Card className="mx-auto w-full max-w-sm sm:max-w-md md:max-w-lg">
       <CardHeader>
         <CardTitle className="text-2xl">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
@@ -197,9 +198,12 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
           <div className="grid gap-2">
             <div className="flex items-center">
               <Label htmlFor="password">Password</Label>
-              <a href="#" className="ml-auto inline-block text-sm underline">
+              <Link
+                href="/forgot-password"
+                className="ml-auto inline-block text-sm underline"
+              >
                 Forgot your password?
-              </a>
+              </Link>
             </div>
             <div className="relative">
               <Input

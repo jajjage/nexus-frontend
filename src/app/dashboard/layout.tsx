@@ -1,5 +1,6 @@
 "use client";
 
+import { FcmSyncer } from "@/components/FcmSyncer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,10 +37,10 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { user, isLoading, isAdmin, hasPermission } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const logoutMutation = useLogout();
   console.log("User in layout:", user);
-  console.log("Has Permission user:", hasPermission("topup.create"));
+  // console.log("Has Permission user:", hasPermission("topup.create"));
 
   const userInitials =
     user?.fullName
@@ -56,8 +57,15 @@ export default function DashboardLayout({
     );
   }
 
+  // if (!isAuthenticated) {
+  //   // This shouldn't happen as middleware handles it
+  //   return null;
+  // }
+
   return (
     <SidebarProvider>
+      {/* Mount FCM syncer only for dashboard (authenticated) pages to avoid running on public/auth routes */}
+      <FcmSyncer />
       <Sidebar>
         <SidebarHeader>
           <h2 className="text-lg font-semibold">User Dashboard</h2>
@@ -181,7 +189,7 @@ export default function DashboardLayout({
         <main className="flex-1 p-6">
           {children}
 
-          {/* Example of conditional rendering based on role */}
+          {/* Example of conditional rendering based on role
           {isAdmin && (
             <div className="mt-6 rounded-lg border border-red-500 bg-red-50 p-4">
               <h3 className="font-bold text-red-800">Admin-Only Section</h3>
@@ -192,7 +200,7 @@ export default function DashboardLayout({
           )}
 
           {/* Example of conditional rendering based on permission */}
-          {hasPermission("transaction:write") && (
+          {/* {hasPermission("transaction:write") && (
             <div className="mt-6 rounded-lg border border-blue-500 bg-blue-50 p-4">
               <h3 className="font-bold text-blue-800">
                 Permission-Based Section
@@ -202,7 +210,7 @@ export default function DashboardLayout({
                 permission.
               </p>
             </div>
-          )}
+          )} */}
         </main>
       </SidebarInset>
     </SidebarProvider>

@@ -70,6 +70,21 @@ export async function requestAndGetFcmToken(vapidKey?: string | null) {
     return null;
   }
 
+  // Always request notification permission before getting token
+  let permission = Notification.permission;
+  if (permission !== "granted") {
+    try {
+      permission = await Notification.requestPermission();
+    } catch (err) {
+      console.warn("Notification permission request failed:", err);
+      return null;
+    }
+  }
+  if (permission !== "granted") {
+    console.warn("Notification permission not granted. Cannot get FCM token.");
+    return null;
+  }
+
   try {
     const messaging = getMessaging();
     const validVapidKey = vapidKey ?? undefined;

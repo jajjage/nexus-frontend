@@ -1,286 +1,405 @@
-import {
-  Permission,
-  hasAllPermissions,
-  hasAnyPermission,
-  hasPermission,
-  hasRole,
-  isAdmin,
-  isSuspended,
-  isVerified,
-} from "@/lib/auth-utils";
+"use client";
+
+import { useAuthContext } from "@/context/AuthContext";
+import { setSessionExpiredCallback } from "@/lib/api-client";
 import { authService } from "@/services/auth.service";
-import { syncFcmToken, unlinkFcmToken } from "@/services/notification.service";
-import {
-  ForgotPasswordRequest,
-  LoginRequest,
-  RegisterRequest,
-  ResetPasswordRequest,
-  UpdatePasswordRequest,
-} from "@/types/auth.types";
+import { User } from "@/types/api.types";
+import { RegisterRequest } from "@/types/auth.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 /**
- * Helper to check if accessToken cookie exists
- * Used to determine if we should refetch user profile
+ * BEST PRACTICES FOR USER AUTH STATE:
+ *
+ * 1. CACHE STRATEGY (5 minutes):
+ *    - First request fetches fresh data from server
+ *    - Subsequent requests within 5 minutes use cached data
+ *    - This prevents N+1 requests on page navigation
+ *    - User profile doesn't change frequently, so 5 min is safe
+ *
+ * 2. STALE DATA HANDLING:
+ *    - Data is considered fresh for 5 minutes
+ *    - After 5 minutes, next request will refetch (in background if not loading)
+ *    - No unnecessary UI blocking
+ *
+ * 3. NO AUTOMATIC REFETCH:
+ *    - refetchOnMount: false - prevents duplicate requests
+ *    - refetchOnWindowFocus: false - prevents unnecessary requests on tab switch
+ *    - Manual refetch available via the refetch() function
+ *
+ * 4. ERROR HANDLING:
+ *    - 401 errors handled by axios interceptor
+ *    - No retry at React Query level (let interceptor handle it)
+ *    - Session expiration handled via context
+ *
+ * 5. SINGLE SOURCE OF TRUTH:
+ *    - AuthContext holds the current user state
+ *    - React Query manages server sync
+ *    - Both are in sync via callbacks
  */
-function hasAccessToken(): boolean {
-  if (typeof window === "undefined") return false;
-  const value = `; ${document.cookie}`;
-  const parts = value.split("; accessToken=");
-  const exists = parts.length === 2;
-  console.log("[DEBUG] hasAccessToken:", {
-    exists,
-    allCookies: document.cookie,
-  });
-  return exists;
-}
 
-// Query Keys
-export const authKeys = {
+// Query keys for React Query cache
+const authKeys = {
   all: ["auth"] as const,
   currentUser: () => [...authKeys.all, "current-user"] as const,
 };
 
-// Get user profile via API
-export const useCurrentUser = () => {
-  const shouldRefetch = !hasAccessToken();
-  console.log("[DEBUG] useCurrentUser mount - shouldRefetch:", shouldRefetch);
+// ============================================================================
+// FETCH CURRENT USER - REACT QUERY
+// ============================================================================
 
-  return useQuery({
+/**
+ * Fetch user profile from server
+ *
+ * Strategy:
+ * - Runs once on component mount
+ * - Result cached for 5 minutes
+ * - No automatic refetch unless explicitly triggered
+ * - Updates AuthContext on success
+ */
+function useCurrentUserQuery() {
+  const { setUser, setIsLoading, markSessionAsExpired, setIsSessionExpired } =
+    useAuthContext();
+  const router = useRouter();
+
+  const query = useQuery<User | null, AxiosError>({
     queryKey: authKeys.currentUser(),
     queryFn: async () => {
-      console.log(
-        "[DEBUG] getProfile queryFn called, shouldRefetch:",
-        shouldRefetch
-      );
-      const result = await authService.getProfile(shouldRefetch);
-      console.log("[DEBUG] getProfile result:", result);
-      return result;
+      console.log("[AUTH] Fetching user profile from server");
+      try {
+        const user = await authService.getProfile();
+        console.log("[AUTH] User profile fetched successfully", {
+          userId: user?.userId,
+        });
+        return user;
+      } catch (error: any) {
+        console.log("[AUTH] Failed to fetch user profile", {
+          status: error.response?.status,
+          message: error.message,
+        });
+
+        // If we get 401 and refresh fails, interceptor will handle it
+        // Just re-throw so React Query treats it as an error
+        throw error;
+      }
     },
-    staleTime: 0, // Always refetch user on mount
-    // Smart refetch: only refetch on mount if accessToken is missing from cookies
-    // This ensures:
-    // 1. If accessToken was deleted (401 scenario), we trigger the refresh flow
-    // 2. If accessToken exists, we trust the cached data to avoid unnecessary requests
-    // The axios 401 interceptor will handle refresh if needed
-    refetchOnMount: shouldRefetch ? "always" : false,
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: 1, // Retry once on failure
+
+    // CACHING STRATEGY
+    staleTime: 3 * 60 * 1000, // Keep data fresh for 3 minutes
+    gcTime: 7 * 60 * 1000, // Keep in memory for 7 minutes
+
+    // REFETCH STRATEGY
+    refetchOnMount: "always", // Always refetch on mount to ensure fresh data
+    refetchOnWindowFocus: false, // Don't refetch on tab switch
+    refetchOnReconnect: true, // Only refetch if network reconnected
+
+    // ERROR HANDLING
+    retry: 0, // Don't retry here - let axios interceptor handle it
+    enabled: true, // Always enabled, but checks cache first
   });
-};
 
-// Custom hook for authorization checks
-export const useAuth = () => {
-  const queryClient = useQueryClient();
-  const {
-    data: user,
-    isLoading,
-    isError,
-    isFetching,
-    refetch,
-  } = useCurrentUser();
+  // Handle success - update context when user data is fetched
+  useEffect(() => {
+    if (query.data !== undefined && query.isSuccess) {
+      console.log("[AUTH] User profile updated in context", {
+        userId: query.data?.userId,
+      });
+      setUser(query.data);
+      setIsLoading(false);
+    }
+  }, [query.data, query.isSuccess, setUser, setIsLoading]);
 
-  // Handle the case where user is undefined (still loading)
-  const safeUser = user || null;
+  // Handle error - mark session as expired if auth error
+  useEffect(() => {
+    if (query.isError) {
+      const status = query.error?.response?.status;
+      const message =
+        (query.error?.response?.data as any)?.message ||
+        (query.error as any)?.message;
 
-  const checkPermission = (permission: Permission): boolean => {
-    return hasPermission(safeUser, permission);
-  };
+      console.error("[AUTH] User profile fetch error", {
+        status,
+        message,
+        errorData: query.error?.response?.data,
+      });
 
-  const checkAnyPermission = (permissions: Permission[]): boolean => {
-    return hasAnyPermission(safeUser, permissions);
-  };
+      // Mark session as expired on auth errors
+      if (
+        status === 401 ||
+        status === 400 ||
+        status === 403 ||
+        status === 404
+      ) {
+        console.error(
+          "[AUTH] Auth error detected in query - marking session as expired",
+          { status }
+        );
+        // Call markSessionAsExpired which updates context AND also call setIsSessionExpired
+        markSessionAsExpired();
+        setIsSessionExpired(true); // Ensure the context state is also updated
 
-  const checkAllPermissions = (permissions: Permission[]): boolean => {
-    return hasAllPermissions(safeUser, permissions);
-  };
+        // For 404 (user deleted), immediately trigger redirect
+        if (status === 404) {
+          toast.error("Sorry ", {
+            description: "You can try login again",
+          });
+          console.error(
+            "[AUTH] User not found (404) - forcing immediate redirect"
+          );
+          // Force immediate redirect without waiting for effect
+          setTimeout(() => {
+            console.log("[AUTH] Executing immediate 404 redirect");
+            if (typeof window !== "undefined") {
+              window.location.href = "/login";
+            }
+          }, 0);
+        }
+      }
 
-  const checkRole = (role: string): boolean => {
-    return hasRole(safeUser, role);
-  };
+      setIsLoading(false);
+    }
+  }, [
+    query.isError,
+    query.error,
+    markSessionAsExpired,
+    setIsSessionExpired,
+    setIsLoading,
+  ]);
 
-  return {
-    user: safeUser,
-    isLoading,
-    isError,
-    refetch, // Include the refetch function to allow manual refresh
-    // `isAuthenticated` indicates that a user object exists and the account isn't suspended.
-    // Note: consumers should also respect `isAuthLoading` to avoid redirecting while a
-    // background refetch (which may trigger token refresh) is still in progress.
-    isAuthenticated: !!safeUser && !isSuspended(safeUser),
-    // True while the currentUser query is loading or refetching. Consumers should wait
-    // for this to be false before making a redirect decision based on `isAuthenticated`.
-    isAuthLoading: isLoading || !!isFetching,
-    isAdmin: isAdmin(safeUser),
-    isSuspended: isSuspended(safeUser),
-    isVerified: isVerified(safeUser),
-    hasPermission: checkPermission,
-    hasAnyPermission: checkAnyPermission,
-    hasAllPermissions: checkAllPermissions,
-    hasRole: checkRole,
-  };
-};
+  return query;
+}
 
-// Register mutation
-export const useRegister = () => {
+// ============================================================================
+// MAIN AUTH HOOK
+// ============================================================================
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+/**
+ * useAuth Hook - Main interface for auth state
+ *
+ * Usage:
+ * const { user, isAuthenticated, isLoading } = useAuth();
+ *
+ * Returns:
+ * - user: Current user object or null
+ * - isAuthenticated: True if user is logged in and not suspended
+ * - isLoading: True while fetching user profile
+ * - isAuthLoading: True while any auth operation is in progress
+ * - refetch: Manually refetch user profile
+ * - checkPermission: Check if user has specific permission
+ * - checkRole: Check if user has specific role
+ */
+export function useAuth() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { user, isLoading, isSessionExpired, setIsSessionExpired } =
+    useAuthContext();
+
+  const {
+    data: fetchedUser,
+    isLoading: isFetching,
+    isError,
+    refetch,
+  } = useCurrentUserQuery();
+
+  // Sync fetched user with context
+  useEffect(() => {
+    if (fetchedUser) {
+      // User was fetched, update context
+      // (already done in query callback, but just for safety)
+    }
+  }, [fetchedUser]);
+
+  // Setup callback for when session expires
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      console.log(
+        "[AUTH] Session expired callback triggered - marking session expired"
+      );
+      // Only mark the session as expired here. Let the dedicated effect
+      // that watches `isSessionExpired` perform the navigation. This
+      // avoids race conditions or double-navigation attempts when the
+      // callback is invoked from different places (interceptor, queries).
+      setIsSessionExpired(true);
+      queryClient.clear();
+    };
+
+    console.log("[AUTH] Setting up session expired callback");
+    setSessionExpiredCallback(handleSessionExpired);
+
+    return () => {
+      console.log("[AUTH] Cleaning up session expired callback");
+      // pass a no-op so the callback type () => void is satisfied
+      setSessionExpiredCallback(() => {});
+    };
+  }, [router, queryClient, setIsSessionExpired]);
+
+  // Handle session expiration state - HIGHEST PRIORITY
+  useEffect(() => {
+    if (isSessionExpired) {
+      console.log(
+        "[AUTH] Session expired state detected - clearing and redirecting"
+      );
+      // Clear everything immediately
+      queryClient.clear();
+
+      // Use hard navigation (window.location.href) to guarantee redirect
+      // This is more reliable than router.replace() which can fail in edge cases
+      console.log("[AUTH] Redirecting to login via window.location.href");
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      return;
+    }
+  }, [isSessionExpired, router, queryClient]);
+
+  const isAuthenticated =
+    !!user && !isSessionExpired && user.isSuspended === false;
+
+  return {
+    // User data
+    user: user || null,
+    isAuthenticated,
+
+    // Loading states
+    isLoading: isLoading || isFetching,
+    isAuthLoading: isFetching,
+    isError,
+
+    // Actions
+    refetch,
+
+    // Helper methods
+    checkPermission: (permission: string): boolean => {
+      if (!user) return false;
+      return user.permissions?.includes(permission) ?? false;
+    },
+
+    checkRole: (role: string): boolean => {
+      if (!user) return false;
+      return user.role === role;
+    },
+  };
+}
+
+// ============================================================================
+// LOGIN HOOK
+// ============================================================================
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function useLogin() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { setUser, setIsLoading, setIsSessionExpired } = useAuthContext();
+
+  return useMutation({
+    mutationFn: authService.login,
+    onSuccess: async (response) => {
+      const user = response.data?.user;
+
+      toast.success("Login successful!", {
+        description: `Welcome back, ${user?.fullName || "user"}! Redirecting to dashboard...`,
+      });
+      console.log("[AUTH] Login successful", { userId: user?.userId });
+
+      // Update auth context immediately
+      setUser(user ?? null);
+
+      // Reset session expiration flag since user just logged in
+      setIsSessionExpired(false);
+
+      // Don't set loading to false yet - let the query fetch handle it
+      // The useCurrentUserQuery will set loading to false when data arrives
+
+      // Invalidate user query to refetch fresh data
+      await queryClient.invalidateQueries({
+        queryKey: authKeys.currentUser(),
+      });
+
+      // Redirect based on role
+      const redirectPath =
+        user?.role === "admin" ? "/admin/dashboard" : "/dashboard";
+      router.push(redirectPath);
+    },
+
+    onError: (error: AxiosError<any>) => {
+      const errorMsg =
+        error.response?.data?.message || "Login failed. Please try again.";
+      console.error("[AUTH] Login failed", { message: errorMsg });
+      toast.error(errorMsg);
+      setIsLoading(false);
+    },
+  });
+}
+
+// ============================================================================
+// LOGOUT HOOK
+// ============================================================================
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function useLogout() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { markSessionAsExpired } = useAuthContext();
+
+  return useMutation({
+    mutationFn: authService.logout,
+    onSuccess: () => {
+      console.log("[AUTH] Logout successful");
+
+      // Clear all state
+      markSessionAsExpired();
+      queryClient.clear();
+
+      // Redirect to login
+      router.push("/login");
+    },
+
+    onError: (error: AxiosError<any>) => {
+      console.error("[AUTH] Logout error", {
+        message: error.message,
+      });
+
+      // Even if logout fails, clear local state and redirect
+      markSessionAsExpired();
+      queryClient.clear();
+      router.push("/login");
+    },
+  });
+}
+
+// ============================================================================
+// REGISTER HOOK
+// ============================================================================
+
+export function useRegister() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { setUser, setIsLoading, setIsSessionExpired } = useAuthContext();
 
   return useMutation({
     mutationFn: (data: RegisterRequest) => authService.register(data),
-    onSuccess: async (data) => {
-      // Note: Register endpoint does NOT return tokens (unlike login)
-      // User must login after registration to receive auth tokens
-      // Therefore, we redirect to login instead of dashboard
+    onSuccess: async (response) => {
+      const user = response.data?.user;
 
-      // Show success message before redirecting
-      toast.success("Account created! Please login to continue.", {
-        description: "Your account has been created successfully.",
-      });
+      console.log("[AUTH] Registration successful", { userId: user?.userId });
 
-      // Get the registered email and password from the mutation data
-      // We'll pass these to the login page so user can login immediately
-      const email = data.data?.user?.email;
-
-      // Note: Password is available in the original RegisterRequest but not in response
-      // We'll store it temporarily in sessionStorage for auto-fill (only for this flow)
-      // Get password from the original registration data by capturing it in the component
-
-      // Redirect to login page with pre-filled email
-      if (email) {
-        // Delay redirect to allow user to see the success toast
-        setTimeout(() => {
-          router.push(
-            `/login?email=${encodeURIComponent(email)}&fromRegister=true`
-          );
-        }, 1500);
-      } else {
-        setTimeout(() => {
-          router.push("/login");
-        }, 1500);
-      }
+      // Registration does NOT set auth cookies, so do NOT set user context or redirect to dashboard
+      // Instead, redirect to login and show a success message
+      toast.success("Registration successful! Please log in.");
+      router.push("/login");
     },
+
     onError: (error: AxiosError<any>) => {
-      const errorMsg = error.response?.data?.message || "Registration failed";
+      const errorMsg =
+        error.response?.data?.message ||
+        "Registration failed. Please try again.";
+      console.error("[AUTH] Registration failed", { message: errorMsg });
       toast.error(errorMsg);
-      console.error("Registration failed:", errorMsg);
+      setIsLoading(false);
     },
   });
-};
-
-// Login mutation
-export const useLogin = () => {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-
-  const mutationOptions = {
-    mutationFn: (data: LoginRequest) => authService.login(data),
-    onSuccess: async (data: any) => {
-      const user = data.data?.user;
-      // Invalidate the user query to refetch fresh data
-      queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
-      console.log("Login successful, currentUser query invalidated:", data);
-
-      // Clear registration credentials from sessionStorage (if coming from register flow)
-      sessionStorage.removeItem("registrationPassword");
-      sessionStorage.removeItem("registrationEmail");
-
-      // Sync FCM token: Link this specific device to the user account
-      // Fire-and-forget: Don't await or block login - if it fails, it's not critical
-      // The sync function checks localStorage to avoid redundant API calls
-      syncFcmToken("web").catch((err: Error) => {
-        console.warn("FCM token sync failed after login (non-blocking):", err);
-      });
-
-      const role = user?.role;
-      if (role === "admin") {
-        router.push("/admin/dashboard");
-      } else {
-        router.push("/dashboard");
-      }
-    },
-    onError: (error: AxiosError<any>) => {
-      console.error("Login failed. Full error object:", error);
-    },
-  };
-
-  return useMutation(mutationOptions);
-};
-
-// Logout mutation
-export const useLogout = () => {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async () => {
-      // Unlink FCM token BEFORE logout to prevent next user from receiving alerts
-      // Fire-and-forget: Even if this fails, we should still logout
-      unlinkFcmToken().catch((err: Error) => {
-        console.warn(
-          "FCM token unlink failed during logout (non-blocking):",
-          err
-        );
-      });
-
-      // Call the logout endpoint
-      return authService.logout();
-    },
-    onSuccess: () => {
-      queryClient.clear(); // Clear all queries
-      router.push("/login");
-    },
-    onError: (error: AxiosError<any>) => {
-      console.error("Logout failed:", error.response?.data?.message);
-      // If logout fails on the backend, still push to login as the token is likely invalid
-      router.push("/login");
-    },
-  });
-};
-
-// Forgot password mutation
-export const useForgotPassword = () => {
-  return useMutation({
-    mutationFn: (data: ForgotPasswordRequest) =>
-      authService.forgotPassword(data),
-    onSuccess: (data) => {
-      console.log("Password reset email sent:", data.message);
-    },
-    onError: (error: AxiosError<any>) => {
-      console.error("Forgot password failed:", error.response?.data?.message);
-    },
-  });
-};
-
-// Reset password mutation
-export const useResetPassword = () => {
-  const router = useRouter();
-
-  return useMutation({
-    mutationFn: (data: ResetPasswordRequest) => authService.resetPassword(data),
-    onSuccess: (data) => {
-      console.log("Password reset successful:", data.message);
-      router.push("/login");
-    },
-    onError: (error: AxiosError<any>) => {
-      console.error("Reset password failed:", error.response?.data?.message);
-    },
-  });
-};
-
-// Update password mutation
-export const useUpdatePassword = () => {
-  return useMutation({
-    mutationFn: (data: UpdatePasswordRequest) =>
-      authService.updatePassword(data),
-    onSuccess: (data) => {
-      console.log("Password updated successfully:", data.message);
-    },
-    onError: (error: AxiosError<any>) => {
-      console.error("Update password failed:", error.response?.data?.message);
-    },
-  });
-};
+}

@@ -1,6 +1,8 @@
+import { AuthProvider } from "@/context/AuthContext";
 import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import type { Metadata } from "next";
+import { Toaster } from "sonner";
 import "../styles/globals.css";
 
 export const metadata: Metadata = {
@@ -26,7 +28,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            <AuthProvider>
+              {/* <FcmSyncer /> */}
+              <Toaster richColors position="top-right" />
+              {children}
+            </AuthProvider>
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>
