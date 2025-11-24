@@ -20,5 +20,5 @@
   "git.confirmSync": false,
   "explorer.confirmDelete": false,
   "explorer.confirmDragAndDrop": false,
-  "cSpell.words": ["TOPUP"]
+  "cSpell.words": ["Syncer", "TOPUP"]
 }

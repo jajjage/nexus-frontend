@@ -1,7 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
 import { walletService } from "@/services/wallet.service";
 import { GetTransactionsParams } from "@/types/wallet.types";
-import { AxiosError } from "axios";
+import { useQuery } from "@tanstack/react-query";
 
 // ============= Query Keys =============
 export const walletKeys = {
@@ -52,6 +51,8 @@ export const useTransactions = (params?: GetTransactionsParams) => {
     queryFn: () => walletService.getTransactions(params),
     staleTime: 1000 * 60 * 3, // 3 minutes
     retry: 2,
+    // Add select to return the transactions array directly
+    select: (data) => data.data.transactions,
     // Only fetch if we have a wallet
     enabled: true,
   });
@@ -81,5 +82,5 @@ export const useRecentTransactions = () => {
  * Get pending transactions
  */
 export const usePendingTransactions = () => {
-  return useTransactions({ status: "PENDING" as any, page: 1, limit: 20 });
+  return useTransactions({ direction: "PENDING" as any, page: 1, limit: 20 });
 };

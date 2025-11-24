@@ -9,43 +9,27 @@ export interface Wallet {
 }
 
 // ============= Transaction Types =============
-export enum TransactionType {
-  DEPOSIT = "DEPOSIT",
-  WITHDRAWAL = "WITHDRAWAL",
-  PURCHASE = "PURCHASE",
-  REFUND = "REFUND",
-  TRANSFER = "TRANSFER",
-}
-
-export enum TransactionStatus {
-  PENDING = "PENDING",
-  COMPLETED = "COMPLETED",
-  FAILED = "FAILED",
-  CANCELLED = "CANCELLED",
-}
-
 export interface Transaction {
   id: string;
   walletId: string;
   userId: string;
-  type: TransactionType;
-  status: TransactionStatus;
+  direction: "debit" | "credit";
   amount: number;
-  balanceBefore: number;
   balanceAfter: number;
-  reference: string;
-  description?: string;
-  metadata?: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
+  method: string;
+  reference?: string;
+  relatedType?: string;
+  relatedId?: string;
+  metadata?: any;
+  note?: string;
+  createdAt: Date;
 }
 
 // ============= Request Types =============
 export interface GetTransactionsParams {
   page?: number;
   limit?: number;
-  type?: TransactionType;
-  status?: TransactionStatus;
+  direction?: "debit" | "credit";
   startDate?: string;
   endDate?: string;
 }
