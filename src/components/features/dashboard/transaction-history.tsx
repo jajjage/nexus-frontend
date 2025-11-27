@@ -1,11 +1,11 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { TransactionItem } from "./transaction-item";
-import Link from "next/link";
-import { useRecentTransactions } from "@/hooks/useWallet";
 import { Spinner } from "@/components/ui/spinner";
+import { useRecentTransactions } from "@/hooks/useWallet";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { TransactionItem } from "./transaction-item";
 
 interface TransactionHistoryProps {
   isVisible: boolean;
@@ -56,17 +56,12 @@ export function TransactionHistory({ isVisible }: TransactionHistoryProps) {
   };
 
   return (
-    <div className="-mt-12 w-full">
-      {" "}
-      {/* Increased negative margin for parent-child effect */}
-      {/* Moved header outside the card */}
-      <div className="mb-2 flex items-center justify-between px-2 pt-12">
-        {" "}
-        {/* Adjusted padding and spacing */}
-        <h2 className="text-foreground font-normal">
+    <Card className="w-full rounded-2xl shadow-sm">
+      {/* Header at the top of the card */}
+      <div className="flex items-center justify-between px-6 pt-4 pb-3">
+        <h2 className="text-foreground text-base font-medium">
           Recent Transactions
-        </h2>{" "}
-        {/* Lighter font */}
+        </h2>
         <Link
           href="/dashboard/transactions"
           className="text-primary text-sm font-medium hover:underline"
@@ -74,11 +69,7 @@ export function TransactionHistory({ isVisible }: TransactionHistoryProps) {
           See More
         </Link>
       </div>
-      <Card className="w-full rounded-none rounded-b-2xl border-t-0 shadow-sm">
-        {" "}
-        {/* Remove top radius, adjust padding */}
-        <CardContent className="p-2">{renderContent()}</CardContent>
-      </Card>
-    </div>
+      <CardContent className="px-6 pt-0 pb-6">{renderContent()}</CardContent>
+    </Card>
   );
 }

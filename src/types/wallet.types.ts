@@ -8,6 +8,23 @@ export interface Wallet {
   updatedAt: string;
 }
 
+// ============= Related Transaction Info (for nested 'related' object) =============
+// This is a union type to handle different shapes of the 'related' object
+export type RelatedTransactionInfo = {
+  status:
+    | "pending"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "reversed"
+    | "retry"
+    | "received";
+  recipient_phone?: string;
+  operatorCode?: string; // Add operatorCode
+  // Add other fields from the 'related' object as needed for different types
+  [key: string]: any;
+};
+
 // ============= Transaction Types =============
 export interface Transaction {
   id: string;
@@ -20,6 +37,7 @@ export interface Transaction {
   reference?: string;
   relatedType?: string;
   relatedId?: string;
+  related?: RelatedTransactionInfo; // Use the new type here
   metadata?: any;
   note?: string;
   createdAt: Date;

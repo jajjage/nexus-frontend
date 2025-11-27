@@ -1,9 +1,9 @@
 import apiClient from "@/lib/api-client";
 import {
   GetTransactionsParams,
+  WalletResponse,
   TransactionResponse,
   TransactionsListResponse,
-  WalletResponse,
 } from "@/types/wallet.types";
 
 export const walletService = {
@@ -26,7 +26,8 @@ export const walletService = {
     params?: GetTransactionsParams
   ): Promise<TransactionsListResponse> => {
     const response = await apiClient.get<TransactionsListResponse>(
-      `/user/wallet/transactions?${params}`
+      "/user/wallet/transactions",
+      { params }
     );
     return response.data;
   },

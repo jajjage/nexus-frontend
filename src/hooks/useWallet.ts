@@ -1,6 +1,6 @@
 import { walletService } from "@/services/wallet.service";
 import { GetTransactionsParams } from "@/types/wallet.types";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 // ============= Query Keys =============
 export const walletKeys = {
@@ -43,18 +43,35 @@ export const useWalletBalance = () => {
 };
 
 /**
- * Get all transactions with optional filters
+ * Get all transactions with optional filters (for simple, non-paginated lists)
  */
 export const useTransactions = (params?: GetTransactionsParams) => {
   return useQuery({
     queryKey: walletKeys.transactions.list(params),
     queryFn: () => walletService.getTransactions(params),
-    staleTime: 1000 * 60 * 3, // 3 minutes
+    staleTime: 1000 * 60 * 1, // 1 minute
     retry: 2,
-    // Add select to return the transactions array directly
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
     select: (data) => data.data.transactions,
-    // Only fetch if we have a wallet
     enabled: true,
+  });
+};
+
+/**
+ * Get all transactions with infinite scrolling
+ */
+export const useInfiniteTransactions = (params?: GetTransactionsParams) => {
+  return useInfiniteQuery({
+    queryKey: walletKeys.transactions.list(params),
+    queryFn: ({ pageParam = 1 }) =>
+      walletService.getTransactions({ ...params, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const currentPage = lastPage.data.pagination.page;
+      const totalPages = lastPage.data.pagination.totalPages;
+      return currentPage < totalPages ? currentPage + 1 : undefined;
+    },
   });
 };
 
@@ -65,16 +82,17 @@ export const useTransaction = (id: string) => {
   return useQuery({
     queryKey: walletKeys.transactions.detail(id),
     queryFn: () => walletService.getTransactionById(id),
-    staleTime: 1000 * 60 * 10, // 10 minutes (transaction details don't change often)
+    staleTime: 1000 * 60 * 10,
     retry: 2,
-    enabled: !!id, // Only fetch if ID is provided
+    enabled: !!id,
   });
 };
 
 /**
- * Get recent transactions (last 10)
+ * Get recent transactions (for dashboard)
  */
 export const useRecentTransactions = () => {
+  // This continues to use the simple useTransactions hook, which is fine for a small, non-paginated list
   return useTransactions({ page: 1, limit: 10 });
 };
 

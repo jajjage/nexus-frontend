@@ -45,8 +45,6 @@ export default function DashboardPage() {
     <div className="bg-muted/40 relative flex min-h-screen w-full flex-col pb-28">
       {/* Main content */}
       <div className="flex flex-col gap-6 p-4">
-        {" "}
-        {/* Increased gap */}
         {/* Top Header Section */}
         <header className="flex w-full items-center justify-between">
           <Avatar className="size-10">
@@ -65,24 +63,37 @@ export default function DashboardPage() {
             </Button>
           </div>
         </header>
+
         {/* User Info Section */}
         <UserInfo fullName={user.fullName} phone={user.phoneNumber} />
+
         {/* Balance Card */}
         <BalanceCard
           balance={parseFloat(user.balance)}
           isVisible={isBalanceVisible}
           setIsVisible={setIsBalanceVisible}
+          accountName={user.fullName}
+          accountNumber={user.accountNumber}
+          providerName={user.providerName}
         />
+
         {/* Recent Transactions */}
-        <TransactionHistory isVisible={isBalanceVisible} />
+        <div className="-mt-12">
+          <TransactionHistory isVisible={isBalanceVisible} />
+        </div>
+
         {/* Referrals Balance */}
         <ReferralsCard />
+
         {/* Make Payment Actions */}
         <ActionButtons />
+
         {/* Ads Carousel */}
         <AdsCarousel />
+
         {/* Secondary Actions */}
         <SecondaryActionButtons />
+
         {/* Promotional Banner */}
         <PromoBanner />
       </div>
