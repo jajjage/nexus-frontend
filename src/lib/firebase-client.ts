@@ -1,6 +1,6 @@
 "use client";
 
-import { getApps, initializeApp } from "firebase/app";
+import { getApp, getApps, initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 const firebaseConfig = {
@@ -97,6 +97,23 @@ export async function requestAndGetFcmToken(vapidKey?: string | null) {
     console.warn("Error getting FCM token:", err);
     return null;
   }
+}
+
+// Add this export at the bottom of the file
+export function getFirebaseApp() {
+  if (typeof window === "undefined") return null;
+
+  // If initialized, return the default app
+  if (getApps().length > 0) {
+    return getApp();
+  }
+
+  // Fallback: If for some reason it wasn't init'd yet, init it now
+  if (isFirebaseConfigValid()) {
+    return initializeApp(firebaseConfig);
+  }
+
+  return null;
 }
 
 // Kept for backward compatibility

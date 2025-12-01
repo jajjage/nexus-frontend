@@ -1,5 +1,4 @@
 "use client";
-
 import { syncFcmToken } from "@/services/notification.service";
 import { useEffect } from "react";
 import { useAuth } from "./useAuth";
@@ -22,17 +21,28 @@ export function useSyncFcmOnMount() {
   const { isLoading, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    // Only sync if user is authenticated and auth is not loading
-    // Note: isAuthenticated checks both that user exists AND is not suspended
     if (!isLoading && isAuthenticated) {
-      console.log("User authenticated on app mount, syncing FCM token");
+      // 1. Sync on Mount
+      syncFcmToken("web").catch(console.warn);
 
-      // Sync FCM token (fire-and-forget)
-      // This checks localStorage to see if token is already synced
-      // If it is, the API call is skipped
-      syncFcmToken("web").catch((err: Error) => {
-        console.warn("FCM token sync on app mount failed (non-blocking):", err);
-      });
+      // 2. Sync on Tab Focus (Replaces onTokenRefresh)
+      // If the user leaves the tab open for days, this updates the token
+      // when they click back on the window.
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          console.log("Tab active: verifying FCM token...");
+          syncFcmToken("web").catch(console.warn);
+        }
+      };
+
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+
+      return () => {
+        document.removeEventListener(
+          "visibilitychange",
+          handleVisibilityChange
+        );
+      };
     }
   }, [isLoading, isAuthenticated]);
 }

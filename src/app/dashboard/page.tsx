@@ -1,22 +1,23 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Signal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/useAuth";
+import { Bell, Signal } from "lucide-react";
 import { useState } from "react";
 
 // Import components
-import { UserInfo } from "@/components/features/dashboard/user-info";
-import { BalanceCard } from "@/components/features/dashboard/balance-card";
-import { TransactionHistory } from "@/components/features/dashboard/transaction-history";
-import { ReferralsCard } from "@/components/features/dashboard/referrals-card";
 import { ActionButtons } from "@/components/features/dashboard/action-buttons";
 import { AdsCarousel } from "@/components/features/dashboard/ads-carousel";
-import { SecondaryActionButtons } from "@/components/features/dashboard/secondary-action-buttons";
-import { PromoBanner } from "@/components/features/dashboard/promo-banner";
+import { BalanceCard } from "@/components/features/dashboard/balance-card";
 import { BottomNav } from "@/components/features/dashboard/bottom-nav";
+import { PromoBanner } from "@/components/features/dashboard/promo-banner";
+import { ReferralsCard } from "@/components/features/dashboard/referrals-card";
+import { SecondaryActionButtons } from "@/components/features/dashboard/secondary-action-buttons";
+import { TransactionHistory } from "@/components/features/dashboard/transaction-history";
+import { UserInfo } from "@/components/features/dashboard/user-info";
+import NotificationBanner from "@/components/notification/NotificationBanner";
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
@@ -63,6 +64,8 @@ export default function DashboardPage() {
             </Button>
           </div>
         </header>
+
+        <NotificationBanner />
 
         {/* User Info Section */}
         <UserInfo fullName={user.fullName} phone={user.phoneNumber} />
