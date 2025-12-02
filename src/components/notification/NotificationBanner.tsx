@@ -11,10 +11,25 @@ export default function NotificationBanner() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // Debug: Check permission status
+    if (typeof window !== "undefined" && "Notification" in window) {
+      console.log(
+        "[NotificationBanner] Current permission:",
+        Notification.permission
+      );
+    }
+
     // Only show if notifications are NOT enabled yet
     // and if the browser actually supports them
     if ("Notification" in window && !areNotificationsEnabled()) {
+      console.log(
+        "[NotificationBanner] Showing banner (permission not granted)"
+      );
       setIsVisible(true);
+    } else {
+      console.log(
+        "[NotificationBanner] Hiding banner (permission already granted or not supported)"
+      );
     }
   }, []);
 

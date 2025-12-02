@@ -67,8 +67,16 @@ export function Header() {
         </div>
 
         <div className="hidden shrink-0 items-center space-x-2 md:flex">
-          <Button variant="ghost">Login</Button>
-          <Button>Create Account</Button>
+          <Button variant="ghost" asChild>
+            <Link href="/login" className="cursor-pointer">
+              Login
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/register" className="cursor-pointer">
+              Create Account
+            </Link>
+          </Button>
         </div>
 
         <div className="z-50 flex shrink-0 items-center md:hidden">
@@ -110,10 +118,16 @@ export function Header() {
                   </Link>
                 ))}
                 <div className="flex flex-col space-y-3 border-t pt-6">
-                  <Button variant="ghost" className="w-full">
-                    Login
+                  <Button variant="ghost" className="w-full" asChild>
+                    <Link href="/login" onClick={() => setIsOpen(false)}>
+                      Login
+                    </Link>
                   </Button>
-                  <Button className="w-full">Create Account</Button>
+                  <Button className="w-full" asChild>
+                    <Link href="/register" onClick={() => setIsOpen(false)}>
+                      Create Account
+                    </Link>
+                  </Button>
                 </div>
               </nav>
             </SheetContent>

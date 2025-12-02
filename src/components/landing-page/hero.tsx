@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import Link from "next/link";
 
 export function Hero() {
   return (
@@ -25,8 +26,8 @@ export function Hero() {
                 Get the cheapest data plans, top-up any network, pay your
                 KEDCO/DStv bills, and more. Fast, automated, and reliable.
               </p>
-              <Button size="lg" className="px-8 py-6 text-base">
-                Get Started Now
+              <Button size="lg" className="px-8 py-6 text-base" asChild>
+                <Link href="/register">Get Started Now</Link>
               </Button>
               <p className="text-sm text-white/80">
                 Join 5,000+ satisfied customers.
@@ -46,8 +47,8 @@ export function Hero() {
             Get the cheapest data plans, top-up any network, pay your KEDCO/DStv
             bills, and more. Fast, automated, and reliable.
           </p>
-          <Button size="lg" className="px-8 py-6 text-base">
-            Get Started Now
+          <Button size="lg" className="px-8 py-6 text-base" asChild>
+            <Link href="/register">Get Started Now</Link>
           </Button>
           <p className="text-muted-foreground text-sm md:text-base">
             Join 5,000+ satisfied customers.
