@@ -14,6 +14,13 @@ export interface ErrorResponse {
   }>;
 }
 
+export interface RecentNumber {
+  id: string;
+  phoneNumber: string;
+  usageCount: number;
+  lastUsedAt: string;
+}
+
 // ============= User Types =============
 export interface User {
   userId: string;
@@ -28,6 +35,7 @@ export interface User {
   providerName: string;
   balance: string;
   profilePictureUrl?: string;
+  recentlyUsedNumbers?: RecentNumber[];
   permissions?: string[]; // Optional permissions array
   createdAt: string;
   updatedAt: string;

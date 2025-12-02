@@ -11,13 +11,15 @@ export const productKeys = {
   detail: (id: string) => [...productKeys.details(), id] as const,
 };
 
-export function useProducts(params?: ProductQueryParams) {
+export function useProducts(
+  params?: ProductQueryParams,
+  options?: { staleTime?: number }
+) {
   return useQuery({
     queryKey: productKeys.list(params || {}),
     queryFn: () => productService.getProducts(params),
-    // We keep the data fresh for 5 minutes by default (configured in queryClient),
-    // but we can override here if needed.
-    staleTime: 1000 * 60 * 5,
+    // Use provided staleTime or default to 5 minutes
+    staleTime: options?.staleTime ?? 1000 * 60 * 5,
     select: (response) => response.data, // Return just the payload (products + pagination)
   });
 }

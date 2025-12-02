@@ -25,6 +25,7 @@ export interface Product {
   validityDays: number | null;
   isActive: boolean;
   metadata: Record<string, any>;
+  slug?: string | null;
   createdAt: string;
   operator: Operator;
   supplierOffers: SupplierOffer[];
