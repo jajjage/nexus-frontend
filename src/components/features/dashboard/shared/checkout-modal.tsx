@@ -23,7 +23,8 @@ interface CheckoutModalProps {
   networkLogo?: string;
   networkName?: string;
   userBalance?: number;
-  onConfirm: () => void;
+  userCashbackBalance?: number;
+  onConfirm: (useCashback: boolean) => void;
   isProcessing: boolean;
   isSuccess?: boolean;
 }
@@ -35,7 +36,8 @@ export function CheckoutModal({
   phoneNumber,
   networkLogo,
   networkName,
-  userBalance = 5000, // Default mock balance
+  userBalance = 0,
+  userCashbackBalance = 0,
   onConfirm,
   isProcessing,
   isSuccess = false,
@@ -55,21 +57,23 @@ export function CheckoutModal({
     sellingPrice = faceValue - margin / 2;
   }
 
-  // Calculate Cashback usage (Mock logic) - Upcoming Feature
-  // const cashbackBalance = 52.0;
-  // const payableAmount = useCashback
-  //   ? Math.max(0, sellingPrice - cashbackBalance)
-  //   : sellingPrice;
+  // Calculate Cashback usage
+  // If useCashback is true, deduct the available cashback balance from the selling price
+  const payableAmount = useCashback
+    ? Math.max(0, sellingPrice - userCashbackBalance)
+    : sellingPrice;
 
-  const payableAmount = sellingPrice;
-
-  // Mock Voucher Deduction - Upcoming Feature
-  // const voucherAmount = 0.0; // No voucher applied yet
-
-  // Bonus logic - Upcoming Feature
-  // const bonusAmount = 18;
+  // Bonus logic (Earn Cashback)
+  const bonusAmount =
+    product.has_cashback && product.cashback_percentage
+      ? sellingPrice * (product.cashback_percentage / 100)
+      : 0;
 
   const isInsufficientBalance = userBalance < payableAmount;
+
+  const handleConfirm = () => {
+    onConfirm(useCashback);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -184,26 +188,24 @@ export function CheckoutModal({
             </div>
           </button> */}
 
-              {/* Wallet Promo Toggle - Upcoming Feature */}
-              {/* <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              Use Cashback (₦{cashbackBalance.toFixed(2)})
-            </span>
-            <Switch
-              checked={useCashback}
-              onCheckedChange={setUseCashback}
-              className="data-[state=checked]:bg-green-500"
-              disabled={isProcessing}
-            />
-          </div> */}
-
-              {/* Rewards - Upcoming Feature */}
-              {/* <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Bonus to Earn</span>
-            <span className="font-bold text-green-600">
-              +₦{bonusAmount} Cashback
-            </span>
-          </div> */}
+              {/* Wallet Promo Toggle (Use Cashback) */}
+              {userCashbackBalance > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Use Cashback (₦
+                    {userCashbackBalance.toLocaleString("en-NG", {
+                      minimumFractionDigits: 2,
+                    })}
+                    )
+                  </span>
+                  <Switch
+                    checked={useCashback}
+                    onCheckedChange={setUseCashback}
+                    className="data-[state=checked]:bg-green-500"
+                    disabled={isProcessing}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Payment Method */}
@@ -242,7 +244,7 @@ export function CheckoutModal({
               <Button
                 size="lg"
                 className="mt-4 w-full text-base font-semibold"
-                onClick={onConfirm}
+                onClick={handleConfirm}
                 disabled={isProcessing || isInsufficientBalance}
                 variant={isInsufficientBalance ? "destructive" : "default"}
               >

@@ -34,6 +34,11 @@ export interface User {
   accountNumber: string;
   providerName: string;
   balance: string;
+  cashback?: {
+    availableBalance: number;
+    totalEarned: number;
+    totalRedeemed: number;
+  };
   profilePictureUrl?: string;
   recentlyUsedNumbers?: RecentNumber[];
   permissions?: string[]; // Optional permissions array

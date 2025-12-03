@@ -141,7 +141,7 @@ export function AirtimePlans() {
   };
 
   // Handle Payment
-  const handlePayment = () => {
+  const handlePayment = (useCashback: boolean) => {
     if (!selectedProduct) return;
 
     const amount = parseFloat(selectedProduct.denomAmount || "0");
@@ -154,6 +154,7 @@ export function AirtimePlans() {
         recipientPhone: phoneNumber,
         supplierSlug: offer?.supplierSlug,
         supplierMappingId: offer?.mappingId,
+        useCashback,
       },
       {
         onSuccess: () => {
@@ -267,6 +268,7 @@ export function AirtimePlans() {
           networkLogo={currentLogo}
           networkName={selectedNetwork}
           userBalance={parseFloat(user?.balance || "0")}
+          userCashbackBalance={user?.cashback?.availableBalance || 0}
           onConfirm={handlePayment}
           isProcessing={topupMutation.isPending}
           isSuccess={isSuccess}

@@ -9,12 +9,6 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onClick }: ProductCardProps) {
-  // Mock data for visual completeness (fields missing from API)
-  const cashback = "₦50 Cashback";
-  // Use deterministic logic for mock data to prevent UI flickering during re-renders
-  const hasBonus = product.id.charCodeAt(0) % 5 === 0; // Stable mock based on ID
-  const bonusText = "Voice Bonus";
-
   // 1. Format Main Display (Volume or Amount)
   const formatMainDisplay = (p: Product) => {
     if (p.productType === "airtime") {
@@ -64,20 +58,21 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
       className="border-muted-foreground/20 hover:border-primary/50 relative flex cursor-pointer flex-col items-center justify-between overflow-hidden p-3 text-center shadow-sm transition-all hover:shadow-md"
       onClick={onClick}
     >
-      {/* Discount Badge */}
-      {hasDiscount && (
-        <div className="absolute top-2 right-2">
+      {/* Badges Container */}
+      <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+        {/* Discount Badge */}
+        {hasDiscount && (
           <Badge
             variant="secondary"
-            className="h-5 px-1.5 text-[10px] font-bold text-green-600"
+            className="h-5 bg-green-100 px-1.5 text-[10px] font-bold text-green-600 dark:bg-green-900/20"
           >
-            -{discountPercentage}%
+            -{discountPercentage}% Off
           </Badge>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Main Display (Volume or Airtime Amount) */}
-      <div className="mt-2 mb-1">
+      <div className="mt-6 mb-1">
         <h3 className="text-foreground text-2xl font-bold">
           {mainDisplayText}
         </h3>
@@ -109,21 +104,6 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           </span>
         )}
       </div>
-
-      {/* Cashback */}
-      <div className="mb-2 rounded-full bg-green-50 px-2 py-0.5 dark:bg-green-900/20">
-        <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">
-          {cashback}
-        </span>
-      </div>
-
-      {/* Optional Bonus Footer */}
-      {hasBonus && (
-        <div className="mt-2 flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-[10px] font-medium text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-          <span>{bonusText}</span>
-          <Info className="size-3" />
-        </div>
-      )}
     </Card>
   );
 }

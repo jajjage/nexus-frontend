@@ -24,6 +24,8 @@ export interface Product {
   dataMb: number | null;
   validityDays: number | null;
   isActive: boolean;
+  has_cashback?: boolean;
+  cashback_percentage?: number;
   metadata: Record<string, any>;
   slug?: string | null;
   createdAt: string;
