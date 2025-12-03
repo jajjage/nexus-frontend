@@ -69,6 +69,15 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             -{discountPercentage}% Off
           </Badge>
         )}
+        {/* Cashback Badge (Earn) */}
+        {product.has_cashback && (
+          <Badge
+            variant="secondary"
+            className="h-5 bg-blue-100 px-1.5 text-[10px] font-bold text-blue-600 dark:bg-blue-900/20"
+          >
+            +{product.cashback_percentage}% Back
+          </Badge>
+        )}
       </div>
 
       {/* Main Display (Volume or Airtime Amount) */}

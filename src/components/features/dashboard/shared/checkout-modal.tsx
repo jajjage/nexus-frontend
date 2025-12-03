@@ -206,6 +206,20 @@ export function CheckoutModal({
                   />
                 </div>
               )}
+
+              {/* Rewards (Bonus to Earn) */}
+              {bonusAmount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Bonus to Earn</span>
+                  <span className="font-bold text-green-600">
+                    +₦
+                    {bonusAmount.toLocaleString("en-NG", {
+                      minimumFractionDigits: 2,
+                    })}{" "}
+                    Cashback
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Payment Method */}
