@@ -4,9 +4,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell, Signal, Gift } from "lucide-react";
-import { useState } from "react";
+import { Bell, Gift, Signal } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 // Import components
 import { ActionButtons } from "@/components/features/dashboard/action-buttons";
@@ -18,11 +18,16 @@ import { ReferralsCard } from "@/components/features/dashboard/referrals-card";
 import { TransactionHistory } from "@/components/features/dashboard/transaction-history";
 import { UserInfo } from "@/components/features/dashboard/user-info";
 import NotificationBanner from "@/components/notification/NotificationBanner";
+import { PullToRefresh } from "@/components/ui/pull-to-refresh";
+import { useQueryClient } from "@tanstack/react-query";
+import { walletKeys } from "@/hooks/useWallet";
+import { userKeys } from "@/hooks/useUser";
 
 export default function DashboardPage() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, refetch: refetchUser } = useAuth();
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
-  console.log("user: ", user);
+  const queryClient = useQueryClient();
+
   if (isLoading || !user) {
     // A simple loading state for now
     return (
@@ -42,69 +47,80 @@ export default function DashboardPage() {
       .toUpperCase();
   };
 
+  const handleRefresh = async () => {
+    // Refetch user data (balance, profile)
+    await refetchUser();
+    // Invalidate wallet transactions
+    await queryClient.invalidateQueries({ queryKey: walletKeys.all });
+    // Invalidate user specific data (purchases, etc)
+    await queryClient.invalidateQueries({ queryKey: userKeys.all });
+  };
+
   return (
-    <div className="bg-muted/40 relative flex min-h-screen w-full flex-col pb-28">
-      {/* Main content */}
-      <div className="flex flex-col gap-6 p-4">
-        {/* Top Header Section */}
-        <header className="flex w-full items-center justify-between">
-          <Avatar className="size-10">
-            <AvatarImage
-              src={user.profilePictureUrl || undefined}
-              alt={user.fullName}
-            />
-            <AvatarFallback>{getInitials(user.fullName)}</AvatarFallback>
-          </Avatar>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/dashboard/rewards">
-                <Gift className="size-5" />
-              </Link>
-            </Button>
-            <Button variant="ghost" size="icon">
-              <Signal className="size-5" />
-            </Button>
-            <Button variant="ghost" size="icon">
-              <Bell className="size-5" />
-            </Button>
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="bg-muted/40 relative flex min-h-screen w-full flex-col pb-28">
+        {/* Main content */}
+        <div className="flex flex-col gap-6 p-4">
+          {/* Top Header Section */}
+          <header className="flex w-full items-center justify-between">
+            <Avatar className="size-10">
+              <AvatarImage
+                src={user.profilePictureUrl || undefined}
+                alt={user.fullName}
+              />
+              <AvatarFallback>{getInitials(user.fullName)}</AvatarFallback>
+            </Avatar>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/dashboard/rewards">
+                  <Gift className="size-5" />
+                </Link>
+              </Button>
+              <Button variant="ghost" size="icon">
+                <Signal className="size-5" />
+              </Button>
+              <Button variant="ghost" size="icon">
+                <Bell className="size-5" />
+              </Button>
+            </div>
+          </header>
+
+          <NotificationBanner />
+
+          {/* User Info Section */}
+          <UserInfo fullName={user.fullName} phone={user.phoneNumber} />
+
+          {/* Balance Card */}
+          <BalanceCard
+            balance={parseFloat(user.balance)}
+            isVisible={isBalanceVisible}
+            setIsVisible={setIsBalanceVisible}
+            accountName={user.fullName}
+            accountNumber={user.accountNumber}
+            providerName={user.providerName}
+          />
+
+          {/* Recent Transactions */}
+          <div className="-mt-12">
+            <TransactionHistory isVisible={isBalanceVisible} />
           </div>
-        </header>
 
-        <NotificationBanner />
+          {/* Referrals Balance */}
+          <ReferralsCard />
 
-        {/* User Info Section */}
-        <UserInfo fullName={user.fullName} phone={user.phoneNumber} />
+          {/* Make Payment Actions */}
+          <ActionButtons />
 
-        {/* Balance Card */}
-        <BalanceCard
-          balance={parseFloat(user.balance)}
-          isVisible={isBalanceVisible}
-          setIsVisible={setIsBalanceVisible}
-          accountName={user.fullName}
-          accountNumber={user.accountNumber}
-          providerName={user.providerName}
-        />
+          {/* Ads Carousel */}
+          <AdsCarousel />
 
-        {/* Recent Transactions */}
-        <div className="-mt-12">
-          <TransactionHistory isVisible={isBalanceVisible} />
+          {/* Promotional Banner */}
+          <PromoBanner />
         </div>
 
-        {/* Referrals Balance */}
-        <ReferralsCard />
-
-        {/* Make Payment Actions */}
-        <ActionButtons />
-
-        {/* Ads Carousel */}
-        <AdsCarousel />
-
-        {/* Promotional Banner */}
-        <PromoBanner />
+        {/* Bottom Navigation */}
+        <BottomNav />
       </div>
-
-      {/* Bottom Navigation */}
-      <BottomNav />
-    </div>
+    </PullToRefresh>
   );
 }

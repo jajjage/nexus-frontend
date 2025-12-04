@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
-import { Coins, Gift, RotateCcw, TrendingUp } from "lucide-react";
+import { ArrowLeft, Coins, Gift, TrendingUp } from "lucide-react";
+import Link from "next/link";
 
 export default function RewardsPage() {
   const { user, isLoading } = useAuth();
@@ -18,12 +19,17 @@ export default function RewardsPage() {
   if (isLoading || !user) {
     return (
       <div className="space-y-6 p-4 md:p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <Skeleton className="h-8 w-40" />
-            <Skeleton className="mt-2 h-4 w-64" />
-          </div>
-        </div>
+        {/* Page Header */}
+        <header className="flex items-center gap-4">
+          <Button asChild variant="outline" size="icon">
+            <Link href="/dashboard">
+              <span className="sr-only">Back to Dashboard</span>
+            </Link>
+          </Button>
+          <h1 className="flex-1 shrink-0 text-xl font-semibold tracking-tight whitespace-nowrap sm:grow-0">
+            Cashback Rewards
+          </h1>
+        </header>
 
         <Card>
           <CardContent className="p-6">
@@ -53,11 +59,18 @@ export default function RewardsPage() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      {/* Header */}
-      <div className="text-center">
-        <h1 className="text-2xl font-bold">Cashback Rewards</h1>
-        <p className="text-muted-foreground">Earn cashback on every purchase</p>
-      </div>
+      {/* Page Header */}
+      <header className="flex items-center gap-4">
+        <Button asChild variant="outline" size="icon">
+          <Link href="/dashboard">
+            <ArrowLeft className="size-4" />
+            <span className="sr-only">Back to Dashboard</span>
+          </Link>
+        </Button>
+        <h1 className="flex-1 shrink-0 text-xl font-semibold tracking-tight whitespace-nowrap sm:grow-0">
+          Cashback Rewards
+        </h1>
+      </header>
 
       {/* Main Cashback Card */}
       <Card className="from-primary to-primary/80 text-primary-foreground bg-linear-to-r">
@@ -156,7 +169,6 @@ export default function RewardsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <RotateCcw className="size-5" />
             How Cashback Works
           </CardTitle>
           <CardDescription>Earn cashback on every transaction</CardDescription>

@@ -93,7 +93,7 @@ function useCurrentUserQuery() {
 
     // REFETCH STRATEGY
     refetchOnMount: "always", // Always refetch on mount to ensure fresh data
-    refetchOnWindowFocus: false, // Don't refetch on tab switch
+    refetchOnWindowFocus: true, // Refetch when window comes into focus to handle webhook updates
     refetchOnReconnect: true, // Only refetch if network reconnected
 
     // ERROR HANDLING
@@ -192,7 +192,16 @@ function useCurrentUserQuery() {
  * - checkPermission: Check if user has specific permission
  * - checkRole: Check if user has specific role
  */
-export function useAuth() {
+export function useAuth(): {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  isAuthLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
+  checkPermission: (permission: string) => boolean;
+  checkRole: (role: string) => boolean;
+} {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, isLoading, isSessionExpired, setIsSessionExpired } =
