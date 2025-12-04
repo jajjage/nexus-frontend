@@ -11,11 +11,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Grid, LayoutList } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CategoryTabs } from "./category-tabs";
 import { CheckoutModal } from "../shared/checkout-modal";
 import { NetworkDetector } from "../shared/network-detector";
 import { NetworkSelector } from "../shared/network-selector";
 import { ProductCard } from "../shared/product-card";
+import { CategoryTabs } from "./category-tabs";
 
 export function DataPlans() {
   const { user } = useAuth();
@@ -55,9 +55,10 @@ export function DataPlans() {
 
   // Fetch all data products.
   const { data, isLoading, error } = useProducts(
-    { type: "data", limit: 1000 },
+    { productType: "data" },
     { staleTime: Infinity }
   );
+  console.log("data plans data: ", data);
 
   const products = data?.products || [];
 
@@ -165,7 +166,7 @@ export function DataPlans() {
   };
 
   // Handle Payment
-  const handlePayment = () => {
+  const handlePayment = (useCashback: boolean) => {
     if (!selectedProduct) return;
 
     // Prepare payload
@@ -179,6 +180,7 @@ export function DataPlans() {
         recipientPhone: phoneNumber,
         supplierSlug: offer?.supplierSlug,
         supplierMappingId: offer?.mappingId,
+        useCashback, // Add the useCashback parameter
       },
       {
         onSuccess: () => {
@@ -299,6 +301,7 @@ export function DataPlans() {
           networkLogo={currentLogo}
           networkName={selectedNetwork}
           userBalance={parseFloat(user?.balance || "0")}
+          userCashbackBalance={user?.cashback?.availableBalance || 0}
           onConfirm={handlePayment}
           isProcessing={topupMutation.isPending}
           isSuccess={isSuccess}

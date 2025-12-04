@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Product } from "@/types/product.types";
-import { Info } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
@@ -70,14 +69,14 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           </Badge>
         )}
         {/* Cashback Badge (Earn) */}
-        {product.has_cashback && (
+        {/* {product.has_cashback && (
           <Badge
             variant="secondary"
             className="h-5 bg-blue-100 px-1.5 text-[10px] font-bold text-blue-600 dark:bg-blue-900/20"
           >
             +{product.cashback_percentage}% Back
           </Badge>
-        )}
+        )} */}
       </div>
 
       {/* Main Display (Volume or Airtime Amount) */}
@@ -113,6 +112,18 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           </span>
         )}
       </div>
+
+      {/* Cashback Badge (Earn) - Moved to bottom-left */}
+      {product.has_cashback && (
+        <div className="absolute bottom-2 left-2 mt-2 mb-2">
+          <Badge
+            variant="secondary"
+            className="h-5 bg-blue-100 px-1.5 text-[10px] font-bold text-blue-600 dark:bg-blue-900/20"
+          >
+            +{product.cashback_percentage}% Back
+          </Badge>
+        </div>
+      )}
     </Card>
   );
 }

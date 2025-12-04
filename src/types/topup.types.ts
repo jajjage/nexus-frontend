@@ -4,7 +4,7 @@ export interface TopupRequest {
   recipientPhone: string;
   supplierSlug?: string;
   supplierMappingId?: string;
-  useCashback: boolean;
+  useCashback?: boolean;
 }
 
 export interface TopupResponse {

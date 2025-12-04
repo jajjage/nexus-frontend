@@ -3,13 +3,13 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Eye, EyeOff, Plus, Copy, Share2 } from "lucide-react";
 import { Dispatch, SetStateAction } from "react";
@@ -88,50 +88,46 @@ export function BalanceCard({
           </p>
         </div>
 
-        <Drawer>
-          <DrawerTrigger asChild>
+        <Dialog>
+          <DialogTrigger asChild>
             <Button className="flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30">
               <Plus className="size-4" />
               <span>Add Money</span>
             </Button>
-          </DrawerTrigger>
-          <DrawerContent>
-            <div className="mx-auto w-full max-w-sm">
-              <DrawerHeader>
-                <DrawerTitle>Add Money</DrawerTitle>
-                <DrawerDescription>
-                  Transfer to the account below to fund your wallet.
-                </DrawerDescription>
-              </DrawerHeader>
-              <div className="space-y-4 p-4">
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <p className="text-muted-foreground text-sm">Account Name</p>
-                  <p className="text-lg font-semibold">{accountName}</p>
-                </div>
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <p className="text-muted-foreground text-sm">
-                    Account Number
-                  </p>
-                  <p className="text-2xl font-bold tracking-widest">
-                    {accountNumber}
-                  </p>
-                </div>
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <p className="text-muted-foreground text-sm">Bank</p>
-                  <p className="text-lg font-semibold">{providerName}</p>
-                </div>
+          </DialogTrigger>
+          <DialogContent className="w-[340px] max-w-[95vw] p-0 sm:max-w-md">
+            <DialogHeader className="px-4 pt-6 pb-2">
+              <DialogTitle className="text-center">Add Money</DialogTitle>
+              <DialogDescription className="text-center">
+                Transfer to the account below to fund your wallet.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 p-4 pb-2">
+              <div className="bg-muted rounded-lg p-4 text-center">
+                <p className="text-muted-foreground text-sm">Account Name</p>
+                <p className="text-lg font-semibold">{accountName}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4 p-4">
-                <Button variant="outline" onClick={handleCopy}>
-                  <Copy className="mr-2 size-4" /> Copy
-                </Button>
-                <Button onClick={handleShare}>
-                  <Share2 className="mr-2 size-4" /> Share
-                </Button>
+              <div className="bg-muted rounded-lg p-4 text-center">
+                <p className="text-muted-foreground text-sm">Account Number</p>
+                <p className="text-2xl font-bold tracking-widest">
+                  {accountNumber}
+                </p>
+              </div>
+              <div className="bg-muted rounded-lg p-4 text-center">
+                <p className="text-muted-foreground text-sm">Bank</p>
+                <p className="text-lg font-semibold">{providerName}</p>
               </div>
             </div>
-          </DrawerContent>
-        </Drawer>
+            <div className="grid grid-cols-2 gap-4 p-4 pt-0 pb-6">
+              <Button variant="outline" onClick={handleCopy}>
+                <Copy className="mr-2 size-4" /> Copy
+              </Button>
+              <Button onClick={handleShare}>
+                <Share2 className="mr-2 size-4" /> Share
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Card>
   );

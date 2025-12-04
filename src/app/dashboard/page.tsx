@@ -4,8 +4,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell, Signal } from "lucide-react";
+import { Bell, Signal, Gift } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
 
 // Import components
 import { ActionButtons } from "@/components/features/dashboard/action-buttons";
@@ -14,7 +15,6 @@ import { BalanceCard } from "@/components/features/dashboard/balance-card";
 import { BottomNav } from "@/components/features/dashboard/bottom-nav";
 import { PromoBanner } from "@/components/features/dashboard/promo-banner";
 import { ReferralsCard } from "@/components/features/dashboard/referrals-card";
-import { SecondaryActionButtons } from "@/components/features/dashboard/secondary-action-buttons";
 import { TransactionHistory } from "@/components/features/dashboard/transaction-history";
 import { UserInfo } from "@/components/features/dashboard/user-info";
 import NotificationBanner from "@/components/notification/NotificationBanner";
@@ -22,7 +22,7 @@ import NotificationBanner from "@/components/notification/NotificationBanner";
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
-
+  console.log("user: ", user);
   if (isLoading || !user) {
     // A simple loading state for now
     return (
@@ -56,6 +56,11 @@ export default function DashboardPage() {
             <AvatarFallback>{getInitials(user.fullName)}</AvatarFallback>
           </Avatar>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/dashboard/rewards">
+                <Gift className="size-5" />
+              </Link>
+            </Button>
             <Button variant="ghost" size="icon">
               <Signal className="size-5" />
             </Button>
@@ -93,9 +98,6 @@ export default function DashboardPage() {
 
         {/* Ads Carousel */}
         <AdsCarousel />
-
-        {/* Secondary Actions */}
-        <SecondaryActionButtons />
 
         {/* Promotional Banner */}
         <PromoBanner />

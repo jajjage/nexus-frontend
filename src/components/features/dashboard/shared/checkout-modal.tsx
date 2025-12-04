@@ -13,7 +13,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Product } from "@/types/product.types";
 import { Check, ChevronRight, Info, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -35,7 +35,6 @@ export function CheckoutModal({
   product,
   phoneNumber,
   networkLogo,
-  networkName,
   userBalance = 0,
   userCashbackBalance = 0,
   onConfirm,
@@ -43,6 +42,13 @@ export function CheckoutModal({
   isSuccess = false,
 }: CheckoutModalProps) {
   const [useCashback, setUseCashback] = useState(false);
+  console.log("userCashbackBalance: ", useCashback);
+  // Reset useCashback state when the modal closes or when a new product is selected
+  useEffect(() => {
+    if (!isOpen) {
+      setUseCashback(false);
+    }
+  }, [isOpen]);
 
   // Price calculations
   const faceValue = parseFloat(product.denomAmount || "0");
@@ -68,7 +74,7 @@ export function CheckoutModal({
     product.has_cashback && product.cashback_percentage
       ? sellingPrice * (product.cashback_percentage / 100)
       : 0;
-
+  console.log(product.has_cashback, product.cashback_percentage);
   const isInsufficientBalance = userBalance < payableAmount;
 
   const handleConfirm = () => {
@@ -81,7 +87,7 @@ export function CheckoutModal({
         {isSuccess ? (
           <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
             <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-green-100 text-green-600">
-              <Check className="size-10 stroke-[3]" />
+              <Check className="size-10 stroke-3" />
             </div>
             <h2 className="mb-2 text-2xl font-bold tracking-tight">
               Transaction Successful

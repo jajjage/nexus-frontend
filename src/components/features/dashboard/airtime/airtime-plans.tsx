@@ -50,7 +50,7 @@ export function AirtimePlans() {
 
   // Fetch all airtime products.
   const { data, isLoading, error } = useProducts(
-    { type: "airtime", limit: 1000 },
+    { productType: "airtime" },
     { staleTime: Infinity }
   );
 
@@ -143,6 +143,7 @@ export function AirtimePlans() {
   // Handle Payment
   const handlePayment = (useCashback: boolean) => {
     if (!selectedProduct) return;
+    console.log("useCashback: ", useCashback);
 
     const amount = parseFloat(selectedProduct.denomAmount || "0");
     const offer = selectedProduct.supplierOffers?.[0];

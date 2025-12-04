@@ -47,8 +47,7 @@ export interface ProductsResponseData {
 
 export interface ProductQueryParams {
   page?: number;
-  limit?: number;
-  type?: "airtime" | "data" | "bill";
+  productType?: "airtime" | "data" | "bill";
   operatorId?: string;
   search?: string;
 }
