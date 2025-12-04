@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,9 +9,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Coins, TrendingUp, Gift, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
+import { Coins, Gift, RotateCcw, TrendingUp } from "lucide-react";
 
 export default function RewardsPage() {
   const { user, isLoading } = useAuth();
@@ -50,8 +49,7 @@ export default function RewardsPage() {
   // Get cashback data from user object
   const cashbackBalance = user.cashback?.availableBalance || 0;
   const totalEarned = user.cashback?.totalEarned || 0;
-  const totalUsed = user.cashback?.totalUsed || 0;
-  const pendingCashback = user.cashback?.pendingBalance || 0;
+  const totalUsed = user.cashback?.totalRedeemed || 0;
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -62,7 +60,7 @@ export default function RewardsPage() {
       </div>
 
       {/* Main Cashback Card */}
-      <Card className="from-primary to-primary/80 text-primary-foreground bg-gradient-to-r">
+      <Card className="from-primary to-primary/80 text-primary-foreground bg-linear-to-r">
         <CardContent className="p-6">
           <div className="flex flex-col items-center justify-center py-6">
             <div className="mb-4 rounded-full bg-white/20 p-4">
@@ -116,7 +114,7 @@ export default function RewardsPage() {
         {/* Ad Card 1 */}
         <Card className="overflow-hidden">
           <div className="relative">
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 text-white">
+            <div className="bg-linear-to-r from-purple-500 to-pink-500 p-6 text-white">
               <h3 className="text-lg font-bold">Earn 10% Cashback</h3>
               <p className="mt-1 text-sm opacity-90">
                 On all data purchases this week
@@ -136,7 +134,7 @@ export default function RewardsPage() {
         {/* Ad Card 2 */}
         <Card className="overflow-hidden">
           <div className="relative">
-            <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-6 text-white">
+            <div className="bg-linear-to-r from-blue-500 to-cyan-500 p-6 text-white">
               <h3 className="text-lg font-bold">Double Cashback Day</h3>
               <p className="mt-1 text-sm opacity-90">
                 Earn double cashback on airtime
@@ -166,7 +164,7 @@ export default function RewardsPage() {
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <div className="bg-primary text-primary-foreground mt-0.5 flex size-6 flex-shrink-0 items-center justify-center rounded-full">
+              <div className="bg-primary text-primary-foreground mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full">
                 1
               </div>
               <div>
@@ -178,7 +176,7 @@ export default function RewardsPage() {
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="bg-primary text-primary-foreground mt-0.5 flex size-6 flex-shrink-0 items-center justify-center rounded-full">
+              <div className="bg-primary text-primary-foreground mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full">
                 2
               </div>
               <div>
@@ -190,7 +188,7 @@ export default function RewardsPage() {
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="bg-primary text-primary-foreground mt-0.5 flex size-6 flex-shrink-0 items-center justify-center rounded-full">
+              <div className="bg-primary text-primary-foreground mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full">
                 3
               </div>
               <div>
