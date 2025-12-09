@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userService } from "@/services/user.service";
 import {
   UpdateProfileRequest,
+  UpdatePasswordRequest,
   SetPinRequest,
   GetPurchasesParams,
   TopupRequest,
@@ -51,6 +52,19 @@ export const useUpdateProfile = () => {
     },
     onError: (error: AxiosError<any>) => {
       console.error("Profile update failed:", error.response?.data?.message);
+    },
+  });
+};
+
+/**
+ * Update user password
+ */
+export const useUpdatePassword = () => {
+  return useMutation({
+    mutationFn: (data: UpdatePasswordRequest) =>
+      userService.updatePassword(data),
+    onError: (error: AxiosError<any>) => {
+      console.error("Password update failed:", error.response?.data?.message);
     },
   });
 };

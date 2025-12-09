@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import { useTopup } from "@/hooks/useTopup";
+import { useUpdateProfile } from "@/hooks/useUser";
 import { detectNetworkProvider } from "@/lib/network-utils";
 import { Product } from "@/types/product.types";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,12 +16,15 @@ import { CheckoutModal } from "../shared/checkout-modal";
 import { NetworkDetector } from "../shared/network-detector";
 import { NetworkSelector } from "../shared/network-selector";
 import { ProductCard } from "../shared/product-card";
+import { TransactionPinModal } from "../shared/transaction-pin-modal";
 import { CategoryTabs } from "./category-tabs";
 
 export function DataPlans() {
-  const { user } = useAuth();
+  const { user, refetch: refetchUser } = useAuth();
   const topupMutation = useTopup();
   const queryClient = useQueryClient();
+  const { mutate: updateProfile, isPending: isUpdatingPin } =
+    useUpdateProfile();
 
   const [selectedNetwork, setSelectedNetwork] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState("HOT");
@@ -35,6 +39,14 @@ export function DataPlans() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // PIN Modal State
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinMode, setPinMode] = useState<"setup" | "enter">("enter");
+  const [pendingPaymentData, setPendingPaymentData] = useState<{
+    useCashback: boolean;
+  } | null>(null);
+  const [transactionPin, setTransactionPin] = useState<string | null>(null);
 
   // Initialize phone number from user profile ONLY ONCE
   useEffect(() => {
@@ -165,27 +177,76 @@ export function DataPlans() {
     setIsCheckoutOpen(true);
   };
 
-  // Handle Payment
+  // Handle PIN Setup Success
+  const handlePinSetupSuccess = (pin: string) => {
+    updateProfile(
+      { pin },
+      {
+        onSuccess: () => {
+          toast.success("PIN set successfully!");
+          setTransactionPin(pin);
+          setShowPinModal(false);
+          setShowPinModal(true); // Re-open in "enter" mode
+          setPinMode("enter");
+          refetchUser();
+        },
+        onError: (error: any) => {
+          const errorMsg = error.response?.data?.message || "Failed to set PIN";
+          toast.error(errorMsg);
+        },
+      }
+    );
+  };
+
+  // Handle PIN Entry Success
+  const handlePinEntrySuccess = (pin: string) => {
+    setTransactionPin(pin);
+    setShowPinModal(false);
+
+    // Proceed with payment
+    if (pendingPaymentData) {
+      proceedWithPayment(pendingPaymentData.useCashback, pin);
+    }
+  };
+
+  // Handle Payment - Check for PIN first
   const handlePayment = (useCashback: boolean) => {
     if (!selectedProduct) return;
 
-    // Prepare payload
+    // Check if user has PIN
+    if (!user?.hasPin) {
+      // No PIN - show setup modal
+      setPinMode("setup");
+      setPendingPaymentData({ useCashback });
+      setShowPinModal(true);
+    } else {
+      // Has PIN - show entry modal
+      setPinMode("enter");
+      setPendingPaymentData({ useCashback });
+      setShowPinModal(true);
+    }
+  };
+
+  // Execute the actual payment
+  const proceedWithPayment = (useCashback: boolean, pin: string) => {
+    if (!selectedProduct) return;
+
     const amount = parseFloat(selectedProduct.denomAmount || "0");
     const offer = selectedProduct.supplierOffers?.[0];
 
     topupMutation.mutate(
       {
-        amount,
+        amount, // Send face value - backend handles discount calculation
         productCode: selectedProduct.productCode,
         recipientPhone: phoneNumber,
         supplierSlug: offer?.supplierSlug,
         supplierMappingId: offer?.mappingId,
-        useCashback, // Add the useCashback parameter
+        useCashback,
+        pin: parseInt(pin, 10), // Include PIN in the request, converted to number
       },
       {
         onSuccess: () => {
           setIsSuccess(true);
-          // Refetch essential data
           queryClient.invalidateQueries({ queryKey: ["transactions"] });
           queryClient.invalidateQueries({ queryKey: ["wallet"] });
           queryClient.invalidateQueries({ queryKey: ["auth", "current-user"] });
@@ -307,6 +368,20 @@ export function DataPlans() {
           isSuccess={isSuccess}
         />
       )}
+
+      {/* Transaction PIN Modal */}
+      <TransactionPinModal
+        isOpen={showPinModal}
+        onClose={() => {
+          setShowPinModal(false);
+          setPendingPaymentData(null);
+        }}
+        onSuccess={
+          pinMode === "setup" ? handlePinSetupSuccess : handlePinEntrySuccess
+        }
+        isLoading={isUpdatingPin || topupMutation.isPending}
+        mode={pinMode}
+      />
     </div>
   );
 }

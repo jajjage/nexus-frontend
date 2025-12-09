@@ -42,6 +42,7 @@ export interface User {
   profilePictureUrl?: string;
   recentlyUsedNumbers?: RecentNumber[];
   permissions?: string[]; // Optional permissions array
+  hasPin: boolean; // Whether the user has set a transaction PIN
   createdAt: string;
   updatedAt: string;
 }

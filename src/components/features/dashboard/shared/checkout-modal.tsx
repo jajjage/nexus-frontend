@@ -83,7 +83,10 @@ export function CheckoutModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md gap-0 p-0 sm:rounded-2xl">
+      <DialogContent
+        className="max-w-md gap-0 p-0 sm:rounded-2xl"
+        showCloseButton={false}
+      >
         {isSuccess ? (
           <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
             <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-green-100 text-green-600">

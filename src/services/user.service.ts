@@ -1,15 +1,16 @@
 import apiClient from "@/lib/api-client";
+import { ApiResponse } from "@/types/api.types";
 import {
-  ProfileResponse,
-  UpdateProfileRequest,
-  SetPinRequest,
-  PurchasesListResponse,
-  PurchaseResponse,
   GetPurchasesParams,
+  ProfileResponse,
+  PurchaseResponse,
+  PurchasesListResponse,
+  SetPinRequest,
   TopupRequest,
   TopupResponse,
+  UpdatePasswordRequest,
+  UpdateProfileRequest,
 } from "@/types/user.types";
-import { ApiResponse } from "@/types/api.types";
 
 export const userService = {
   // ============= Profile Methods =============
@@ -30,6 +31,17 @@ export const userService = {
   ): Promise<ProfileResponse> => {
     const response = await apiClient.put<ProfileResponse>(
       "/user/profile/me",
+      data
+    );
+    return response.data;
+  },
+
+  /**
+   * Update user password
+   */
+  updatePassword: async (data: UpdatePasswordRequest): Promise<ApiResponse> => {
+    const response = await apiClient.post<ApiResponse>(
+      "/password/update-password",
       data
     );
     return response.data;

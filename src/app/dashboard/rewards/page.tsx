@@ -1,5 +1,6 @@
 "use client";
 
+import { BottomNav } from "@/components/features/dashboard/bottom-nav";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,8 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Coins, Gift, TrendingUp } from "lucide-react";
-import Link from "next/link";
+import { Coins, Gift, TrendingUp } from "lucide-react";
 
 export default function RewardsPage() {
   const { user, isLoading } = useAuth();
@@ -21,11 +21,11 @@ export default function RewardsPage() {
       <div className="space-y-6 p-4 md:p-6">
         {/* Page Header */}
         <header className="flex items-center gap-4">
-          <Button asChild variant="outline" size="icon">
+          {/* <Button asChild variant="outline" size="icon">
             <Link href="/dashboard">
               <span className="sr-only">Back to Dashboard</span>
             </Link>
-          </Button>
+          </Button> */}
           <h1 className="flex-1 shrink-0 text-xl font-semibold tracking-tight whitespace-nowrap sm:grow-0">
             Cashback Rewards
           </h1>
@@ -61,12 +61,12 @@ export default function RewardsPage() {
     <div className="space-y-6 p-4 md:p-6">
       {/* Page Header */}
       <header className="flex items-center gap-4">
-        <Button asChild variant="outline" size="icon">
+        {/* <Button asChild variant="outline" size="icon">
           <Link href="/dashboard">
             <ArrowLeft className="size-4" />
             <span className="sr-only">Back to Dashboard</span>
           </Link>
-        </Button>
+        </Button> */}
         <h1 className="flex-1 shrink-0 text-xl font-semibold tracking-tight whitespace-nowrap sm:grow-0">
           Cashback Rewards
         </h1>
@@ -213,6 +213,7 @@ export default function RewardsPage() {
           </div>
         </CardContent>
       </Card>
+      <BottomNav />
     </div>
   );
 }

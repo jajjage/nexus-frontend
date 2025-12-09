@@ -1,16 +1,22 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ArrowUp, CreditCard, Home, PiggyBank, Trophy } from "lucide-react";
+import {
+  ArrowUp,
+  CreditCard,
+  Home,
+  PiggyBank,
+  Trophy,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/dashboard" },
-  { label: "Cards", icon: CreditCard, href: "/dashboard/cards" },
-  // Central button is handled separately
   { label: "Savings", icon: PiggyBank, href: "/dashboard/savings" },
   { label: "Rewards", icon: Trophy, href: "/dashboard/rewards" },
+  { label: "Profile", icon: User, href: "/dashboard/profile" },
 ];
 
 export function BottomNav() {

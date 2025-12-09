@@ -12,6 +12,12 @@ export interface UserProfile {
 export interface UpdateProfileRequest {
   fullName?: string;
   phoneNumber?: string;
+  pin?: string; // Transaction PIN for verification
+}
+
+export interface UpdatePasswordRequest {
+  oldPassword?: string;
+  newPassword?: string;
 }
 
 export interface SetPinRequest {
