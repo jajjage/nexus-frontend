@@ -1,3 +1,5 @@
+"use client";
+
 import { LoginForm } from "@/components/features/auth/login-form";
 import { Footer } from "@/components/landing-page/footer";
 import { Header } from "@/components/landing-page/header";

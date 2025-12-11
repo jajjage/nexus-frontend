@@ -50,35 +50,96 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
+console.log('[SW] Service Worker initialized');
+
 messaging.onBackgroundMessage((payload) => {
-  console.log('Background message received:', payload);
+  console.log('[SW] Background message received:', payload);
 
   const notificationTitle = payload.notification?.title || 'New Message';
+  const notificationId = payload.data?.notificationId || '';
+
+  console.log('[SW] Notification ID:', notificationId);
+  console.log('[SW] Showing notification with title:', notificationTitle);
+
   const notificationOptions = {
     body: payload.notification?.body || 'You have a new notification',
     icon: payload.notification?.image || '/images/notification-icon.png',
     badge: '/images/notification-badge.png',
     click_action: payload.fcmOptions?.link || '/',
+    tag: notificationId || 'notification', // Group notifications by ID
+    requireInteraction: false, // Set to true if you want notifications to stay until user interacts
+    // Pass notificationId in data so it can be accessed on click
+    data: {
+      notificationId: notificationId,
+      ...payload.data,
+    },
   };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  try {
+    self.registration.showNotification(notificationTitle, notificationOptions);
+    console.log('[SW] Notification shown successfully for ID:', notificationId);
+  } catch (error) {
+    console.error('[SW] Failed to show notification:', error);
+  }
 });
 
-self.addEventListener('notificationclick', (event) => {
-  console.log('Notification clicked:', event.notification);
+// Handle notification close
+self.addEventListener('notificationclose', (event) => {
+  console.log('[SW] Notification closed:', event.notification.tag);
+});self.addEventListener('notificationclick', (event) => {
+  console.log('[SW] Notification clicked:', event.notification);
   event.notification.close();
 
-  const urlToOpen = event.notification.tag || '/';
+  // Extract notificationId from notification.data
+  const notificationId = event.notification.data?.notificationId;
+  let urlToOpen = '/dashboard';
+
+  if (notificationId) {
+    urlToOpen = '/dashboard/notifications/';
+  }
+
+  console.log('[SW] Opening URL:', urlToOpen);
+  console.log('[SW] Available clients:', event.clientId);
+
   event.waitUntil(
     clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
+        console.log('[SW] Found', clientList.length, 'open clients');
+
+        // Check if a window with the app is already open
         for (let i = 0; i < clientList.length; i++) {
           const client = clientList[i];
-          if (client.url === urlToOpen && 'focus' in client) {
-            return client.focus();
+          console.log('[SW] Checking client:', client.url);
+
+          if (client.url.includes(self.location.origin)) {
+            console.log('[SW] Found matching client, navigating...');
+
+            // Focus the existing window and navigate to the notification
+            if ('focus' in client) {
+              client.focus();
+            }
+            // Use navigate if available (more reliable), fallback to postMessage
+            if ('navigate' in client) {
+              client.navigate(urlToOpen);
+              console.log('[SW] Used client.navigate()');
+            } else {
+              client.postMessage({ type: 'navigate', url: urlToOpen });
+              console.log('[SW] Used client.postMessage()');
+            }
+            return;
           }
         }
+
+        // If no window is open, open a new one
+        console.log('[SW] No existing client found, opening new window');
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+      .catch((err) => {
+        console.error('[SW] Error handling notification click:', err);
+        // Fallback: just open the URL
         if (clients.openWindow) {
           return clients.openWindow(urlToOpen);
         }

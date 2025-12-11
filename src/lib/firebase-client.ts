@@ -51,7 +51,7 @@ export async function registerServiceWorker() {
   try {
     const registration = await navigator.serviceWorker.register(
       "/firebase-messaging-sw.js",
-      { scope: "/" }
+      { scope: "/dashboard/notifications/" }
     );
     console.log("Service Worker registered:", registration);
   } catch (err) {
@@ -70,16 +70,25 @@ export async function requestAndGetFcmToken(vapidKey?: string | null) {
     return null;
   }
 
+  // Check notification support
+  if (!("Notification" in window)) {
+    console.warn("Notifications not supported in this browser");
+    return null;
+  }
+
   // Always request notification permission before getting token
   let permission = Notification.permission;
   if (permission !== "granted") {
     try {
+      console.log("Requesting notification permission...");
       permission = await Notification.requestPermission();
+      console.log("Permission response:", permission);
     } catch (err) {
-      console.warn("Notification permission request failed:", err);
+      console.error("Notification permission request failed:", err);
       return null;
     }
   }
+
   if (permission !== "granted") {
     console.warn("Notification permission not granted. Cannot get FCM token.");
     return null;
@@ -88,13 +97,25 @@ export async function requestAndGetFcmToken(vapidKey?: string | null) {
   try {
     const messaging = getMessaging();
     const validVapidKey = vapidKey ?? undefined;
+
+    // Ensure service worker is registered before getting token
+    const swRegistration = await navigator.serviceWorker.ready;
+    console.log("Service worker ready, getting FCM token...");
+
     const currentToken = await getToken(messaging, {
       vapidKey: validVapidKey,
-      serviceWorkerRegistration: await navigator.serviceWorker.ready,
+      serviceWorkerRegistration: swRegistration,
     });
-    return currentToken || null;
+
+    if (currentToken) {
+      console.log("FCM token obtained successfully");
+      return currentToken;
+    } else {
+      console.warn("No FCM token received from Firebase");
+      return null;
+    }
   } catch (err) {
-    console.warn("Error getting FCM token:", err);
+    console.error("Error getting FCM token:", err);
     return null;
   }
 }

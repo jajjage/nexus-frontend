@@ -108,7 +108,7 @@ export function PinInput({
             ref={(el) => {
               inputRefs.current[index] = el;
             }}
-            type="text"
+            type={masked ? "password" : "text"}
             inputMode="numeric"
             maxLength={1}
             value={digits[index] || ""}
@@ -118,16 +118,10 @@ export function PinInput({
             disabled={disabled}
             className={cn(
               "h-14 w-full text-center text-2xl font-semibold",
-              masked && digits[index] && "text-transparent",
               error && "border-red-500 focus-visible:ring-red-500"
             )}
             aria-label={`PIN digit ${index + 1}`}
           />
-          {masked && digits[index] && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="bg-foreground h-3 w-3 rounded-full" />
-            </div>
-          )}
         </div>
       ))}
     </div>

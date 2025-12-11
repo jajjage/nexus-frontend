@@ -39,8 +39,8 @@ const NOTIFICATION_CATEGORIES = [
     description: "Important alerts and warnings",
   },
   {
-    id: "offers",
-    label: "Offers",
+    id: "offer",
+    label: "Offer",
     description: "Special offers and promotions",
   },
 ];

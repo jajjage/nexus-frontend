@@ -1,8 +1,11 @@
+/**
+ * Admin Dashboard Page
+ * Route: /admin/dashboard
+ *
+ * Renders the admin dashboard component
+ */
+import { AdminDashboard } from "@/components/features/dashboard/admin-dashboard";
+
 export default function AdminDashboardPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-      <p>Welcome to the admin dashboard.</p>
-    </div>
-  );
+  return <AdminDashboard />;
 }

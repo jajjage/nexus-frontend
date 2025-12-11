@@ -2,14 +2,15 @@ import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
+  SidebarInset,
   SidebarMenu,
-  SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-  SidebarInset,
 } from "@/components/ui/sidebar";
-import { HomeIcon, UsersIcon, SettingsIcon, ShieldIcon } from "lucide-react";
+import { HomeIcon, SettingsIcon, ShieldIcon, UsersIcon } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminDashboardLayout({
   children,
@@ -25,27 +26,35 @@ export default function AdminDashboardLayout({
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton href="/admin/dashboard" isActive>
-                <HomeIcon className="size-4" />
-                <span>Home</span>
+              <SidebarMenuButton asChild>
+                <Link href="/admin/dashboard">
+                  <HomeIcon className="size-4" />
+                  <span>Home</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton href="/admin/dashboard/users">
-                <UsersIcon className="size-4" />
-                <span>Manage Users</span>
+              <SidebarMenuButton asChild>
+                <Link href="/admin/dashboard/users">
+                  <UsersIcon className="size-4" />
+                  <span>Manage Users</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton href="/admin/dashboard/roles">
-                <ShieldIcon className="size-4" />
-                <span>Manage Roles</span>
+              <SidebarMenuButton asChild>
+                <Link href="/admin/dashboard/roles">
+                  <ShieldIcon className="size-4" />
+                  <span>Manage Roles</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton href="/admin/dashboard/settings">
-                <SettingsIcon className="size-4" />
-                <span>Settings</span>
+              <SidebarMenuButton asChild>
+                <Link href="/admin/dashboard/settings">
+                  <SettingsIcon className="size-4" />
+                  <span>Settings</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

@@ -19,19 +19,62 @@ export function useForegroundNotifications() {
 
       // 2. Listen for messages while app is open
       const unsubscribe = onMessage(messaging, (payload) => {
-        console.log("Foreground message received:", payload);
+        console.log("[Foreground] Message received:", payload);
 
-        // Show the toast
-        toast(payload.notification?.body || "New Notification", {
+        const notificationTitle =
+          payload.notification?.title || "New Notification";
+        const notificationBody =
+          payload.notification?.body || "You have a new notification";
+        const notificationId = payload.data?.notificationId || "";
+
+        // Show toast notification
+        toast.success(notificationBody, {
           duration: 5000,
           position: "top-right",
-          icon: "🔔",
+          description: notificationId
+            ? "Click notification center to view details"
+            : undefined,
         });
+
+        // Also try to show system notification if permission is granted
+        if (
+          Notification.permission === "granted" &&
+          "serviceWorker" in navigator
+        ) {
+          navigator.serviceWorker.ready.then((registration) => {
+            try {
+              registration.showNotification(notificationTitle, {
+                body: notificationBody,
+                icon:
+                  payload.notification?.image ||
+                  "/images/notification-icon.png",
+                badge: "/images/notification-badge.png",
+                tag: notificationId || "foreground-notification",
+                data: {
+                  notificationId: notificationId,
+                  ...payload.data,
+                },
+              });
+              console.log(
+                "[Foreground] System notification shown for ID:",
+                notificationId
+              );
+            } catch (error) {
+              console.error(
+                "[Foreground] Failed to show system notification:",
+                error
+              );
+            }
+          });
+        }
       });
 
       return () => unsubscribe();
     } catch (error) {
-      console.error("Error setting up foreground listener:", error);
+      console.error(
+        "[Foreground] Error setting up foreground listener:",
+        error
+      );
     }
   }, []);
 }

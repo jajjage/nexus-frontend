@@ -8,7 +8,7 @@ import { RegisterRequest } from "@/types/auth.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useTransition } from "react";
 import { toast } from "sonner";
 
 /**
@@ -224,7 +224,18 @@ export function useAuth(): {
 
   // Setup callback for when session expires
   useEffect(() => {
+    let isHandling = false; // Prevent concurrent handling
+
     const handleSessionExpired = () => {
+      // Skip if already handling session expiration
+      if (isHandling) {
+        console.log(
+          "[AUTH] Session expired callback skipped - already handling"
+        );
+        return;
+      }
+
+      isHandling = true;
       console.log(
         "[AUTH] Session expired callback triggered - marking session expired"
       );
@@ -348,34 +359,66 @@ export function useLogin() {
 // LOGOUT HOOK
 // ============================================================================
 
+// Track if a logout is already in progress to prevent duplicate calls
+let isLoggingOut = false;
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function useLogout() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { markSessionAsExpired } = useAuthContext();
+  const [_, startTransition] = useTransition();
 
   return useMutation({
-    mutationFn: authService.logout,
+    mutationFn: async () => {
+      // Prevent concurrent logout attempts
+      if (isLoggingOut) {
+        console.warn(
+          "[AUTH] Logout already in progress - skipping duplicate request"
+        );
+        throw new Error("Logout already in progress");
+      }
+
+      isLoggingOut = true;
+      try {
+        return await authService.logout();
+      } finally {
+        isLoggingOut = false;
+      }
+    },
     onSuccess: () => {
       console.log("[AUTH] Logout successful");
 
-      // Clear all state
+      // Clear all state immediately (don't wait for transition)
       markSessionAsExpired();
       queryClient.clear();
 
-      // Redirect to login
-      router.push("/login");
+      // Use startTransition to prefetch the login page while clearing state
+      startTransition(() => {
+        // Prefetch the login page to prevent blank page flash
+        router.prefetch("/login");
+      });
+
+      // Redirect immediately without waiting for transitions
+      // This prevents the blank page by navigating instantly
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
     },
 
-    onError: (error: AxiosError<any>) => {
+    onError: (error: any) => {
       console.error("[AUTH] Logout error", {
         message: error.message,
       });
 
-      // Even if logout fails, clear local state and redirect
+      // Even if logout fails, clear local state and redirect immediately
+      // Don't wait for animations or transitions
       markSessionAsExpired();
       queryClient.clear();
-      router.push("/login");
+
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
     },
   });
 }
