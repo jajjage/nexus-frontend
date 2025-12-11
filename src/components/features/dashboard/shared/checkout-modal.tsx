@@ -84,7 +84,7 @@ export function CheckoutModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="max-w-md gap-0 p-0 sm:rounded-2xl"
+        className="w-full max-w-[calc(100%-2rem)] p-4 sm:max-w-md sm:rounded-2xl sm:p-6"
         showCloseButton={false}
       >
         {isSuccess ? (
@@ -107,7 +107,7 @@ export function CheckoutModal({
         ) : (
           <>
             {/* Header */}
-            <DialogHeader className="px-6 pt-6 pb-2">
+            <DialogHeader className="pt-6 pb-2">
               <div className="flex items-center justify-between">
                 <button
                   onClick={onClose}
@@ -142,7 +142,7 @@ export function CheckoutModal({
             </div>
 
             {/* Transaction Details List */}
-            <div className="bg-muted/10 flex flex-col space-y-4 border-t px-6 py-6">
+            <div className="bg-muted/10 flex flex-col space-y-4 border-t py-6">
               {/* Product */}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Product Name</span>
@@ -183,20 +183,6 @@ export function CheckoutModal({
                 </span>
               </div>
 
-              {/* Voucher - Upcoming Feature */}
-              {/* <button className="flex items-center justify-between text-sm group">
-            <span className="text-muted-foreground">Voucher</span>
-            <div className="flex items-center gap-1 font-medium text-blue-600 transition-colors group-hover:text-blue-700">
-              <span>
-                -₦
-                {voucherAmount.toLocaleString("en-NG", {
-                  minimumFractionDigits: 2,
-                })}
-              </span>
-              <ChevronRight className="size-4" />
-            </div>
-          </button> */}
-
               {/* Wallet Promo Toggle (Use Cashback) */}
               {userCashbackBalance > 0 && (
                 <div className="flex items-center justify-between text-sm">
@@ -232,7 +218,7 @@ export function CheckoutModal({
             </div>
 
             {/* Payment Method */}
-            <div className="flex flex-col gap-3 px-6 pt-4 pb-8">
+            <div className="flex flex-col gap-3 pt-4 pb-8">
               <div className="flex items-center justify-between">
                 <Label className="font-semibold">Payment Method</Label>
                 <button className="text-primary flex items-center text-xs font-medium hover:underline">
