@@ -86,16 +86,24 @@ messaging.onBackgroundMessage((payload) => {
 // Handle notification close
 self.addEventListener('notificationclose', (event) => {
   console.log('[SW] Notification closed:', event.notification.tag);
-});self.addEventListener('notificationclick', (event) => {
+});
+
+self.addEventListener('notificationclick', (event) => {
   console.log('[SW] Notification clicked:', event.notification);
   event.notification.close();
 
-  // Extract notificationId from notification.data
+  // Extract notificationId and transactionId from notification.data
   const notificationId = event.notification.data?.notificationId;
+  const transactionId = event.notification.data?.id;
   let urlToOpen = '/dashboard';
 
+  // If notificationId exists, navigate to notifications detail page
   if (notificationId) {
-    urlToOpen = '/dashboard/notifications/';
+    urlToOpen = '/dashboard/notifications/' + notificationId;
+  }
+  // If only transactionId exists, navigate to transaction detail page
+  else if (transactionId) {
+    urlToOpen = '/dashboard/transactions/' + transactionId;
   }
 
   console.log('[SW] Opening URL:', urlToOpen);

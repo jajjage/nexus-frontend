@@ -81,7 +81,7 @@ export function TransactionPinModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-full max-w-[calc(100%-2rem)] p-4 sm:max-w-md sm:p-6">
+      <DialogContent className="w-full max-w-[calc(100%-2rem)] p-4 sm:max-w-md sm:rounded-2xl sm:p-6">
         <DialogHeader>
           <DialogTitle>
             {mode === "setup" ? "Set Transaction PIN" : "Enter Transaction PIN"}

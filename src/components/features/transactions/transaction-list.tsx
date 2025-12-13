@@ -1,16 +1,16 @@
 "use client";
 
-import { useInfiniteTransactions } from "@/hooks/useWallet";
 import { TransactionItem } from "@/components/features/dashboard/transaction-item";
 import { Spinner } from "@/components/ui/spinner";
+import { useInfiniteTransactions } from "@/hooks/useWallet";
+import { Transaction } from "@/types/wallet.types";
+import { format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import {
   TransactionFilters,
   TransactionFiltersState,
 } from "./transaction-filters";
-import { Transaction } from "@/types/wallet.types";
-import { format } from "date-fns";
 
 export function TransactionList() {
   const [filters, setFilters] = useState<TransactionFiltersState>({
@@ -77,7 +77,7 @@ export function TransactionList() {
 
       {status === "pending" ? (
         <div className="flex justify-center p-8">
-          <Spinner size="lg" />
+          <Spinner />
         </div>
       ) : status === "error" ? (
         <div className="text-destructive text-center">

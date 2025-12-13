@@ -51,7 +51,7 @@ export async function registerServiceWorker() {
   try {
     const registration = await navigator.serviceWorker.register(
       "/firebase-messaging-sw.js",
-      { scope: "/dashboard/notifications/" }
+      { scope: "/" }
     );
     console.log("Service Worker registered:", registration);
   } catch (err) {

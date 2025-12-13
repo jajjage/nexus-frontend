@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Transaction } from "@/types/wallet.types";
 import { ArrowDown, ArrowUp, Landmark, Phone, Wifi } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // Helper to determine status badge color
 const getStatusColor = (status: string) => {
@@ -56,8 +57,12 @@ interface TransactionItemProps {
 }
 
 export function TransactionItem({ transaction }: TransactionItemProps) {
+  const router = useRouter();
   const isDebit = transaction.direction === "debit";
 
+  const tranxDetail = () => {
+    router.push(`/dashboard/transactions/${transaction.id}`);
+  };
   const formattedAmount = transaction.amount
     .toLocaleString("en-NG", {
       style: "currency",
@@ -66,7 +71,10 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
     .replace("₦", "");
 
   return (
-    <div className="hover:bg-muted/50 flex items-center justify-between p-3 transition-colors">
+    <div
+      className="hover:bg-muted/50 flex cursor-auto items-center justify-between p-3 transition-colors"
+      onClick={() => tranxDetail()}
+    >
       <div className="flex items-center gap-3">
         <div
           className={cn(
