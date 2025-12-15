@@ -93,7 +93,11 @@ export function TransactionList() {
                 </h3>
                 <div className="bg-card rounded-lg shadow-sm">
                   {transactions.map((tx) => (
-                    <TransactionItem key={tx.id} transaction={tx} />
+                    <TransactionItem
+                      key={tx.id}
+                      transaction={tx}
+                      source="transactions"
+                    />
                   ))}
                 </div>
               </div>

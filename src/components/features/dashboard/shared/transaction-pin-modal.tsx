@@ -101,21 +101,20 @@ export function TransactionPinModal({
             {mode === "setup" ? "Set Transaction PIN" : "Enter Transaction PIN"}
           </DialogTitle>
           <DialogDescription>
-            {amount && (
-              <div className="mt-3 mb-2">
-                <p className="text-muted-foreground mb-2 text-xs">
-                  Transaction Amount
-                </p>
-                <p className="text-foreground text-2xl font-bold">
-                  ₦
-                  {amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
-                </p>
-              </div>
-            )}
             {mode === "setup"
               ? "Create a 4-digit PIN to authorize this transaction."
               : "Enter your 4-digit PIN to complete the transaction."}
           </DialogDescription>
+          {amount && (
+            <div className="mt-3 mb-2">
+              <p className="text-muted-foreground mb-2 text-xs">
+                Transaction Amount
+              </p>
+              <p className="text-foreground text-2xl font-bold">
+                ₦{amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+          )}
         </DialogHeader>
 
         <div className="space-y-6">

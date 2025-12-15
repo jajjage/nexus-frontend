@@ -3,21 +3,23 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTransaction } from "@/hooks/useWallet";
 import { cn } from "@/lib/utils";
 import type { Transaction } from "@/types/wallet.types";
 import {
+  ArrowDown,
   ArrowLeft,
+  ArrowUp,
   Copy,
-  Download,
   Landmark,
   Phone,
   Share2,
   Wifi,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ShareTransactionDialog } from "./share-transaction-dialog";
@@ -61,14 +63,14 @@ const getTransactionIcon = (transaction: Transaction) => {
       }
     }
     // Default debit icon
-    return <div className="text-destructive text-2xl font-bold">↑</div>;
+    return <ArrowUp className="text-destructive size-8" />;
   } else {
     // isCredit
     if (transaction.relatedType === "incoming_payment") {
       return <Landmark className="size-8 text-green-600" />;
     }
     // Default credit icon
-    return <div className="text-2xl font-bold text-green-600">↓</div>;
+    return <ArrowDown className="size-8 text-green-600" />;
   }
 };
 
@@ -157,6 +159,16 @@ export function TransactionDetailPage({
   const { data, isLoading, error } = useTransaction(transactionId);
   const transaction = data?.data;
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const searchParams = useSearchParams();
+
+  // Navigation Logic
+  const fromSource = searchParams.get("from");
+  const backLink =
+    fromSource === "transactions" ? "/dashboard/transactions" : "/dashboard";
+  const backLabel =
+    fromSource === "transactions"
+      ? "Back to Transactions"
+      : "Back to Dashboard";
 
   if (isLoading) {
     return (
@@ -172,10 +184,10 @@ export function TransactionDetailPage({
     return (
       <div className="bg-background min-h-screen p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl">
-          <Link href="/dashboard/transactions">
+          <Link href={backLink}>
             <Button variant="ghost" className="mb-6">
               <ArrowLeft className="mr-2 size-4" />
-              Back to Transactions
+              {backLabel}
             </Button>
           </Link>
           <Card className="border-red-200 bg-red-50">
@@ -195,10 +207,10 @@ export function TransactionDetailPage({
     return (
       <div className="bg-background min-h-screen p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl">
-          <Link href="/dashboard/transactions">
+          <Link href={backLink}>
             <Button variant="ghost" className="mb-6">
               <ArrowLeft className="mr-2 size-4" />
-              Back to Transactions
+              {backLabel}
             </Button>
           </Link>
           <Card>
@@ -223,10 +235,10 @@ export function TransactionDetailPage({
     <div className="bg-background min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Back Button */}
-        <Link href="/dashboard/transactions">
+        <Link href={backLink}>
           <Button variant="ghost">
             <ArrowLeft className="mr-2 size-4" />
-            Back to Transactions
+            {backLabel}
           </Button>
         </Link>
 
@@ -482,462 +494,6 @@ export function TransactionDetailPage({
         transaction={transaction}
         operatorLogo={operatorLogo}
       />
-    </div>
-  );
-}
-
-interface TransactionDetailPageProps {
-  transactionId: string;
-}
-
-// Helper to determine status badge color
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case "pending":
-      return "bg-yellow-500 text-yellow-50";
-    case "completed":
-    case "received":
-      return "bg-green-500 text-green-50";
-    case "failed":
-      return "bg-red-500 text-red-50";
-    case "cancelled":
-      return "bg-gray-400 text-gray-50";
-    case "reversed":
-      return "bg-orange-500 text-orange-50";
-    case "retry":
-      return "bg-blue-500 text-blue-50";
-    default:
-      return "bg-gray-400 text-gray-50";
-  }
-};
-
-// Helper to determine the transaction icon
-const getTransactionIcon = (transaction: Transaction) => {
-  const isDebit = transaction.direction === "debit";
-
-  if (isDebit) {
-    if (transaction.relatedType === "topup_request") {
-      if (transaction.related?.type === "data") {
-        return <Wifi className="size-8 text-purple-600" />;
-      }
-      if (transaction.related?.type === "airtime") {
-        return <Phone className="size-8 text-blue-600" />;
-      }
-    }
-    // Default debit icon
-    return <ArrowUp className="size-8 text-red-600" />;
-  } else {
-    // isCredit
-    if (transaction.relatedType === "incoming_payment") {
-      return <Landmark className="size-8 text-green-600" />;
-    }
-    // Default credit icon
-    return <ArrowDown className="size-8 text-green-600" />;
-  }
-};
-
-// Helper to get transaction type label
-const getTransactionTypeLabel = (transaction: Transaction): string => {
-  const isDebit = transaction.direction === "debit";
-
-  if (isDebit && transaction.relatedType === "topup_request") {
-    const type = transaction.related?.type?.toLowerCase() || "topup";
-    return `${type.charAt(0).toUpperCase() + type.slice(1)} Purchase`;
-  }
-
-  if (!isDebit && transaction.relatedType === "incoming_payment") {
-    return "Incoming Payment";
-  }
-
-  return isDebit ? "Withdrawal" : "Deposit";
-};
-
-// Helper to get transaction description
-const getTransactionDescription = (transaction: Transaction): string => {
-  const isDebit = transaction.direction === "debit";
-
-  if (isDebit && transaction.relatedType === "topup_request") {
-    const operator =
-      transaction.related?.operatorCode?.toUpperCase() || "Unknown";
-    const phone = transaction.related?.recipient_phone || "N/A";
-    const type = transaction.related?.type?.toLowerCase() || "topup";
-    return `${type.charAt(0).toUpperCase() + type.slice(1)} to ${operator} - ${phone}`;
-  }
-
-  return transaction.note || transaction.method || "Transaction";
-};
-
-// Helper to format date
-const formatDate = (date: Date | string | undefined): string => {
-  if (!date) return "N/A";
-  const dateObj = typeof date === "string" ? new Date(date) : date;
-  return dateObj.toLocaleString("en-NG", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-// Helper to copy to clipboard
-const copyToClipboard = (text: string, label: string) => {
-  navigator.clipboard.writeText(text);
-  toast.success(`${label} copied to clipboard`);
-};
-
-// Skeleton loader component
-function TransactionDetailSkeleton() {
-  return (
-    <div className="space-y-6">
-      {/* Header skeleton */}
-      <div className="flex items-center gap-4">
-        <Skeleton className="size-12 rounded-full" />
-        <div className="space-y-2">
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-4 w-64" />
-        </div>
-      </div>
-
-      {/* Details cards skeleton */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {Array(4)
-          .fill(0)
-          .map((_, i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-4 w-24" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-6 w-32" />
-              </CardContent>
-            </Card>
-          ))}
-      </div>
-
-      {/* Additional info skeleton */}
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-5 w-32" />
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {Array(3)
-            .fill(0)
-            .map((_, i) => (
-              <Skeleton key={i} className="h-4 w-full" />
-            ))}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-export function TransactionDetailPage({
-  transactionId,
-}: TransactionDetailPageProps) {
-  const { data, isLoading, error } = useTransaction(transactionId);
-  const transaction = data?.data;
-  const [copied, setCopied] = useState<string | null>(null);
-
-  if (isLoading) {
-    return (
-      <div className="bg-background min-h-screen p-4 sm:p-6">
-        <div className="mx-auto max-w-2xl">
-          <Skeleton className="mb-6 h-10 w-32" />
-          <TransactionDetailSkeleton />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-background min-h-screen p-4 sm:p-6">
-        <div className="mx-auto max-w-2xl">
-          <Link href="/dashboard/transactions">
-            <Button variant="ghost" className="mb-6">
-              <ArrowLeft className="mr-2 size-4" />
-              Back to Transactions
-            </Button>
-          </Link>
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="pt-6">
-              <p className="text-red-900">Error loading transaction details.</p>
-              <p className="text-sm text-red-800">
-                Please try again or go back to the transaction list.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  if (!transaction) {
-    return (
-      <div className="bg-background min-h-screen p-4 sm:p-6">
-        <div className="mx-auto max-w-2xl">
-          <Link href="/dashboard/transactions">
-            <Button variant="ghost" className="mb-6">
-              <ArrowLeft className="mr-2 size-4" />
-              Back to Transactions
-            </Button>
-          </Link>
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-muted-foreground">Transaction not found.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  const isDebit = transaction.direction === "debit";
-  const formattedAmount = transaction.amount.toLocaleString("en-NG", {
-    style: "currency",
-    currency: "NGN",
-  });
-
-  return (
-    <div className="bg-background min-h-screen p-4 sm:p-6">
-      <div className="mx-auto max-w-2xl space-y-6">
-        {/* Back Button */}
-        <Link href="/dashboard/transactions">
-          <Button variant="ghost">
-            <ArrowLeft className="mr-2 size-4" />
-            Back to Transactions
-          </Button>
-        </Link>
-
-        {/* Transaction Header */}
-        <div className="rounded-lg bg-linear-to-r from-blue-50 to-purple-50 p-6">
-          <div className="flex items-center gap-4">
-            <div
-              className={cn(
-                "flex size-16 items-center justify-center rounded-full",
-                isDebit ? "bg-red-100" : "bg-green-100"
-              )}
-            >
-              {getTransactionIcon(transaction)}
-            </div>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold">
-                {getTransactionTypeLabel(transaction)}
-              </h1>
-              <p className="text-muted-foreground">
-                {getTransactionDescription(transaction)}
-              </p>
-            </div>
-          </div>
-
-          {/* Amount Display */}
-          <div className="mt-6 space-y-2">
-            <p
-              className={cn(
-                "text-4xl font-bold",
-                isDebit ? "text-destructive" : "text-green-600"
-              )}
-            >
-              {isDebit ? "-" : "+"}
-              {formattedAmount}
-            </p>
-            {transaction.related?.status && (
-              <Badge
-                className={cn(
-                  "capitalize",
-                  getStatusColor(transaction.related.status)
-                )}
-              >
-                {transaction.related.status}
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        {/* Main Details Grid */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          {/* Transaction ID */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">
-                Transaction ID
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <code className="bg-muted rounded px-2 py-1 font-mono text-sm">
-                  {transaction.id.slice(0, 8)}...
-                </code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    copyToClipboard(transaction.id, "Transaction ID")
-                  }
-                >
-                  <Copy className="size-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Reference */}
-          {transaction.reference && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Reference</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <code className="bg-muted rounded px-2 py-1 font-mono text-sm">
-                    {transaction.reference}
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      copyToClipboard(transaction.reference || "", "Reference")
-                    }
-                  >
-                    <Copy className="size-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Date */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Date & Time</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="font-mono text-sm">
-                {formatDate(transaction.createdAt)}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Method */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Method</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Badge variant="outline" className="capitalize">
-                {transaction.method}
-              </Badge>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Detailed Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Details</CardTitle>
-            <CardDescription>Full transaction information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-muted-foreground text-sm font-medium">
-                  Amount
-                </p>
-                <p className="mt-1 text-lg font-bold">{formattedAmount}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm font-medium">
-                  Balance After
-                </p>
-                <p className="mt-1 text-lg font-bold">
-                  ₦{transaction.balanceAfter.toLocaleString("en-NG")}
-                </p>
-              </div>
-              {transaction.note && (
-                <div className="sm:col-span-2">
-                  <p className="text-muted-foreground text-sm font-medium">
-                    Note
-                  </p>
-                  <p className="mt-1">{transaction.note}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Related Transaction Info */}
-            {transaction.related &&
-              Object.keys(transaction.related).length > 0 && (
-                <div className="border-t pt-4">
-                  <p className="text-muted-foreground mb-3 text-sm font-medium">
-                    Related Information
-                  </p>
-                  <div className="space-y-2">
-                    {transaction.related.recipient_phone && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground text-sm">
-                          Recipient Phone:
-                        </span>
-                        <span className="font-medium">
-                          {transaction.related.recipient_phone}
-                        </span>
-                      </div>
-                    )}
-                    {transaction.related.operatorCode && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground text-sm">
-                          Operator:
-                        </span>
-                        <span className="font-medium">
-                          {transaction.related.operatorCode.toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                    {transaction.related.type && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground text-sm">
-                          Type:
-                        </span>
-                        <span className="font-medium capitalize">
-                          {transaction.related.type}
-                        </span>
-                      </div>
-                    )}
-                    {transaction.related.status && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground text-sm">
-                          Status:
-                        </span>
-                        <Badge
-                          className={cn(
-                            "capitalize",
-                            getStatusColor(transaction.related.status)
-                          )}
-                        >
-                          {transaction.related.status}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-          </CardContent>
-        </Card>
-
-        {/* Metadata (if available) */}
-        {transaction.metadata &&
-          Object.keys(transaction.metadata).length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Metadata</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <pre className="bg-muted overflow-x-auto rounded p-3 text-xs">
-                  {JSON.stringify(transaction.metadata, null, 2)}
-                </pre>
-              </CardContent>
-            </Card>
-          )}
-      </div>
     </div>
   );
 }

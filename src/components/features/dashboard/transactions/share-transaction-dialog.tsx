@@ -102,16 +102,18 @@ export function ShareTransactionDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh] w-full max-w-2xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Share Transaction Receipt</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="flex max-h-[90vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <DialogHeader className="border-b px-4 py-4 sm:px-6">
+          <DialogTitle className="text-lg sm:text-xl">
+            Share Receipt
+          </DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
             Download your transaction receipt as an image or PDF
           </DialogDescription>
         </DialogHeader>
 
-        {/* Receipt Preview */}
-        <div className="max-h-[50vh] overflow-y-auto rounded-lg border bg-gray-50 p-4">
+        {/* Receipt Preview - Scrollable */}
+        <div className="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6">
           <TransactionReceipt
             ref={receiptRef}
             transaction={transaction}
@@ -119,12 +121,12 @@ export function ShareTransactionDialog({
           />
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-3 pt-6">
+        {/* Action Buttons - Fixed at bottom */}
+        <div className="border-t bg-white p-4 sm:flex sm:gap-3">
           <Button
             onClick={handleShareAsImage}
             disabled={isGenerating}
-            className="flex-1"
+            className="mb-2 w-full sm:mb-0 sm:flex-1"
             variant="outline"
           >
             {isGenerating ? (
@@ -135,14 +137,14 @@ export function ShareTransactionDialog({
             ) : (
               <>
                 <Image className="mr-2 size-4" />
-                Download as Image
+                Share as Image
               </>
             )}
           </Button>
           <Button
             onClick={handleShareAsPDF}
             disabled={isGenerating}
-            className="flex-1"
+            className="w-full sm:flex-1"
           >
             {isGenerating ? (
               <>

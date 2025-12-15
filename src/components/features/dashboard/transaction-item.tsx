@@ -54,14 +54,16 @@ const getTransactionIcon = (transaction: Transaction) => {
 
 interface TransactionItemProps {
   transaction: Transaction;
+  source?: "home" | "transactions";
 }
 
-export function TransactionItem({ transaction }: TransactionItemProps) {
+export function TransactionItem({ transaction, source }: TransactionItemProps) {
   const router = useRouter();
   const isDebit = transaction.direction === "debit";
 
   const tranxDetail = () => {
-    router.push(`/dashboard/transactions/${transaction.id}`);
+    const url = `/dashboard/transactions/${transaction.id}${source ? `?from=${source}` : ""}`;
+    router.push(url);
   };
   const formattedAmount = transaction.amount
     .toLocaleString("en-NG", {

@@ -49,7 +49,11 @@ export function TransactionHistory({ isVisible }: TransactionHistoryProps) {
         )}
       >
         {recentTransactions.map((transaction) => (
-          <TransactionItem key={transaction.id} transaction={transaction} />
+          <TransactionItem
+            key={transaction.id}
+            transaction={transaction}
+            source="home"
+          />
         ))}
       </div>
     );
