@@ -45,6 +45,7 @@ export function DataPlans() {
   const [pinMode, setPinMode] = useState<"setup" | "enter">("enter");
   const [pendingPaymentData, setPendingPaymentData] = useState<{
     useCashback: boolean;
+    amount?: number;
   } | null>(null);
   const [transactionPin, setTransactionPin] = useState<string | null>(null);
 
@@ -213,16 +214,35 @@ export function DataPlans() {
   const handlePayment = (useCashback: boolean) => {
     if (!selectedProduct) return;
 
+    // Calculate the amount to display
+    const faceValue = parseFloat(selectedProduct.denomAmount || "0");
+    const supplierPrice = selectedProduct.supplierOffers?.[0]?.supplierPrice
+      ? parseFloat(selectedProduct.supplierOffers[0].supplierPrice)
+      : faceValue;
+
+    // Calculate selling price (margin logic from checkout modal)
+    let sellingPrice = faceValue;
+    if (supplierPrice < faceValue) {
+      const margin = faceValue - supplierPrice;
+      sellingPrice = faceValue - margin / 2;
+    }
+
+    // Calculate payable amount
+    const userCashbackBalance = user?.cashback?.availableBalance || 0;
+    const payableAmount = useCashback
+      ? Math.max(0, sellingPrice - userCashbackBalance)
+      : sellingPrice;
+
     // Check if user has PIN
     if (!user?.hasPin) {
       // No PIN - show setup modal
       setPinMode("setup");
-      setPendingPaymentData({ useCashback });
+      setPendingPaymentData({ useCashback, amount: payableAmount });
       setShowPinModal(true);
     } else {
       // Has PIN - show entry modal
       setPinMode("enter");
-      setPendingPaymentData({ useCashback });
+      setPendingPaymentData({ useCashback, amount: payableAmount });
       setShowPinModal(true);
     }
   };
@@ -381,6 +401,7 @@ export function DataPlans() {
         }
         isLoading={isUpdatingPin || topupMutation.isPending}
         mode={pinMode}
+        amount={pendingPaymentData?.amount}
       />
     </div>
   );

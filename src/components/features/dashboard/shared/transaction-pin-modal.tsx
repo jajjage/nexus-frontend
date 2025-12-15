@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface TransactionPinModalProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ interface TransactionPinModalProps {
   onSuccess: (pin: string) => void;
   isLoading?: boolean;
   mode: "setup" | "enter"; // "setup" for first time, "enter" for existing PIN
+  amount?: number; // Amount to display when PIN modal appears
 }
 
 export function TransactionPinModal({
@@ -26,11 +27,24 @@ export function TransactionPinModal({
   onSuccess,
   isLoading = false,
   mode = "enter",
+  amount,
 }: TransactionPinModalProps) {
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError] = useState<string>("");
   const confirmPinRef = useRef<HTMLDivElement>(null);
+  const firstPinInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus first PIN input when modal opens on mobile
+  useEffect(() => {
+    if (isOpen) {
+      // Small delay to ensure modal is rendered
+      const timer = setTimeout(() => {
+        firstPinInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const handlePinComplete = () => {
     if (mode === "setup") {
@@ -87,6 +101,17 @@ export function TransactionPinModal({
             {mode === "setup" ? "Set Transaction PIN" : "Enter Transaction PIN"}
           </DialogTitle>
           <DialogDescription>
+            {amount && (
+              <div className="mt-3 mb-2">
+                <p className="text-muted-foreground mb-2 text-xs">
+                  Transaction Amount
+                </p>
+                <p className="text-foreground text-2xl font-bold">
+                  ₦
+                  {amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            )}
             {mode === "setup"
               ? "Create a 4-digit PIN to authorize this transaction."
               : "Enter your 4-digit PIN to complete the transaction."}
@@ -99,6 +124,7 @@ export function TransactionPinModal({
               {mode === "setup" ? "New Transaction PIN" : "Your PIN"}
             </label>
             <PinInput
+              ref={firstPinInputRef}
               length={4}
               value={pin}
               onChange={setPin}
