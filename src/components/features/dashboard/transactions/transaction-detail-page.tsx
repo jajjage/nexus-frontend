@@ -126,21 +126,42 @@ const copyToClipboard = (text: string, label: string) => {
 
 // Get operator logo from related data or from API
 const getOperatorLogo = (transaction: Transaction): string | undefined => {
-  // Try to get from metadata or related data
+  // Priority 1: Check if operator info is in related.operator object
+  if (transaction.related?.operator?.logoUrl) {
+    return transaction.related.operator.logoUrl;
+  }
+
+  // Priority 2: Try to get from metadata
   if (transaction.metadata?.operatorLogo) {
     return transaction.metadata.operatorLogo;
   }
-  // Default logos based on operator code
+
+  // Priority 3: Default logos based on operator code
   const operatorCode = transaction.related?.operatorCode?.toLowerCase();
+  const operatorName =
+    transaction.related?.operator?.name?.toLowerCase() || operatorCode;
+
   const logos: Record<string, string> = {
-    mtn: "https://www.mtn.com/sites/default/files/styles/hero_image_1920_550/public/2024-02/MTN_Hero_SA_1920x550px.jpg",
-    airtel:
-      "https://www.airtel.com/sites/default/files/styles/full_width_1200/public/2024-01/Airtel_logo.jpg",
-    glo: "https://www.gloworld.com/sites/default/files/styles/full_width_1200/public/glo_logo.jpg",
-    etisalat:
-      "https://www.9mobile.com.ng/sites/default/files/styles/full_width_1200/public/9mobile_logo.jpg",
+    mtn: "https://logowik.com/content/uploads/images/mtn3122.jpg",
+    airtel: "https://logowik.com/content/uploads/images/airtel4585.jpg",
+    glo: "https://logowik.com/content/uploads/images/globacom-glo3852.jpg",
+    "9mobile": "https://logowik.com/content/uploads/images/9mobile4667.jpg",
+    etisalat: "https://logowik.com/content/uploads/images/etisalat1614.jpg",
   };
-  return logos[operatorCode || ""];
+
+  // Try to match by operator code first
+  if (operatorCode && logos[operatorCode]) {
+    return logos[operatorCode];
+  }
+
+  // Try to match by operator name (partial match)
+  for (const [key, url] of Object.entries(logos)) {
+    if (operatorName && operatorName.includes(key)) {
+      return url;
+    }
+  }
+
+  return undefined;
 };
 
 // Skeleton loader component
@@ -264,19 +285,6 @@ export function TransactionDetailPage({
                     {getTransactionDescription(transaction)}
                   </p>
                 </div>
-              </div>
-
-              {/* Share Buttons */}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsShareOpen(true)}
-                  className="gap-2"
-                >
-                  <Share2 className="size-4" />
-                  Share
-                </Button>
               </div>
             </div>
 
@@ -470,21 +478,20 @@ export function TransactionDetailPage({
                   </div>
                 </div>
               )}
-
-            {/* Metadata */}
-            {transaction.metadata &&
-              Object.keys(transaction.metadata).length > 0 && (
-                <div className="border-t pt-6">
-                  <p className="text-muted-foreground mb-4 text-sm font-medium tracking-wide uppercase">
-                    Additional Information
-                  </p>
-                  <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-xs">
-                    {JSON.stringify(transaction.metadata, null, 2)}
-                  </pre>
-                </div>
-              )}
           </CardContent>
         </Card>
+
+        {/* Share Button Footer - Outside Card */}
+        <div className="flex justify-center pb-4">
+          <Button
+            onClick={() => setIsShareOpen(true)}
+            className="gap-2"
+            size="lg"
+          >
+            <Share2 className="size-5" />
+            Share Receipt
+          </Button>
+        </div>
       </div>
 
       {/* Share Dialog */}

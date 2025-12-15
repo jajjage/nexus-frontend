@@ -10,11 +10,10 @@ import {
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import type { Transaction } from "@/types/wallet.types";
-import { Download, Image, X } from "lucide-react";
+import { Download, FileImage } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
+import { ExportReceipt } from "./export-receipt";
 import { TransactionReceipt } from "./transaction-receipt";
 
 interface ShareTransactionDialogProps {
@@ -31,72 +30,192 @@ export function ShareTransactionDialog({
   operatorLogo,
 }: ShareTransactionDialogProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const exportReceiptRef = useRef<HTMLDivElement>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  // Convert HTML element to Blob
+  const elementToBlob = async (element: HTMLElement): Promise<Blob> => {
+    const canvas = await import("html2canvas").then((m) => m.default);
+    const canvasElement = await canvas(element, {
+      backgroundColor: "#ffffff",
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      imageTimeout: 0,
+      windowHeight: element.scrollHeight,
+      windowWidth: element.scrollWidth,
+    });
+
+    return new Promise((resolve, reject) => {
+      canvasElement.toBlob(
+        (blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error("Failed to create blob"));
+        },
+        "image/png",
+        0.95
+      );
+    });
+  };
 
   const handleShareAsImage = async () => {
-    if (!receiptRef.current) return;
+    if (!exportReceiptRef.current) return;
 
-    setIsGenerating(true);
+    setIsGeneratingImage(true);
     try {
-      const canvas = await html2canvas(receiptRef.current, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
+      const element = exportReceiptRef.current.cloneNode(true) as HTMLElement;
+      const tempContainer = document.createElement("div");
+      tempContainer.style.position = "fixed";
+      tempContainer.style.left = "-9999px";
+      tempContainer.style.top = "-9999px";
+      tempContainer.style.display = "block";
+      tempContainer.appendChild(element);
+      document.body.appendChild(tempContainer);
 
-      // Create blob and download
-      canvas.toBlob((blob) => {
-        if (blob) {
+      try {
+        const canvas = await import("html2canvas").then((m) => m.default);
+        const canvasElement = await canvas(element, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          imageTimeout: 0,
+          windowHeight: element.scrollHeight,
+          windowWidth: element.scrollWidth,
+        });
+
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvasElement.toBlob(
+            (blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error("Failed to create blob"));
+            },
+            "image/png",
+            0.95
+          );
+        });
+
+        const file = new File(
+          [blob],
+          `nexus-receipt-${transaction.id.slice(0, 8)}.png`,
+          { type: "image/png" }
+        );
+
+        // Use Web Share API with files
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: "Nexus Transaction Receipt",
+            text: `Receipt for transaction ${transaction.id.slice(0, 8)}`,
+          });
+          onClose();
+          toast.success("Shared successfully!");
+        } else {
+          // Fallback: Download the image
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = url;
-          link.download = `receipt-${transaction.id.slice(0, 8)}.png`;
+          link.download = file.name;
+          document.body.appendChild(link);
           link.click();
+          document.body.removeChild(link);
           URL.revokeObjectURL(url);
           toast.success("Receipt downloaded as image");
         }
-      });
-    } catch (error) {
-      console.error("Error generating image:", error);
-      toast.error("Failed to generate receipt image");
+      } finally {
+        document.body.removeChild(tempContainer);
+      }
+    } catch (error: any) {
+      if (error.name !== "AbortError") {
+        console.error("Share image failed:", error);
+        toast.error("Failed to share receipt as image");
+      }
     } finally {
-      setIsGenerating(false);
+      setIsGeneratingImage(false);
     }
   };
 
   const handleShareAsPDF = async () => {
-    if (!receiptRef.current) return;
+    if (!exportReceiptRef.current) return;
 
-    setIsGenerating(true);
+    setIsGeneratingPDF(true);
     try {
-      const canvas = await html2canvas(receiptRef.current, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
+      const element = exportReceiptRef.current.cloneNode(true) as HTMLElement;
+      const tempContainer = document.createElement("div");
+      tempContainer.style.position = "fixed";
+      tempContainer.style.left = "-9999px";
+      tempContainer.style.top = "-9999px";
+      tempContainer.style.display = "block";
+      tempContainer.appendChild(element);
+      document.body.appendChild(tempContainer);
 
-      // Get canvas dimensions
-      const imgData = canvas.toDataURL("image/png");
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      try {
+        const canvas = await import("html2canvas").then((m) => m.default);
+        const { jsPDF } = await import("jspdf");
 
-      // Create PDF
-      const pdf = new jsPDF({
-        orientation: imgHeight > imgWidth ? "portrait" : "portrait",
-        unit: "mm",
-        format: "a4",
-      });
+        const canvasElement = await canvas(element, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          imageTimeout: 0,
+          windowHeight: element.scrollHeight,
+          windowWidth: element.scrollWidth,
+        });
 
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-      pdf.save(`receipt-${transaction.id.slice(0, 8)}.pdf`);
-      toast.success("Receipt downloaded as PDF");
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      toast.error("Failed to generate receipt PDF");
+        const imgData = canvasElement.toDataURL("image/png");
+        const imgWidth = 140;
+        const imgHeight =
+          (canvasElement.height * imgWidth) / canvasElement.width;
+
+        const pdf = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "a4",
+        });
+
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const x = (pageWidth - imgWidth) / 2;
+        const y = 15;
+
+        pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
+
+        // Get PDF as blob
+        const pdfBlob = pdf.output("blob");
+        const file = new File(
+          [pdfBlob],
+          `nexus-receipt-${transaction.id.slice(0, 8)}.pdf`,
+          { type: "application/pdf" }
+        );
+
+        // Use Web Share API with files
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: "Nexus Transaction Receipt",
+            text: `Receipt for transaction ${transaction.id.slice(0, 8)}`,
+          });
+          onClose();
+          toast.success("Shared successfully!");
+        } else {
+          // Fallback: Download the PDF
+          pdf.save(file.name);
+          toast.success("Receipt downloaded as PDF");
+        }
+      } finally {
+        document.body.removeChild(tempContainer);
+      }
+    } catch (error: any) {
+      if (error.name !== "AbortError") {
+        console.error("Share PDF failed:", error);
+        toast.error("Failed to share receipt as PDF");
+      }
     } finally {
-      setIsGenerating(false);
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -108,7 +227,8 @@ export function ShareTransactionDialog({
             Share Receipt
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
-            Download your transaction receipt as an image or PDF
+            Share your transaction receipt via WhatsApp, Instagram, Email, and
+            more
           </DialogDescription>
         </DialogHeader>
 
@@ -121,32 +241,41 @@ export function ShareTransactionDialog({
           />
         </div>
 
+        {/* Hidden Export Receipt for file generation */}
+        <div style={{ display: "none" }}>
+          <ExportReceipt
+            ref={exportReceiptRef}
+            transaction={transaction}
+            operatorLogo={operatorLogo}
+          />
+        </div>
+
         {/* Action Buttons - Fixed at bottom */}
         <div className="border-t bg-white p-4 sm:flex sm:gap-3">
           <Button
             onClick={handleShareAsImage}
-            disabled={isGenerating}
+            disabled={isGeneratingImage}
             className="mb-2 w-full sm:mb-0 sm:flex-1"
             variant="outline"
           >
-            {isGenerating ? (
+            {isGeneratingImage ? (
               <>
                 <Spinner className="mr-2 size-4" />
                 Generating...
               </>
             ) : (
               <>
-                <Image className="mr-2 size-4" />
+                <FileImage className="mr-2 size-4" />
                 Share as Image
               </>
             )}
           </Button>
           <Button
             onClick={handleShareAsPDF}
-            disabled={isGenerating}
+            disabled={isGeneratingPDF}
             className="w-full sm:flex-1"
           >
-            {isGenerating ? (
+            {isGeneratingPDF ? (
               <>
                 <Spinner className="mr-2 size-4" />
                 Generating...
@@ -154,7 +283,7 @@ export function ShareTransactionDialog({
             ) : (
               <>
                 <Download className="mr-2 size-4" />
-                Download as PDF
+                Share as PDF
               </>
             )}
           </Button>
