@@ -39,6 +39,7 @@ export interface Transaction {
   relatedId?: string;
   related?: RelatedTransactionInfo; // Use the new type here
   metadata?: any;
+  cashbackUsed: number;
   note?: string;
   createdAt: Date;
 }

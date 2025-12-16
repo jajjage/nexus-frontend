@@ -13,7 +13,7 @@ import {
   useNotificationPreferences,
   useUpdateNotificationPreference,
 } from "@/hooks/useNotificationPreferences";
-import { ChevronLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -93,11 +93,16 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="bg-background sticky top-0 z-10 border-b">
         <div className="flex items-center gap-4 p-6">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/dashboard/profile">
-              <ChevronLeft className="size-5" />
-            </Link>
-          </Button>
+          <header className="flex items-center gap-4">
+            <Button asChild variant="outline" size="icon">
+              <Link href="/dashboard/profile">
+                <ArrowLeft className="size-4" />
+              </Link>
+            </Button>
+            {/* <h1 className="flex-1 shrink-0 text-xl font-semibold tracking-tight whitespace-nowrap sm:grow-0">
+                {backLabel}
+              </h1> */}
+          </header>
           <div className="flex-1">
             <h1 className="text-2xl font-bold">Notifications</h1>
             <p className="text-muted-foreground text-sm">

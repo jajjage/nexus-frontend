@@ -90,6 +90,24 @@ const getTransactionTypeLabel = (transaction: Transaction): string => {
   return isDebit ? "Withdrawal" : "Deposit";
 };
 
+// Helper to get transaction cashback label
+const getCashbackUsed = (transaction: Transaction): string => {
+  const isDebit = transaction.direction === "debit";
+
+  if (isDebit && transaction.relatedType === "topup_request") {
+    const cashbackUsed = transaction.cashbackUsed || 0;
+    const formattedBalance = cashbackUsed.toLocaleString("en-NG", {
+      style: "currency",
+      currency: "NGN",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    return formattedBalance;
+  }
+
+  return transaction.cashbackUsed as unknown as string;
+};
+
 // Helper to get transaction description
 const getTransactionDescription = (transaction: Transaction): string => {
   const isDebit = transaction.direction === "debit";
@@ -99,9 +117,13 @@ const getTransactionDescription = (transaction: Transaction): string => {
       transaction.related?.operatorCode?.toUpperCase() || "Unknown";
     const phone = transaction.related?.recipient_phone || "N/A";
     const type = transaction.related?.type?.toLowerCase() || "topup";
+    console.log(
+      `getTransactionDescription: ${type.charAt(0).toUpperCase() + type.slice(1)} to ${operator} - ${phone}`
+    );
     return `${type.charAt(0).toUpperCase() + type.slice(1)} to ${operator} - ${phone}`;
   }
 
+  console.log(transaction.note || transaction.method || "Transaction");
   return transaction.note || transaction.method || "Transaction";
 };
 
@@ -126,39 +148,20 @@ const copyToClipboard = (text: string, label: string) => {
 
 // Get operator logo from related data or from API
 const getOperatorLogo = (transaction: Transaction): string | undefined => {
-  // Priority 1: Check if operator info is in related.operator object
-  if (transaction.related?.operator?.logoUrl) {
-    return transaction.related.operator.logoUrl;
-  }
-
-  // Priority 2: Try to get from metadata
-  if (transaction.metadata?.operatorLogo) {
-    return transaction.metadata.operatorLogo;
-  }
-
-  // Priority 3: Default logos based on operator code
   const operatorCode = transaction.related?.operatorCode?.toLowerCase();
-  const operatorName =
-    transaction.related?.operator?.name?.toLowerCase() || operatorCode;
 
   const logos: Record<string, string> = {
-    mtn: "https://logowik.com/content/uploads/images/mtn3122.jpg",
-    airtel: "https://logowik.com/content/uploads/images/airtel4585.jpg",
-    glo: "https://logowik.com/content/uploads/images/globacom-glo3852.jpg",
-    "9mobile": "https://logowik.com/content/uploads/images/9mobile4667.jpg",
-    etisalat: "https://logowik.com/content/uploads/images/etisalat1614.jpg",
+    mtn: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/New-mtn-logo.jpg/960px-New-mtn-logo.jpg?20220217143058",
+    airtel:
+      "https://upload.wikimedia.org/wikipedia/commons/1/18/Airtel_logo.svg",
+    glo: "https://upload.wikimedia.org/wikipedia/commons/8/86/Glo_button.png",
+    "9mobile":
+      "https://logosandtypes.com/wp-content/uploads/2020/10/9mobile-1.svg",
   };
 
   // Try to match by operator code first
   if (operatorCode && logos[operatorCode]) {
     return logos[operatorCode];
-  }
-
-  // Try to match by operator name (partial match)
-  for (const [key, url] of Object.entries(logos)) {
-    if (operatorName && operatorName.includes(key)) {
-      return url;
-    }
   }
 
   return undefined;
@@ -205,12 +208,16 @@ export function TransactionDetailPage({
     return (
       <div className="bg-background min-h-screen p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl">
-          <Link href={backLink}>
-            <Button variant="ghost" className="mb-6">
-              <ArrowLeft className="mr-2 size-4" />
-              {backLabel}
+          <header className="flex items-center gap-4">
+            <Button asChild variant="outline" size="icon">
+              <Link href={backLink}>
+                <ArrowLeft className="size-4" />
+              </Link>
             </Button>
-          </Link>
+            <h1 className="flex-1 shrink-0 text-xl font-semibold tracking-tight whitespace-nowrap sm:grow-0">
+              {backLabel}
+            </h1>
+          </header>
           <Card className="border-red-200 bg-red-50">
             <CardContent className="pt-6">
               <p className="text-red-900">Error loading transaction details.</p>
@@ -228,12 +235,16 @@ export function TransactionDetailPage({
     return (
       <div className="bg-background min-h-screen p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl">
-          <Link href={backLink}>
-            <Button variant="ghost" className="mb-6">
-              <ArrowLeft className="mr-2 size-4" />
-              {backLabel}
+          <header className="flex items-center gap-4">
+            <Button asChild variant="outline" size="icon">
+              <Link href={backLink}>
+                <ArrowLeft className="size-4" />
+              </Link>
             </Button>
-          </Link>
+            <h1 className="flex-1 shrink-0 text-xl font-semibold tracking-tight whitespace-nowrap sm:grow-0">
+              {backLabel}
+            </h1>
+          </header>
           <Card>
             <CardContent className="pt-6">
               <p className="text-muted-foreground">Transaction not found.</p>
@@ -255,19 +266,22 @@ export function TransactionDetailPage({
   return (
     <div className="bg-background min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-4xl space-y-6">
-        {/* Back Button */}
-        <Link href={backLink}>
-          <Button variant="ghost">
-            <ArrowLeft className="mr-2 size-4" />
-            {backLabel}
+        <header className="flex items-center gap-4">
+          <Button asChild variant="outline" size="icon">
+            <Link href={backLink}>
+              <ArrowLeft className="size-4" />
+            </Link>
           </Button>
-        </Link>
+          <h1 className="flex-1 shrink-0 text-xl font-semibold tracking-tight whitespace-nowrap sm:grow-0">
+            {backLabel}
+          </h1>
+        </header>
 
         {/* Main Transaction Card - Single Card Layout */}
         <Card className="overflow-hidden">
           {/* Header Section with Transaction Info */}
-          <div className="bg-linear-to-r from-blue-50 to-purple-50 px-6 py-8 sm:py-12">
-            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="px-6 py-8 sm:py-12">
+            <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-center">
               <div className="flex items-center gap-4">
                 <div
                   className={cn(
@@ -286,10 +300,6 @@ export function TransactionDetailPage({
                   </p>
                 </div>
               </div>
-            </div>
-
-            {/* Amount Display */}
-            <div className="mt-8 space-y-3">
               <p
                 className={cn(
                   "text-5xl font-bold",
@@ -302,20 +312,21 @@ export function TransactionDetailPage({
               {transaction.related?.status && (
                 <Badge
                   className={cn(
-                    "capitalize",
+                    "text-1xl capitalize",
                     getStatusColor(transaction.related.status)
                   )}
                 >
                   {transaction.related.status}
                 </Badge>
               )}
+              <p className="font-medium">{formatDate(transaction.createdAt)}</p>
             </div>
           </div>
 
           {/* Details Section */}
-          <CardContent className="space-y-8 px-6 py-8">
+          <CardContent className="mt-0 space-y-8 px-6 py-8">
             {/* Transaction Metadata */}
-            <div className="grid gap-6 sm:grid-cols-2">
+            {/* <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-1">
                 <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                   Transaction ID
@@ -381,7 +392,7 @@ export function TransactionDetailPage({
             </div>
 
             {/* Amount Details */}
-            <div className="border-t pt-6">
+            {/* <div className="border-t pt-6">
               <p className="text-muted-foreground mb-4 text-sm font-medium tracking-wide uppercase">
                 Amount Details
               </p>
@@ -399,7 +410,7 @@ export function TransactionDetailPage({
                   </p>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Transaction Note */}
             {transaction.note && (
@@ -427,7 +438,6 @@ export function TransactionDetailPage({
                         </span>
                       </div>
                     )}
-
                     {/* Operator Info with Logo */}
                     {transaction.related.operatorCode && (
                       <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
@@ -461,20 +471,57 @@ export function TransactionDetailPage({
                         </span>
                       </div>
                     )}
-
-                    {transaction.related.status && (
+                    {transaction.relatedType === "topup_request" && (
                       <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
-                        <span className="font-medium">Status</span>
-                        <Badge
-                          className={cn(
-                            "capitalize",
-                            getStatusColor(transaction.related.status)
-                          )}
-                        >
-                          {transaction.related.status}
-                        </Badge>
+                        <span className="font-medium"> Cashback Used </span>
+                        <span className="text-right">
+                          <span className="text-right">
+                            {getCashbackUsed(transaction)}
+                          </span>
+                        </span>
                       </div>
                     )}
+                    {transaction.reference && (
+                      <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
+                        <span className="font-medium"> Reference </span>
+                        <div className="flex items-center gap-2">
+                          <code className="bg-muted rounded px-2 py-1 font-mono text-sm">
+                            {transaction.reference}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              copyToClipboard(
+                                transaction.reference || "",
+                                "Reference"
+                              )
+                            }
+                          >
+                            {}
+                            <Copy className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
+                      <span className="font-medium"> Transaction ID </span>
+                      <span className="text-right">
+                        <code className="bg-muted rounded px-2 py-1 font-mono text-sm">
+                          {transaction.id.slice(0, 16)}...
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            copyToClipboard(transaction.id, "Transaction ID")
+                          }
+                        >
+                          {}
+                          <Copy className="size-4" />
+                        </Button>
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}

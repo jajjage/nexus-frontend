@@ -1,14 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, KeyRound, Lock } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, ChevronRight, KeyRound, Lock } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -31,13 +25,21 @@ export default function SecurityPage() {
   ];
 
   return (
-    <div className="bg-muted/30 flex min-h-screen w-full flex-col pb-28">
+    <div className="bg-muted/30 flex min-h-screen w-full flex-col p-4 pb-20">
       {/* Header */}
-      <div className="bg-background sticky top-0 z-10 flex items-center gap-4 border-b p-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ChevronLeft className="size-6" />
-        </Button>
-        <h1 className="text-lg font-semibold">Security</h1>
+      <div className="mb-2 flex items-center">
+        {/* Page Header */}
+        <header className="flex items-center gap-4">
+          <Button asChild variant="outline" size="icon">
+            <Link href="/dashboard/profile">
+              <ArrowLeft className="size-4" />
+              <span className="sr-only">Security</span>
+            </Link>
+          </Button>
+          <h1 className="flex-1 shrink-0 text-xl font-semibold tracking-tight whitespace-nowrap sm:grow-0">
+            Security
+          </h1>
+        </header>
       </div>
 
       <div className="flex flex-col gap-4 p-4">
