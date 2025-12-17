@@ -34,6 +34,18 @@ export function ShareTransactionDialog({
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
+  const formatDate = (date: Date | string | undefined): string => {
+    if (!date) return "N/A";
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    return dateObj.toLocaleString("en-NG", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   // Convert HTML element to Blob
   const elementToBlob = async (element: HTMLElement): Promise<Blob> => {
     const canvas = await import("html2canvas").then((m) => m.default);
@@ -60,6 +72,63 @@ export function ShareTransactionDialog({
     });
   };
 
+  const generateShareText = (tx: Transaction) => {
+    const amount = tx.amount.toLocaleString("en-NG", {
+      style: "currency",
+      currency: "NGN",
+    });
+
+    const date = formatDate(tx.createdAt);
+    const status = tx.related?.status || "N/A";
+    const recipient = tx.related?.recipient_phone || "-";
+    const provider =
+      tx.related?.operatorCode || tx.related?.operator?.name || "-";
+
+    return `Nexus Receipt\nTransaction ID: ${tx.id}\nAmount: ${amount}\nStatus: ${status}\nProvider: ${provider}\nRecipient: ${recipient}\nDate: ${date}`;
+  };
+
+  // Wait for images inside an element to load (useful when cloning an element that wasn't rendered)
+  const waitForImages = (el: HTMLElement, timeout = 5000) => {
+    const imgs = Array.from(el.querySelectorAll("img")) as HTMLImageElement[];
+    if (imgs.length === 0) return Promise.resolve();
+
+    return new Promise<void>((resolve) => {
+      let remaining = imgs.length;
+      const onDone = () => {
+        remaining -= 1;
+        if (remaining <= 0) resolve();
+      };
+
+      imgs.forEach((img) => {
+        // attempt to set crossOrigin to increase chance of being captured
+        try {
+          img.crossOrigin = "anonymous";
+        } catch {}
+
+        if (img.complete && img.naturalWidth !== 0) {
+          onDone();
+        } else {
+          const t = setTimeout(() => {
+            // timeout for this image
+            try {
+              img.removeEventListener("load", onDone);
+            } catch {}
+            onDone();
+          }, timeout);
+
+          img.addEventListener("load", () => {
+            clearTimeout(t);
+            onDone();
+          });
+          img.addEventListener("error", () => {
+            clearTimeout(t);
+            onDone();
+          });
+        }
+      });
+    });
+  };
+
   const handleShareAsImage = async () => {
     if (!exportReceiptRef.current) return;
 
@@ -67,14 +136,21 @@ export function ShareTransactionDialog({
     try {
       const element = exportReceiptRef.current.cloneNode(true) as HTMLElement;
       const tempContainer = document.createElement("div");
-      tempContainer.style.position = "fixed";
-      tempContainer.style.left = "-9999px";
-      tempContainer.style.top = "-9999px";
+      // keep the container in layout but moved off-screen so html2canvas can render it
+      tempContainer.style.position = "absolute";
+      tempContainer.style.left = "0";
+      tempContainer.style.top = "0";
+      tempContainer.style.transform = "translateX(-10000px)";
+      tempContainer.style.width = "100%";
       tempContainer.style.display = "block";
       tempContainer.appendChild(element);
       document.body.appendChild(tempContainer);
 
       try {
+        // ensure cloned element has a concrete width and images loaded
+        element.style.width = element.style.width || "400px";
+        await waitForImages(element);
+
         const canvas = await import("html2canvas").then((m) => m.default);
         const canvasElement = await canvas(element, {
           backgroundColor: "#ffffff",
@@ -83,8 +159,8 @@ export function ShareTransactionDialog({
           allowTaint: true,
           logging: false,
           imageTimeout: 0,
-          windowHeight: element.scrollHeight,
-          windowWidth: element.scrollWidth,
+          windowHeight: element.scrollHeight || element.offsetHeight,
+          windowWidth: element.scrollWidth || element.offsetWidth,
         });
 
         const blob = await new Promise<Blob>((resolve, reject) => {
@@ -94,7 +170,7 @@ export function ShareTransactionDialog({
               else reject(new Error("Failed to create blob"));
             },
             "image/png",
-            0.95
+            0.92
           );
         });
 
@@ -105,11 +181,13 @@ export function ShareTransactionDialog({
         );
 
         // Use Web Share API with files
+        const shareText = generateShareText(transaction);
+
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
             title: "Nexus Transaction Receipt",
-            text: `Receipt for transaction ${transaction.id.slice(0, 8)}`,
+            text: shareText,
           });
           onClose();
           toast.success("Shared successfully!");
@@ -123,7 +201,14 @@ export function ShareTransactionDialog({
           link.click();
           document.body.removeChild(link);
           URL.revokeObjectURL(url);
-          toast.success("Receipt downloaded as image");
+          try {
+            await navigator.clipboard.writeText(shareText);
+            toast.success(
+              "Receipt downloaded and share text copied to clipboard"
+            );
+          } catch {
+            toast.success("Receipt downloaded as image");
+          }
         }
       } finally {
         document.body.removeChild(tempContainer);
@@ -145,30 +230,36 @@ export function ShareTransactionDialog({
     try {
       const element = exportReceiptRef.current.cloneNode(true) as HTMLElement;
       const tempContainer = document.createElement("div");
-      tempContainer.style.position = "fixed";
-      tempContainer.style.left = "-9999px";
-      tempContainer.style.top = "-9999px";
+      tempContainer.style.position = "absolute";
+      tempContainer.style.left = "0";
+      tempContainer.style.top = "0";
+      tempContainer.style.transform = "translateX(-10000px)";
+      tempContainer.style.width = "100%";
       tempContainer.style.display = "block";
       tempContainer.appendChild(element);
       document.body.appendChild(tempContainer);
 
       try {
+        element.style.width = element.style.width || "400px";
+        await waitForImages(element);
+
         const canvas = await import("html2canvas").then((m) => m.default);
         const { jsPDF } = await import("jspdf");
 
+        // Use lower scale and JPEG to reduce PDF size
         const canvasElement = await canvas(element, {
           backgroundColor: "#ffffff",
-          scale: 2,
+          scale: 1,
           useCORS: true,
           allowTaint: true,
           logging: false,
           imageTimeout: 0,
-          windowHeight: element.scrollHeight,
-          windowWidth: element.scrollWidth,
+          windowHeight: element.scrollHeight || element.offsetHeight,
+          windowWidth: element.scrollWidth || element.offsetWidth,
         });
 
-        const imgData = canvasElement.toDataURL("image/png");
-        const imgWidth = 140;
+        const imgData = canvasElement.toDataURL("image/jpeg", 0.8);
+        const imgWidth = 120; // mm
         const imgHeight =
           (canvasElement.height * imgWidth) / canvasElement.width;
 
@@ -177,12 +268,11 @@ export function ShareTransactionDialog({
           unit: "mm",
           format: "a4",
         });
-
         const pageWidth = pdf.internal.pageSize.getWidth();
         const x = (pageWidth - imgWidth) / 2;
         const y = 15;
 
-        pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
+        pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight);
 
         // Get PDF as blob
         const pdfBlob = pdf.output("blob");
@@ -192,19 +282,28 @@ export function ShareTransactionDialog({
           { type: "application/pdf" }
         );
 
+        const shareText = generateShareText(transaction);
+
         // Use Web Share API with files
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
             title: "Nexus Transaction Receipt",
-            text: `Receipt for transaction ${transaction.id.slice(0, 8)}`,
+            text: shareText,
           });
           onClose();
           toast.success("Shared successfully!");
         } else {
           // Fallback: Download the PDF
           pdf.save(file.name);
-          toast.success("Receipt downloaded as PDF");
+          try {
+            await navigator.clipboard.writeText(shareText);
+            toast.success(
+              "Receipt downloaded and share text copied to clipboard"
+            );
+          } catch {
+            toast.success("Receipt downloaded as PDF");
+          }
         }
       } finally {
         document.body.removeChild(tempContainer);

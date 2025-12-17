@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Transaction } from "@/types/wallet.types";
 import { Landmark, Phone, Wifi } from "lucide-react";
@@ -12,24 +11,45 @@ interface TransactionReceiptProps {
   operatorLogo?: string;
 }
 
-// Helper to determine status badge color
+// Helper to determine status badge color classes for improved badge styling
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case "pending":
-      return "bg-yellow-500 text-yellow-50";
+      return "bg-amber-100 text-amber-800";
     case "completed":
     case "received":
-      return "bg-green-500 text-green-50";
+      return "bg-emerald-100 text-emerald-800";
     case "failed":
-      return "bg-red-500 text-red-50";
+      return "bg-red-100 text-red-800";
     case "cancelled":
-      return "bg-gray-400 text-gray-50";
+      return "bg-gray-100 text-gray-700";
     case "reversed":
-      return "bg-orange-500 text-orange-50";
+      return "bg-orange-100 text-orange-800";
     case "retry":
-      return "bg-blue-500 text-blue-50";
+      return "bg-sky-100 text-sky-800";
     default:
-      return "bg-gray-400 text-gray-50";
+      return "bg-gray-100 text-gray-700";
+  }
+};
+
+// Helper to determine status text color (used when we show plain text status)
+const getStatusTextColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "pending":
+      return "#D97706"; // amber-600
+    case "completed":
+    case "received":
+      return "var(--color-primary)";
+    case "failed":
+      return "var(--color-destructive)";
+    case "cancelled":
+      return "#6B7280"; // gray-500
+    case "reversed":
+      return "#F97316"; // orange-500
+    case "retry":
+      return "#0284C7"; // sky-600
+    default:
+      return "#374151"; // gray-700
   }
 };
 
@@ -145,12 +165,32 @@ export const TransactionReceipt = React.forwardRef<
       className="w-full bg-white p-4 sm:p-6"
       style={{ maxWidth: "400px", margin: "0 auto" }}
     >
-      {/* Header */}
-      <div className="mb-4 text-center">
-        <h1 className="text-xl font-bold">Receipt</h1>
-        <p className="text-muted-foreground mt-0.5 text-xs">
-          {formatDate(transaction.createdAt)}
-        </p>
+      {/* Header with site logo and primary color */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {/* Site logo (public folder) */}
+            <img
+              src="/images/logo.svg"
+              alt="Nexus"
+              className="h-6 w-auto"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+            <div>
+              <h1
+                className="text-xl font-bold"
+                style={{ color: "var(--color-primary)" }}
+              >
+                Receipt
+              </h1>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {formatDate(transaction.createdAt)}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Transaction Summary */}
@@ -176,32 +216,47 @@ export const TransactionReceipt = React.forwardRef<
               )}
             </div>
           </div>
-          <div className="text-right">
+          <div className="flex flex-col items-center">
             <p
-              className={cn(
-                "text-lg leading-none font-bold",
-                isDebit ? "text-destructive" : "text-green-600"
-              )}
+              className={cn("text-lg leading-none font-bold")}
+              style={{
+                color: isDebit
+                  ? "var(--color-destructive)"
+                  : "var(--color-primary)",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                justifyContent: "center",
+              }}
             >
-              {isDebit ? "-" : "+"}
-              {formattedAmount.replace("₦", "")}
+              <span
+                style={{
+                  display: "inline-block",
+                  transform: "translateY(1px)",
+                }}
+              >
+                {isDebit ? "-" : "+"}
+              </span>
+              <span style={{ display: "inline-block" }}>
+                {formattedAmount.replace("₦", "")}
+              </span>
             </p>
             {transaction.related?.status && (
-              <Badge
-                className={cn(
-                  "mt-1 px-2 py-0.5 text-xs capitalize",
-                  getStatusColor(transaction.related.status)
-                )}
+              <div
+                className="mt-1 text-sm font-semibold capitalize"
+                style={{
+                  color: getStatusTextColor(transaction.related.status),
+                }}
               >
                 {transaction.related.status}
-              </Badge>
+              </div>
             )}
           </div>
         </div>
 
         {/* Operator Logo for Topup */}
         {showLogo && transaction.relatedType === "topup_request" && (
-          <div className="mt-3 flex items-center gap-2 border-t border-blue-100 pt-3">
+          <div className="mt-3 flex items-center justify-center gap-2 border-t border-blue-100 pt-3">
             <span className="text-muted-foreground text-xs font-medium">
               Provider:
             </span>
@@ -228,9 +283,7 @@ export const TransactionReceipt = React.forwardRef<
       <div className="mb-4 space-y-2 text-xs">
         <div className="flex justify-between border-b pb-2">
           <span className="font-medium text-gray-600">TXN ID</span>
-          <span className="font-mono text-xs">
-            {transaction.id.slice(0, 12)}...
-          </span>
+          <span className="font-mono text-xs">{transaction.id}</span>
         </div>
 
         {transaction.reference && (

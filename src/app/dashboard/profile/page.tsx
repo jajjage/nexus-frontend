@@ -3,22 +3,13 @@
 import { BottomNav } from "@/components/features/dashboard/bottom-nav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useLogout } from "@/hooks/useAuth";
 import {
-  Bell,
   ChevronRight,
-  CreditCard,
   HelpCircle,
   LogOut,
-  Settings,
   Shield,
   User,
   Wallet,
@@ -67,12 +58,6 @@ export default function ProfilePage() {
           icon: Shield,
           href: "/dashboard/profile/security",
           description: "Password, PIN, Biometrics",
-        },
-        {
-          label: "Notifications",
-          icon: Bell,
-          href: "/dashboard/profile/notifications",
-          description: "Push, Email, SMS",
         },
       ],
     },

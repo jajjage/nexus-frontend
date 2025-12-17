@@ -481,6 +481,14 @@ export function TransactionDetailPage({
                         </span>
                       </div>
                     )}
+                    <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
+                      <span className="font-medium"> Balance After </span>
+                      <span className="text-right">
+                        <span className="text-right">
+                          ₦{transaction.balanceAfter.toLocaleString("en-NG")}
+                        </span>
+                      </span>
+                    </div>
                     {transaction.reference && (
                       <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
                         <span className="font-medium"> Reference </span>

@@ -72,11 +72,21 @@ export const ExportReceipt = React.forwardRef<
     parseFloat(transaction.metadata?.cashback || "0") ||
     0;
 
+  // cashbackUsed may exist at top-level `transaction.cashbackUsed` or in related
   const cashbackUsed =
-    parseFloat(transaction.related?.cashbackUsed || "0") || 0;
+    parseFloat(
+      (transaction.related?.cashbackUsed as any) ||
+        (transaction as any).cashbackUsed ||
+        transaction.metadata?.cashback_used ||
+        "0"
+    ) || 0;
 
   const amountPaid =
-    parseFloat(transaction.related?.amountPaid || "0") || transaction.amount;
+    parseFloat(
+      (transaction.related?.amountPaid as any) ||
+        (transaction as any).amountPaid ||
+        "0"
+    ) || transaction.amount;
 
   const formatDate = (date: Date | string | undefined): string => {
     if (!date) return "N/A";
@@ -108,6 +118,24 @@ export const ExportReceipt = React.forwardRef<
     }
   };
 
+  const getStatusTextColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "pending":
+        return "#D97706";
+      case "completed":
+      case "received":
+        return "var(--color-primary)";
+      case "failed":
+        return "var(--color-destructive)";
+      case "cancelled":
+        return "#6B7280";
+      case "reversed":
+        return "#F97316";
+      default:
+        return "#374151";
+    }
+  };
+
   return (
     <div
       ref={ref}
@@ -115,32 +143,45 @@ export const ExportReceipt = React.forwardRef<
         width: "100%",
         maxWidth: "400px",
         margin: "0 auto",
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "var(--color-card)",
         padding: "24px",
         fontFamily: "Arial, sans-serif",
-        color: "#000000",
+        color: "var(--color-card-foreground)",
       }}
     >
-      {/* Header */}
-      <div style={{ marginBottom: "16px", textAlign: "center" }}>
-        <h1
-          style={{
-            fontSize: "24px",
-            fontWeight: "bold",
-            margin: "0 0 4px 0",
-          }}
-        >
-          Receipt
-        </h1>
-        <p
-          style={{
-            color: "#666666",
-            margin: "0",
-            fontSize: "12px",
-          }}
-        >
-          {formatDate(transaction.createdAt)}
-        </p>
+      {/* Header - site logo + title */}
+      <div style={{ marginBottom: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <img
+            src="/images/logo.svg"
+            alt="Nexus"
+            style={{ width: 36, height: "auto", objectFit: "contain" }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none";
+            }}
+          />
+          <div>
+            <h1
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                margin: 0,
+                color: "var(--color-primary)",
+              }}
+            >
+              Receipt
+            </h1>
+            <p
+              style={{
+                color: "var(--color-muted-foreground)",
+                margin: 0,
+                fontSize: 12,
+              }}
+            >
+              {formatDate(transaction.createdAt)}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Transaction Summary */}
@@ -187,30 +228,45 @@ export const ExportReceipt = React.forwardRef<
           </div>
 
           {/* Right side - Amount and status */}
-          <div style={{ textAlign: "right" }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
             <p
               style={{
-                fontSize: "18px",
-                fontWeight: "bold",
+                fontSize: 18,
+                fontWeight: 700,
                 margin: "0 0 4px 0",
-                color: isDebit ? "#EF4444" : "#22C55E",
+                color: isDebit
+                  ? "var(--color-destructive)"
+                  : "var(--color-primary)",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                justifyContent: "center",
               }}
             >
-              {isDebit ? "-" : "+"}
-              {formattedAmount}
+              <span
+                style={{
+                  display: "inline-block",
+                  transform: "translateY(1px)",
+                }}
+              >
+                {isDebit ? "-" : "+"}
+              </span>
+              <span style={{ display: "inline-block" }}>{formattedAmount}</span>
             </p>
             {transaction.related?.status && (
               <div
                 style={{
-                  display: "inline-block",
-                  padding: "4px 8px",
-                  marginTop: "4px",
-                  backgroundColor: getStatusColor(transaction.related.status),
-                  color: "#FFFFFF",
-                  fontSize: "11px",
-                  fontWeight: "600",
-                  borderRadius: "4px",
+                  marginTop: 6,
+                  fontSize: 12,
+                  fontWeight: 700,
                   textTransform: "capitalize",
+                  color: getStatusTextColor(transaction.related.status),
                 }}
               >
                 {transaction.related.status}
@@ -227,6 +283,7 @@ export const ExportReceipt = React.forwardRef<
               paddingTop: "12px",
               borderTop: "1px solid #BFDBFE",
               display: "flex",
+              justifyContent: "center",
               alignItems: "center",
               gap: "8px",
               fontSize: "12px",
@@ -238,11 +295,7 @@ export const ExportReceipt = React.forwardRef<
             <img
               src={logoUrl}
               alt="operator"
-              style={{
-                width: "20px",
-                height: "20px",
-                objectFit: "contain",
-              }}
+              style={{ width: "20px", height: "20px", objectFit: "contain" }}
             />
             <span style={{ fontWeight: "600" }}>
               {transaction.related?.operatorCode?.toUpperCase() || "N/A"}
@@ -263,9 +316,7 @@ export const ExportReceipt = React.forwardRef<
           }}
         >
           <span style={{ color: "#666666", fontWeight: "600" }}>TXN ID</span>
-          <span style={{ fontFamily: "monospace" }}>
-            {transaction.id.slice(0, 16)}
-          </span>
+          <span style={{ fontFamily: "monospace" }}>{transaction.id}</span>
         </div>
 
         {/* Reference */}
@@ -283,6 +334,27 @@ export const ExportReceipt = React.forwardRef<
             </span>
             <span style={{ fontFamily: "monospace" }}>
               {transaction.reference}
+            </span>
+          </div>
+        )}
+
+        {/* Recipient Phone */}
+        {(transaction.related?.recipient_phone ||
+          (transaction as any).recipient_phone) && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "8px 0",
+              borderBottom: "1px solid #E5E7EB",
+            }}
+          >
+            <span style={{ color: "#666666", fontWeight: "600" }}>
+              Recipient
+            </span>
+            <span style={{ fontFamily: "monospace" }}>
+              {transaction.related?.recipient_phone ||
+                (transaction as any).recipient_phone}
             </span>
           </div>
         )}

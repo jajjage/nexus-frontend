@@ -18,9 +18,11 @@ import {
   CheckCheck,
   CheckCircle,
   Info,
+  Settings,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import React from "react";
 
 const typeConfig = {
   info: { icon: Info, color: "text-blue-500", bgColor: "bg-blue-50" },
@@ -50,6 +52,8 @@ export default function NotificationsPage() {
 
   const notifications = notificationsResponse?.data?.notifications || [];
   const unreadCount = notificationsResponse?.data?.unreadCount || 0;
+
+  const [filter, setFilter] = React.useState<"all" | "unread">("all");
 
   const handleMarkAsRead = (notificationId: string) => {
     markAsRead(notificationId, {
@@ -86,6 +90,9 @@ export default function NotificationsPage() {
     );
   }
 
+  const filteredNotifications =
+    filter === "unread" ? notifications.filter((n) => !n.read) : notifications;
+
   return (
     <div className="flex min-h-screen w-full flex-col pb-20">
       {/* Header */}
@@ -112,23 +119,71 @@ export default function NotificationsPage() {
               )}
             </div>
           </div>
-          {unreadCount > 0 && (
+          <div className="flex items-center gap-2">
+            {/* Mark all read button */}
+            {unreadCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleMarkAllAsRead}
+                className="whitespace-nowrap"
+              >
+                <CheckCheck className="mr-2 size-4" />
+                Mark all read
+              </Button>
+            )}
+
+            {/* Settings icon linking to profile notification settings */}
             <Button
-              variant="outline"
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              className="whitespace-nowrap"
+              asChild
+              variant="ghost"
+              size="icon"
+              title="Notification settings"
             >
-              <CheckCheck className="mr-2 size-4" />
-              Mark all read
+              <Link href="/dashboard/profile/notifications?from=notifications">
+                <Settings className="size-5" />
+              </Link>
             </Button>
-          )}
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="bg-background border-b">
+        <div className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                className={`rounded-md px-3 py-1 text-sm font-semibold ${
+                  filter === "all"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground"
+                }`}
+                onClick={() => setFilter("all")}
+              >
+                All
+              </button>
+              <button
+                className={`rounded-md px-3 py-1 text-sm font-semibold ${
+                  filter === "unread"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground"
+                }`}
+                onClick={() => setFilter("unread")}
+              >
+                Unread {unreadCount > 0 ? `(${unreadCount})` : ""}
+              </button>
+            </div>
+            <div className="text-muted-foreground text-sm">
+              Showing {filteredNotifications.length} notifications
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Notifications List */}
       <div className="flex flex-col gap-3 p-4">
-        {notifications.length === 0 ? (
+        {filteredNotifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
             <Bell className="text-muted-foreground size-12" />
             <div>
@@ -139,7 +194,7 @@ export default function NotificationsPage() {
             </div>
           </div>
         ) : (
-          notifications.map((notification) => {
+          filteredNotifications.map((notification) => {
             const notifData = notification.notification;
             const TypeIcon =
               typeConfig[notifData.type as keyof typeof typeConfig]?.icon ||

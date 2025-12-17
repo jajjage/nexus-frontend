@@ -95,7 +95,16 @@ export default function NotificationsPage() {
         <div className="flex items-center gap-4 p-6">
           <header className="flex items-center gap-4">
             <Button asChild variant="outline" size="icon">
-              <Link href="/dashboard/profile">
+              {/* Back: if opened from Notifications page, return there; else go to profile */}
+              <Link
+                href={
+                  typeof window !== "undefined" &&
+                  new URLSearchParams(window.location.search).get("from") ===
+                    "notifications"
+                    ? "/dashboard/notifications"
+                    : "/dashboard/profile"
+                }
+              >
                 <ArrowLeft className="size-4" />
               </Link>
             </Button>
