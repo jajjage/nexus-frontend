@@ -21,6 +21,7 @@ export type RelatedTransactionInfo = {
     | "received";
   recipient_phone?: string;
   operatorCode?: string; // Add operatorCode
+  type?: string;
   // Add other fields from the 'related' object as needed for different types
   [key: string]: any;
 };
@@ -40,6 +41,8 @@ export interface Transaction {
   related?: RelatedTransactionInfo; // Use the new type here
   metadata?: any;
   cashbackUsed: number;
+  productCode?: string;
+  denomAmount: number;
   note?: string;
   createdAt: Date;
 }

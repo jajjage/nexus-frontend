@@ -14,9 +14,7 @@ import {
   ArrowUp,
   Copy,
   Landmark,
-  Phone,
   Share2,
-  Wifi,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -55,11 +53,17 @@ const getTransactionIcon = (transaction: Transaction) => {
 
   if (isDebit) {
     if (transaction.relatedType === "topup_request") {
-      if (transaction.related?.type === "data") {
-        return <Wifi className="size-8 text-purple-600" />;
+      if (transaction.related?.operatorCode === "MTN") {
+        return "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/New-mtn-logo.jpg/960px-New-mtn-logo.jpg?20220217143058";
       }
-      if (transaction.related?.type === "airtime") {
-        return <Phone className="size-8 text-blue-600" />;
+      if (transaction.related?.operatorCode === "AIRTEL") {
+        return "https://upload.wikimedia.org/wikipedia/commons/1/18/Airtel_logo.svg";
+      }
+      if (transaction.related?.operatorCode === "GLO") {
+        return "https://upload.wikimedia.org/wikipedia/commons/8/86/Glo_button.png";
+      }
+      if (transaction.related?.operatorCode === "9MOBILE") {
+        return "https://logosandtypes.com/wp-content/uploads/2020/10/9mobile-1.svg";
       }
     }
     // Default debit icon
@@ -104,8 +108,13 @@ const getCashbackUsed = (transaction: Transaction): string => {
     });
     return formattedBalance;
   }
-
-  return transaction.cashbackUsed as unknown as string;
+  const formattedBalance = transaction.cashbackUsed.toLocaleString("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return formattedBalance;
 };
 
 // Helper to get transaction description
@@ -255,8 +264,18 @@ export function TransactionDetailPage({
     );
   }
 
-  const isDebit = transaction.direction === "debit";
-  const formattedAmount = transaction.amount.toLocaleString("en-NG", {
+  const isCredit = transaction.direction === "credit";
+  const formattedAmount = isCredit
+    ? transaction.amount.toLocaleString("en-NG", {
+        style: "currency",
+        currency: "NGN",
+      })
+    : `₦${transaction.denomAmount.toLocaleString("en-NG", {
+        style: "currency",
+        currency: "NGN",
+      })}`;
+
+  const formattedAmountPaid = transaction.amount.toLocaleString("en-NG", {
     style: "currency",
     currency: "NGN",
   });
@@ -283,14 +302,13 @@ export function TransactionDetailPage({
           <div className="px-6 py-8 sm:py-12">
             <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-center">
               <div className="flex items-center gap-4">
-                <div
-                  className={cn(
-                    "flex size-16 items-center justify-center rounded-full",
-                    isDebit ? "bg-red-100" : "bg-green-100"
-                  )}
-                >
-                  {getTransactionIcon(transaction)}
-                </div>
+                <Avatar className="flex size-16 items-center justify-center rounded-full">
+                  <AvatarImage src={operatorLogo} className="object-contain" />
+                  <AvatarFallback>
+                    {getTransactionIcon(transaction)}
+                  </AvatarFallback>
+                </Avatar>
+
                 <div className="flex-1">
                   <h1 className="text-2xl font-bold">
                     {getTransactionTypeLabel(transaction)}
@@ -300,15 +318,7 @@ export function TransactionDetailPage({
                   </p>
                 </div>
               </div>
-              <p
-                className={cn(
-                  "text-5xl font-bold",
-                  isDebit ? "text-destructive" : "text-green-600"
-                )}
-              >
-                {isDebit ? "-" : "+"}
-                {formattedAmount}
-              </p>
+              <p className="text-5xl font-bold">{formattedAmount}</p>
               {transaction.related?.status && (
                 <Badge
                   className={cn(
@@ -325,93 +335,6 @@ export function TransactionDetailPage({
 
           {/* Details Section */}
           <CardContent className="mt-0 space-y-8 px-6 py-8">
-            {/* Transaction Metadata */}
-            {/* <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Transaction ID
-                </p>
-                <div className="flex items-center gap-2">
-                  <code className="bg-muted rounded px-2 py-1 font-mono text-sm">
-                    {transaction.id.slice(0, 16)}...
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      copyToClipboard(transaction.id, "Transaction ID")
-                    }
-                  >
-                    <Copy className="size-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {transaction.reference && (
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Reference
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <code className="bg-muted rounded px-2 py-1 font-mono text-sm">
-                      {transaction.reference}
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        copyToClipboard(
-                          transaction.reference || "",
-                          "Reference"
-                        )
-                      }
-                    >
-                      <Copy className="size-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Date & Time
-                </p>
-                <p className="font-medium">
-                  {formatDate(transaction.createdAt)}
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Method
-                </p>
-                <Badge variant="outline" className="w-fit capitalize">
-                  {transaction.method}
-                </Badge>
-              </div>
-            </div>
-
-            {/* Amount Details */}
-            {/* <div className="border-t pt-6">
-              <p className="text-muted-foreground mb-4 text-sm font-medium tracking-wide uppercase">
-                Amount Details
-              </p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="bg-muted/30 rounded-lg p-4">
-                  <p className="text-muted-foreground text-xs">
-                    Transaction Amount
-                  </p>
-                  <p className="mt-1 text-2xl font-bold">{formattedAmount}</p>
-                </div>
-                <div className="bg-muted/30 rounded-lg p-4">
-                  <p className="text-muted-foreground text-xs">Balance After</p>
-                  <p className="mt-1 text-2xl font-bold">
-                    ₦{transaction.balanceAfter.toLocaleString("en-NG")}
-                  </p>
-                </div>
-              </div>
-            </div> */}
-
             {/* Transaction Note */}
             {transaction.note && (
               <div className="border-t pt-6">
@@ -438,57 +361,35 @@ export function TransactionDetailPage({
                         </span>
                       </div>
                     )}
-                    {/* Operator Info with Logo */}
-                    {transaction.related.operatorCode && (
-                      <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
-                        <span className="font-medium">Provider</span>
-                        <div className="flex items-center gap-2">
-                          {operatorLogo && (
-                            <Avatar className="size-6">
-                              <AvatarImage
-                                src={operatorLogo}
-                                className="object-contain"
-                              />
-                              <AvatarFallback>
-                                {transaction.related.operatorCode
-                                  .slice(0, 2)
-                                  .toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                          )}
-                          <span className="font-medium">
-                            {transaction.related.operatorCode.toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {transaction.related.type && (
-                      <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
-                        <span className="font-medium">Type</span>
-                        <span className="capitalize">
-                          {transaction.related.type}
-                        </span>
-                      </div>
-                    )}
+                    <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
+                      <span className="font-medium">Amount Paid</span>
+                      <span className="text-right">{formattedAmountPaid}</span>
+                    </div>
                     {transaction.relatedType === "topup_request" && (
                       <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
                         <span className="font-medium"> Cashback Used </span>
                         <span className="text-right">
                           <span className="text-right">
-                            {getCashbackUsed(transaction)}
+                            -₦{getCashbackUsed(transaction)}
                           </span>
                         </span>
                       </div>
                     )}
-                    <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
-                      <span className="font-medium"> Balance After </span>
-                      <span className="text-right">
-                        <span className="text-right">
-                          ₦{transaction.balanceAfter.toLocaleString("en-NG")}
+                    {transaction.related.type === "data" ? (
+                      <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
+                        <span className="font-medium">Data Bundle</span>
+                        <span className="capitalize">
+                          {transaction.productCode}
                         </span>
-                      </span>
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
+                        <span className="font-medium">Airtime</span>
+                        <span className="capitalize">
+                          {transaction.productCode}
+                        </span>
+                      </div>
+                    )}
                     {transaction.reference && (
                       <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
                         <span className="font-medium"> Reference </span>

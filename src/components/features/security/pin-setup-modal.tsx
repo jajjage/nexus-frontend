@@ -73,7 +73,7 @@ export function PinSetupModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-full max-w-[calc(100%-2rem)] p-4 sm:max-w-md sm:rounded-2xl sm:p-6">
         <DialogHeader>
           <DialogTitle>Set Your Transaction PIN</DialogTitle>
           <DialogDescription>
