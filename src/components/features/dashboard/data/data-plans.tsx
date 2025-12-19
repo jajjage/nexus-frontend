@@ -71,7 +71,6 @@ export function DataPlans() {
     { productType: "data" },
     { staleTime: Infinity }
   );
-  console.log("data plans data: ", data);
 
   const products = data?.products || [];
 

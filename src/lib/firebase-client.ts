@@ -54,6 +54,26 @@ export async function registerServiceWorker() {
       { scope: "/" }
     );
     console.log("Service Worker registered:", registration);
+
+    // Send Firebase config to the service worker after registration
+    if (registration.active) {
+      registration.active.postMessage({
+        type: "INIT_FIREBASE",
+        firebaseConfig: firebaseConfig,
+      });
+      console.log("Firebase config sent to service worker");
+    } else if (registration.installing) {
+      // If still installing, wait for it to become active
+      registration.installing.addEventListener("statechange", (event: any) => {
+        if (event.target.state === "activated") {
+          event.target.postMessage({
+            type: "INIT_FIREBASE",
+            firebaseConfig: firebaseConfig,
+          });
+          console.log("Firebase config sent to activated service worker");
+        }
+      });
+    }
   } catch (err) {
     console.warn("Service Worker registration failed:", err);
   }

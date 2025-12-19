@@ -167,14 +167,21 @@ export function CheckoutModal({
               </div>
 
               {/* Plan */}
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Data Bundle</span>
-                <span className="font-medium">{product.name}</span>
-              </div>
+              {product.productType === "data" ? (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Data Bundle</span>
+                  <span className="font-medium">{product.name}</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Airtime</span>
+                  <span className="font-medium">{product.name}</span>
+                </div>
+              )}
 
               {/* Base Price */}
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Amount</span>
+                <span className="text-muted-foreground">Amount to Paid</span>
                 <span className="font-medium">
                   ₦
                   {sellingPrice.toLocaleString("en-NG", {

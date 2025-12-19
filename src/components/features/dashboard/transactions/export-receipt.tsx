@@ -182,6 +182,36 @@ export const ExportReceipt = React.forwardRef<
             }}
           />
         )}
+        {/* Display Landmark icon for incoming payments */}
+        {transaction.direction === "credit" &&
+          transaction.relatedType === "incoming_payment" && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: 8,
+              }}
+            >
+              <svg
+                width="64"
+                height="64"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#16a34a"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  display: "block",
+                }}
+              >
+                <path d="M3 21h18" />
+                <path d="M5 21V5c0-1 .75-3 3-3s3 2 3 3v16" />
+                <path d="M11 21V9c0-1 .75-3 3-3s3 2 3 3v12" />
+                <path d="M17 21v-8c0-1 .75-3 3-3s3 2 3 3v8" />
+              </svg>
+            </div>
+          )}
         <h2
           style={{
             margin: "0 0 4px 0",
@@ -305,7 +335,7 @@ export const ExportReceipt = React.forwardRef<
           )}
 
           {/* Cashback Used */}
-          {transaction.cashbackUsed && (
+          {transaction.relatedType === "topup-request" && (
             <div
               style={{
                 display: "flex",

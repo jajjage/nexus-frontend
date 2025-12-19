@@ -116,7 +116,9 @@ export default function proxy(request: NextRequest) {
       console.log("[PROXY] Unauthenticated user accessing protected path", {
         pathname,
       });
-      return NextResponse.redirect(new URL("/login", request.url));
+      return NextResponse.redirect(
+        new URL("/login?reason=session-expired", request.url)
+      );
     }
 
     // If user is regular user but tries to access admin

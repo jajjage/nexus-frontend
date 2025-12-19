@@ -8,9 +8,9 @@ import React, { createContext, useContext, useEffect, useState } from "react";
  *
  * This context manages the global authentication state including:
  * - User profile information
- * - Session validity
- * - Token refresh attempts tracking
- * - Session expiration flag
+ * - Session validity and revalidation
+ * - Global auth loading states (for post-sleep recovery)
+ * - Redirect reason (why user is being redirected to login)
  *
  * This is the single source of truth for auth state across the application.
  */
@@ -25,19 +25,44 @@ interface AuthContextType {
   isSessionExpired: boolean;
   hasRefreshTokens: boolean;
 
+  // Global auth loading state (shown during recovery, revalidation, or redirect)
+  isAuthLoadingGlobal: boolean;
+  authLoadingReason?: "revalidating" | "redirecting" | "recovering";
+
+  // Redirect reason
+  redirectReason?:
+    | "session-expired"
+    | "session-invalid"
+    | "user-deleted"
+    | "error";
+
   // Actions
   setUser: (user: User | null) => void;
   setIsLoading: (loading: boolean) => void;
   setIsSessionExpired: (expired: boolean) => void;
+  setIsAuthLoadingGlobal: (
+    loading: boolean,
+    reason?: "revalidating" | "redirecting" | "recovering"
+  ) => void;
+  setRedirectReason: (
+    reason?: "session-expired" | "session-invalid" | "user-deleted" | "error"
+  ) => void;
   markSessionAsExpired: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSessionExpired, setIsSessionExpired] = useState(false);
+  const [isAuthLoadingGlobal, setIsAuthLoadingGlobalState] = useState(false);
+  const [authLoadingReason, setAuthLoadingReason] = useState<
+    "revalidating" | "redirecting" | "recovering"
+  >();
+  const [redirectReason, setRedirectReasonState] = useState<
+    "session-expired" | "session-invalid" | "user-deleted" | "error"
+  >();
 
   // Check if user has refresh tokens on mount
   const [hasRefreshTokens, setHasRefreshTokens] = useState(false);
@@ -51,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const cachedUser = localStorage.getItem("auth_user_cache");
     if (cachedUser) {
       try {
-        setUser(JSON.parse(cachedUser));
+        setUserState(JSON.parse(cachedUser));
       } catch (e) {
         console.error("Failed to parse cached user:", e);
         localStorage.removeItem("auth_user_cache");
@@ -63,8 +88,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const markSessionAsExpired = () => {
     setIsSessionExpired(true);
-    setUser(null);
+    setUserState(null);
     localStorage.removeItem("auth_user_cache");
+  };
+
+  const setUser = (newUser: User | null) => {
+    setUserState(newUser);
+    if (newUser) {
+      // Cache user for 5 minutes
+      localStorage.setItem("auth_user_cache", JSON.stringify(newUser));
+      localStorage.setItem("auth_user_cache_time", Date.now().toString());
+    }
+  };
+
+  const setIsAuthLoadingGlobal = (
+    loading: boolean,
+    reason?: "revalidating" | "redirecting" | "recovering"
+  ) => {
+    setIsAuthLoadingGlobalState(loading);
+    if (loading && reason) {
+      setAuthLoadingReason(reason);
+    } else {
+      setAuthLoadingReason(undefined);
+    }
+  };
+
+  const setRedirectReason = (
+    reason?: "session-expired" | "session-invalid" | "user-deleted" | "error"
+  ) => {
+    setRedirectReasonState(reason);
   };
 
   const value: AuthContextType = {
@@ -73,16 +125,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!user && !isSessionExpired,
     isSessionExpired,
     hasRefreshTokens,
-    setUser: (newUser) => {
-      setUser(newUser);
-      if (newUser) {
-        // Cache user for 5 minutes
-        localStorage.setItem("auth_user_cache", JSON.stringify(newUser));
-        localStorage.setItem("auth_user_cache_time", Date.now().toString());
-      }
-    },
+    isAuthLoadingGlobal,
+    authLoadingReason,
+    redirectReason,
+    setUser,
     setIsLoading,
     setIsSessionExpired,
+    setIsAuthLoadingGlobal,
+    setRedirectReason,
     markSessionAsExpired,
   };
 

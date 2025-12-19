@@ -131,8 +131,45 @@ const MAX_REFRESH_ATTEMPTS = 2; // After 2 failures, consider session expired
  */
 let sessionExpiredCallback: (() => void) | null = null;
 
+/**
+ * Callback to set global auth loading state from context
+ * Called during session revalidation, recovery, or redirect
+ */
+let authLoadingCallback:
+  | ((
+      loading: boolean,
+      reason?: "revalidating" | "redirecting" | "recovering"
+    ) => void)
+  | null = null;
+
+/**
+ * Callback to set redirect reason
+ */
+let redirectReasonCallback:
+  | ((
+      reason?: "session-expired" | "session-invalid" | "user-deleted" | "error"
+    ) => void)
+  | null = null;
+
 export function setSessionExpiredCallback(callback: () => void) {
   sessionExpiredCallback = callback;
+}
+
+export function setAuthLoadingCallback(
+  callback: (
+    loading: boolean,
+    reason?: "revalidating" | "redirecting" | "recovering"
+  ) => void
+) {
+  authLoadingCallback = callback;
+}
+
+export function setRedirectReasonCallback(
+  callback: (
+    reason?: "session-expired" | "session-invalid" | "user-deleted" | "error"
+  ) => void
+) {
+  redirectReasonCallback = callback;
 }
 
 // ============================================================================
@@ -167,6 +204,38 @@ apiClient.interceptors.response.use(
     );
 
     // ========================================================================
+    // HANDLE NETWORK ERRORS (e.g., ERR_CONNECTION_RESET after sleep)
+    // ========================================================================
+
+    if (!error.response) {
+      // Network error occurred (no response from server)
+      const errorMessage = error.message || "Network error";
+      const isConnectionError =
+        errorMessage.includes("ERR_CONNECTION_RESET") ||
+        errorMessage.includes("ERR_NETWORK") ||
+        errorMessage.includes("ECONNREFUSED") ||
+        errorMessage.includes("TIMEOUT");
+
+      console.warn("[AUTH] Network error detected", {
+        message: errorMessage,
+        isConnectionError,
+        url: originalRequest.url,
+      });
+
+      // For connection errors on protected endpoints, suggest session revalidation
+      if (isConnectionError && !isAuthEndpoint) {
+        console.log(
+          "[AUTH] Connection error on protected endpoint - may need session revalidation"
+        );
+        // Don't fail immediately - let the request timeout naturally
+        // This gives the backend time to come back online
+      }
+
+      // Return the error as-is for higher-level handling
+      return Promise.reject(error);
+    }
+
+    // ========================================================================
     // HANDLE 401 UNAUTHORIZED
     // ========================================================================
 
@@ -186,6 +255,14 @@ apiClient.interceptors.response.use(
         console.error("[AUTH] Max refresh attempts reached - Session expired", {
           attempts: refreshAttemptCount,
         });
+
+        // Signal that we're redirecting due to invalid session
+        if (setAuthLoadingCallback) {
+          setAuthLoadingCallback(true, "redirecting");
+        }
+        if (setRedirectReasonCallback) {
+          setRedirectReasonCallback("session-invalid");
+        }
 
         // Notify React components that session has expired
         if (sessionExpiredCallback) {
@@ -220,6 +297,11 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
       refreshAttemptCount++;
+
+      // Signal that we're attempting to revalidate session
+      if (setAuthLoadingCallback) {
+        setAuthLoadingCallback(true, "revalidating");
+      }
 
       try {
         console.log("[AUTH] Starting token refresh", {
@@ -273,6 +355,20 @@ apiClient.interceptors.response.use(
             maxAttempts: MAX_REFRESH_ATTEMPTS,
           });
 
+          // Set redirect reason based on status
+          if (setRedirectReasonCallback) {
+            if (refreshStatus === 404) {
+              setRedirectReasonCallback("user-deleted");
+            } else {
+              setRedirectReasonCallback("session-invalid");
+            }
+          }
+
+          // Signal that we're redirecting
+          if (setAuthLoadingCallback) {
+            setAuthLoadingCallback(true, "redirecting");
+          }
+
           // Notify React components
           if (sessionExpiredCallback) {
             console.log(
@@ -289,6 +385,62 @@ apiClient.interceptors.response.use(
 
         return Promise.reject(refreshError);
       }
+    }
+
+    // ========================================================================
+    // HANDLE 403 FORBIDDEN
+    // ========================================================================
+
+    if (error.response?.status === 403 && !isAuthEndpoint) {
+      console.warn("[AUTH] 403 Forbidden - Access denied", {
+        url: originalRequest.url,
+      });
+
+      // Set redirect reason
+      if (setRedirectReasonCallback) {
+        setRedirectReasonCallback("session-invalid");
+      }
+
+      // Signal that we're redirecting
+      if (setAuthLoadingCallback) {
+        setAuthLoadingCallback(true, "redirecting");
+      }
+
+      // Notify React components
+      if (sessionExpiredCallback) {
+        sessionExpiredCallback();
+      }
+
+      clearSessionCookies();
+      return Promise.reject(new Error("Access forbidden - session invalid"));
+    }
+
+    // ========================================================================
+    // HANDLE 404 - USER NOT FOUND
+    // ========================================================================
+
+    if (error.response?.status === 404 && !isAuthEndpoint) {
+      console.error("[AUTH] 404 - User/resource not found", {
+        url: originalRequest.url,
+      });
+
+      // Set redirect reason
+      if (setRedirectReasonCallback) {
+        setRedirectReasonCallback("user-deleted");
+      }
+
+      // Signal that we're redirecting
+      if (setAuthLoadingCallback) {
+        setAuthLoadingCallback(true, "redirecting");
+      }
+
+      // Notify React components
+      if (sessionExpiredCallback) {
+        sessionExpiredCallback();
+      }
+
+      clearSessionCookies();
+      return Promise.reject(new Error("User not found"));
     }
 
     // ========================================================================

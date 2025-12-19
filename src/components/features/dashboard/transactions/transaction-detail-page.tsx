@@ -155,27 +155,6 @@ const copyToClipboard = (text: string, label: string) => {
   toast.success(`${label} copied to clipboard`);
 };
 
-// Get operator logo from related data or from API
-const getOperatorLogo = (transaction: Transaction): string | undefined => {
-  const operatorCode = transaction.related?.operatorCode?.toLowerCase();
-
-  const logos: Record<string, string> = {
-    mtn: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/New-mtn-logo.jpg/960px-New-mtn-logo.jpg?20220217143058",
-    airtel:
-      "https://upload.wikimedia.org/wikipedia/commons/1/18/Airtel_logo.svg",
-    glo: "https://upload.wikimedia.org/wikipedia/commons/8/86/Glo_button.png",
-    "9mobile":
-      "https://logosandtypes.com/wp-content/uploads/2020/10/9mobile-1.svg",
-  };
-
-  // Try to match by operator code first
-  if (operatorCode && logos[operatorCode]) {
-    return logos[operatorCode];
-  }
-
-  return undefined;
-};
-
 // Skeleton loader component
 function TransactionDetailSkeleton() {
   return (
@@ -280,7 +259,8 @@ export function TransactionDetailPage({
     currency: "NGN",
   });
 
-  const operatorLogo = getOperatorLogo(transaction);
+  const transactionIcon = getTransactionIcon(transaction);
+  const isIconUrl = typeof transactionIcon === "string";
 
   return (
     <div className="bg-background min-h-screen p-4 sm:p-6 lg:p-8">
@@ -303,9 +283,14 @@ export function TransactionDetailPage({
             <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-center">
               <div className="flex items-center gap-4">
                 <Avatar className="flex size-16 items-center justify-center rounded-full">
-                  <AvatarImage src={operatorLogo} className="object-contain" />
+                  {isIconUrl ? (
+                    <AvatarImage
+                      src={transactionIcon}
+                      className="object-contain"
+                    />
+                  ) : null}
                   <AvatarFallback>
-                    {getTransactionIcon(transaction)}
+                    {isIconUrl ? null : transactionIcon}
                   </AvatarFallback>
                 </Avatar>
 
@@ -319,17 +304,21 @@ export function TransactionDetailPage({
                 </div>
               </div>
               <p className="text-5xl font-bold">{formattedAmount}</p>
-              {transaction.related?.status && (
-                <Badge
-                  className={cn(
-                    "text-1xl capitalize",
-                    getStatusColor(transaction.related.status)
-                  )}
-                >
-                  {transaction.related.status}
-                </Badge>
-              )}
-              <p className="font-medium">{formatDate(transaction.createdAt)}</p>
+              <div className="flex justify-center">
+                {transaction.related?.status && (
+                  <Badge
+                    className={cn(
+                      "text-1xl capitalize",
+                      getStatusColor(transaction.related.status)
+                    )}
+                  >
+                    {transaction.related.status}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-center font-medium">
+                {formatDate(transaction.createdAt)}
+              </p>
             </div>
           </div>
 
@@ -455,7 +444,6 @@ export function TransactionDetailPage({
         isOpen={isShareOpen}
         onClose={() => setIsShareOpen(false)}
         transaction={transaction}
-        operatorLogo={operatorLogo}
       />
     </div>
   );

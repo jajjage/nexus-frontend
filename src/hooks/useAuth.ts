@@ -1,7 +1,11 @@
 "use client";
 
 import { useAuthContext } from "@/context/AuthContext";
-import { setSessionExpiredCallback } from "@/lib/api-client";
+import {
+  setAuthLoadingCallback,
+  setRedirectReasonCallback,
+  setSessionExpiredCallback,
+} from "@/lib/api-client";
 import { authService } from "@/services/auth.service";
 import { User } from "@/types/api.types";
 import { RegisterRequest } from "@/types/auth.types";
@@ -10,6 +14,7 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { useEffect, useTransition } from "react";
 import { toast } from "sonner";
+import { useSessionRevalidation } from "./useSessionRevalidation";
 
 /**
  * BEST PRACTICES FOR USER AUTH STATE:
@@ -204,8 +209,14 @@ export function useAuth(): {
 } {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user, isLoading, isSessionExpired, setIsSessionExpired } =
-    useAuthContext();
+  const {
+    user,
+    isLoading,
+    isSessionExpired,
+    setIsSessionExpired,
+    setIsAuthLoadingGlobal,
+    setRedirectReason,
+  } = useAuthContext();
 
   const {
     data: fetchedUser,
@@ -222,7 +233,7 @@ export function useAuth(): {
     }
   }, [fetchedUser]);
 
-  // Setup callback for when session expires
+  // Setup callbacks for auth state changes
   useEffect(() => {
     let isHandling = false; // Prevent concurrent handling
 
@@ -247,15 +258,38 @@ export function useAuth(): {
       queryClient.clear();
     };
 
-    console.log("[AUTH] Setting up session expired callback");
+    const handleSetAuthLoading = (
+      loading: boolean,
+      reason?: "revalidating" | "redirecting" | "recovering"
+    ) => {
+      console.log("[AUTH] Setting auth loading state", { loading, reason });
+      setIsAuthLoadingGlobal(loading, reason);
+    };
+
+    const handleSetRedirectReason = (
+      reason?: "session-expired" | "session-invalid" | "user-deleted" | "error"
+    ) => {
+      console.log("[AUTH] Setting redirect reason", { reason });
+      setRedirectReason(reason);
+    };
+
+    console.log("[AUTH] Setting up auth callbacks");
     setSessionExpiredCallback(handleSessionExpired);
+    setAuthLoadingCallback(handleSetAuthLoading);
+    setRedirectReasonCallback(handleSetRedirectReason);
 
     return () => {
-      console.log("[AUTH] Cleaning up session expired callback");
-      // pass a no-op so the callback type () => void is satisfied
+      console.log("[AUTH] Cleaning up auth callbacks");
       setSessionExpiredCallback(() => {});
+      setAuthLoadingCallback(() => {});
+      setRedirectReasonCallback(() => {});
     };
-  }, [router, queryClient, setIsSessionExpired]);
+  }, [
+    queryClient,
+    setIsSessionExpired,
+    setIsAuthLoadingGlobal,
+    setRedirectReason,
+  ]);
 
   // Handle session expiration state - HIGHEST PRIORITY
   useEffect(() => {
@@ -266,15 +300,25 @@ export function useAuth(): {
       // Clear everything immediately
       queryClient.clear();
 
-      // Use hard navigation (window.location.href) to guarantee redirect
-      // This is more reliable than router.replace() which can fail in edge cases
-      console.log("[AUTH] Redirecting to login via window.location.href");
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
-      return;
+      // Small delay to ensure UI updates before redirect
+      // This prevents the blank page flicker
+      const redirectTimer = setTimeout(() => {
+        // Use hard navigation (window.location.href) to guarantee redirect
+        // This is more reliable than router.replace() which can fail in edge cases
+        console.log(
+          "[AUTH] Executing redirect to login via window.location.href"
+        );
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+      }, 50);
+
+      return () => clearTimeout(redirectTimer);
     }
   }, [isSessionExpired, router, queryClient]);
+
+  // Setup session revalidation on app focus/wake from sleep
+  useSessionRevalidation();
 
   const isAuthenticated =
     !!user && !isSessionExpired && user.isSuspended === false;

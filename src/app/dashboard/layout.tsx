@@ -1,6 +1,7 @@
 "use client";
 
 import { FcmSyncer } from "@/components/FcmSyncer";
+import { HomeNotificationBanner } from "@/components/notification/home-notification-banner";
 
 export default function DashboardLayout({
   children,
@@ -10,6 +11,7 @@ export default function DashboardLayout({
   return (
     <>
       <FcmSyncer />
+      <HomeNotificationBanner />
       {children}
     </>
   );
