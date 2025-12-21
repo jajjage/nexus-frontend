@@ -5,9 +5,14 @@ import { Product } from "@/types/product.types";
 interface ProductCardProps {
   product: Product;
   onClick?: () => void;
+  markupPercent?: number;
 }
 
-export function ProductCard({ product, onClick }: ProductCardProps) {
+export function ProductCard({
+  product,
+  onClick,
+  markupPercent = 0,
+}: ProductCardProps) {
   // 1. Format Main Display (Volume or Amount)
   const formatMainDisplay = (p: Product) => {
     if (p.productType === "airtime") {
@@ -26,24 +31,36 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
 
   const mainDisplayText = formatMainDisplay(product);
 
-  // 2. Determine Price
+  // 2. Determine Price with Markup
   const faceValue = parseFloat(product.denomAmount || "0");
-  const supplierPrice = product.supplierOffers?.[0]?.supplierPrice
-    ? parseFloat(product.supplierOffers[0].supplierPrice)
-    : null;
+  const supplierOffer = product.supplierOffers?.[0];
+  const supplierPrice = supplierOffer
+    ? parseFloat(supplierOffer.supplierPrice)
+    : faceValue;
 
-  let sellingPrice = faceValue;
-  let originalPrice = faceValue;
-  let discountPercentage = 0;
+  // Calculate selling price: supplierPrice + (supplierPrice * markup%)
+  // markupPercent can be either decimal (0.10) or percentage (10)
+  // If it's less than 1, treat as decimal; otherwise divide by 100
+  const actualMarkup = markupPercent < 1 ? markupPercent : markupPercent / 100;
+  const sellingPrice = supplierPrice + supplierPrice * actualMarkup;
+
+  console.log("[ProductCard Debug]", {
+    productId: product.id,
+    faceValue,
+    supplierPrice,
+    markupPercent,
+    actualMarkup,
+    sellingPrice,
+    calculation: `${supplierPrice} + (${supplierPrice} * ${actualMarkup}) = ${sellingPrice}`,
+  });
+
   let hasDiscount = false;
+  let discountPercentage = 0;
 
-  if (supplierPrice !== null && supplierPrice < faceValue) {
-    const margin = faceValue - supplierPrice;
-    // User saves half of the margin
-    const userSavings = margin / 2;
-    sellingPrice = faceValue - userSavings;
-    originalPrice = faceValue;
-    discountPercentage = Math.round((userSavings / faceValue) * 100);
+  // Only show discount if selling price is less than face value
+  if (sellingPrice < faceValue) {
+    const savings = faceValue - sellingPrice;
+    discountPercentage = Math.round((savings / faceValue) * 100);
     hasDiscount = true;
   }
 
@@ -108,17 +125,17 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
         </span>
         {hasDiscount && (
           <span className="text-muted-foreground text-xs line-through">
-            ₦{originalPrice.toLocaleString()}
+            ₦{faceValue.toLocaleString()}
           </span>
         )}
       </div>
 
-      {/* Cashback Badge (Earn) - Moved to bottom-left */}
+      {/* Cashback Badge (Earn) - Position at bottom to avoid overlapping */}
       {product.has_cashback && (
-        <div className="absolute bottom-2 left-2 mt-2 mb-2">
+        <div className="mt-auto pt-2">
           <Badge
             variant="secondary"
-            className="h-5 bg-blue-100 px-1.5 text-[10px] font-bold text-blue-600 dark:bg-blue-900/20"
+            className="h-4 bg-blue-100 px-1 text-[9px] font-bold text-blue-600 dark:bg-blue-900/20"
           >
             +{product.cashback_percentage}% Back
           </Badge>

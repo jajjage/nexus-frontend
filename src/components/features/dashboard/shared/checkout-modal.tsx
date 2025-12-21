@@ -27,6 +27,7 @@ interface CheckoutModalProps {
   onConfirm: (useCashback: boolean) => void;
   isProcessing: boolean;
   isSuccess?: boolean;
+  markupPercent?: number;
 }
 
 export function CheckoutModal({
@@ -40,6 +41,7 @@ export function CheckoutModal({
   onConfirm,
   isProcessing,
   isSuccess = false,
+  markupPercent = 0,
 }: CheckoutModalProps) {
   const [useCashback, setUseCashback] = useState(false);
   console.log("userCashbackBalance: ", useCashback);
@@ -56,12 +58,11 @@ export function CheckoutModal({
     ? parseFloat(product.supplierOffers[0].supplierPrice)
     : faceValue;
 
-  // Calculate selling price (margin logic from card)
-  let sellingPrice = faceValue;
-  if (supplierPrice < faceValue) {
-    const margin = faceValue - supplierPrice;
-    sellingPrice = faceValue - margin / 2;
-  }
+  // Calculate selling price: supplierPrice + (supplierPrice * markup%)
+  // markupPercent can be either decimal (0.10) or percentage (10)
+  // If it's less than 1, treat as decimal; otherwise divide by 100
+  const actualMarkup = markupPercent < 1 ? markupPercent : markupPercent / 100;
+  const sellingPrice = supplierPrice + supplierPrice * actualMarkup;
 
   // Calculate Cashback usage
   // If useCashback is true, deduct the available cashback balance from the selling price

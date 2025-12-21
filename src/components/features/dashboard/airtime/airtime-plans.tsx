@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
+import { useSupplierMarkupMap } from "@/hooks/useSupplierMarkup";
 import { useTopup } from "@/hooks/useTopup";
 import { useUpdateProfile } from "@/hooks/useUser";
 import { detectNetworkProvider } from "@/lib/network-utils";
@@ -36,6 +37,7 @@ export function AirtimePlans() {
   // Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedMarkupPercent, setSelectedMarkupPercent] = useState(0);
   const [isSuccess, setIsSuccess] = useState(false);
 
   // PIN Modal State
@@ -68,6 +70,16 @@ export function AirtimePlans() {
   );
 
   const products = data?.products || [];
+
+  // Get markup map for all suppliers
+  const markupMap = useSupplierMarkupMap();
+  useEffect(() => {
+    console.log("Debug markupMap:", {
+      mapSize: markupMap.size,
+      mapEntries: Array.from(markupMap.entries()),
+      fullMap: markupMap,
+    });
+  }, [markupMap]);
 
   // Extract unique operators from products
   const operators = useMemo(() => {
@@ -150,6 +162,12 @@ export function AirtimePlans() {
     }
     setSelectedProduct(product);
     setIsSuccess(false);
+
+    // Get and set the markup percent for this product's supplier
+    const supplierId = product.supplierOffers?.[0]?.supplierId || "";
+    const markup = markupMap.get(supplierId) || 0;
+    setSelectedMarkupPercent(markup);
+
     setIsCheckoutOpen(true);
   };
 
@@ -195,12 +213,23 @@ export function AirtimePlans() {
       ? parseFloat(selectedProduct.supplierOffers[0].supplierPrice)
       : faceValue;
 
-    // Calculate selling price (margin logic from checkout modal)
-    let sellingPrice = faceValue;
-    if (supplierPrice < faceValue) {
-      const margin = faceValue - supplierPrice;
-      sellingPrice = faceValue - margin / 2;
-    }
+    // Get supplier markup
+    const supplierId = selectedProduct.supplierOffers?.[0]?.supplierId || "";
+    const markupPercent = markupMap.get(supplierId) || 0;
+    console.log("DEBUG - Payment Calculation:", {
+      supplierId,
+      markupPercent,
+      mapSize: markupMap.size,
+      mapEntries: Array.from(markupMap.entries()),
+      faceValue,
+      supplierPrice,
+    });
+
+    // Calculate selling price: supplierPrice + (supplierPrice * markup%)
+    // markupPercent can be either decimal (0.10) or percentage (10)
+    const actualMarkup =
+      markupPercent < 1 ? markupPercent : markupPercent / 100;
+    const sellingPrice = supplierPrice + supplierPrice * actualMarkup;
 
     // Calculate payable amount
     const userCashbackBalance = user?.cashback?.availableBalance || 0;
@@ -328,13 +357,19 @@ export function AirtimePlans() {
               : "flex flex-col gap-3"
           }
         >
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onClick={() => handlePlanClick(product)}
-            />
-          ))}
+          {filteredProducts.map((product) => {
+            const supplierId = product.supplierOffers?.[0]?.supplierId || "";
+            const markupPercent = markupMap.get(supplierId) || 0;
+
+            return (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onClick={() => handlePlanClick(product)}
+                markupPercent={markupPercent}
+              />
+            );
+          })}
         </div>
       ) : (
         <div className="text-muted-foreground py-10 text-center">
@@ -356,6 +391,7 @@ export function AirtimePlans() {
           onConfirm={handlePayment}
           isProcessing={topupMutation.isPending}
           isSuccess={isSuccess}
+          markupPercent={selectedMarkupPercent}
         />
       )}
 

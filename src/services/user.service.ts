@@ -2,6 +2,8 @@ import apiClient from "@/lib/api-client";
 import { ApiResponse } from "@/types/api.types";
 import {
   GetPurchasesParams,
+  GetSupplierMarkupParams,
+  PaginatedSupplierMarkupResponse,
   ProfileResponse,
   PurchaseResponse,
   PurchasesListResponse,
@@ -71,6 +73,21 @@ export const userService = {
       { params }
     );
     return response.data;
+  },
+
+  /**
+   * Get supplier markup percentages
+   */
+  getMarkupPercent: async (
+    params?: GetSupplierMarkupParams
+  ): Promise<PaginatedSupplierMarkupResponse> => {
+    const response = await apiClient.get<any>("/user/supplier-markups", {
+      params,
+    });
+    // Backend wraps response in { success, message, data: { markups, pagination }, statusCode }
+    // Extract the actual data from the wrapper
+    const data = response.data?.data || response.data;
+    return data;
   },
 
   /**

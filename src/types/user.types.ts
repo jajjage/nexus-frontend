@@ -76,6 +76,12 @@ export interface GetPurchasesParams {
   endDate?: string;
 }
 
+export interface GetSupplierMarkupParams {
+  page?: number;
+  limit?: number;
+  supplierId?: number;
+}
+
 // ============= Response Types =============
 export interface ProfileResponse {
   success: boolean;
@@ -87,6 +93,29 @@ export interface PurchaseResponse {
   success: boolean;
   message: string;
   data: Purchase;
+}
+
+interface SupplierMarkupPercent {
+  id: string;
+  supplierId: string;
+  markupPercent: number | string;
+  validFrom: Date | string;
+  validUntil: Date | string | null;
+  isActive: boolean;
+  description: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  supplierName: string;
+}
+
+export interface PaginatedSupplierMarkupResponse {
+  markups: SupplierMarkupPercent[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export interface PurchasesListResponse {

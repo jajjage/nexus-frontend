@@ -136,6 +136,16 @@ const getTransactionDescription = (transaction: Transaction): string => {
   return transaction.note || transaction.method || "Transaction";
 };
 
+// Helper to get transaction detail type label
+const getTransactionDetailTypeLabel = (transaction: Transaction): string => {
+  if (transaction.relatedType === "incoming_payment") {
+    return "Incoming Transfer";
+  }
+
+  const type = transaction.related?.type?.toLowerCase() || "airtime";
+  return type.charAt(0).toUpperCase() + type.slice(1);
+};
+
 // Helper to format date
 const formatDate = (date: Date | string | undefined): string => {
   if (!date) return "N/A";
@@ -364,9 +374,14 @@ export function TransactionDetailPage({
                         </span>
                       </div>
                     )}
-                    {transaction.related.type === "data" ? (
+                    {transaction.relatedType === "incoming_payment" ? (
                       <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
-                        <span className="font-medium">Data Bundle</span>
+                        <span className="font-medium">Incoming Transfer</span>
+                        <span className="capitalize">{transaction.method}</span>
+                      </div>
+                    ) : transaction.related?.type === "data" ? (
+                      <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
+                        <span className="font-medium">Data</span>
                         <span className="capitalize">
                           {transaction.productCode}
                         </span>

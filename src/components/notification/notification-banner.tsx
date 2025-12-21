@@ -19,7 +19,8 @@ interface NotificationBannerProps {
  * - Fixed positioned banner that appears on top without pushing content
  * - Color-coded by notification type (info, success, warning, error, alert)
  * - Smooth fade/slide animations for appearance and disappearance
- * - Dismiss only removes from UI locally, no API calls
+ * - Dismiss only removes from UI locally, persists in localStorage
+ * - NO API calls when dismissing - only local state
  */
 export function NotificationBanner({
   notifications,
@@ -29,6 +30,21 @@ export function NotificationBanner({
   const [visibleNotification, setVisibleNotification] =
     useState<Notification | null>(null);
   const [isHiding, setIsHiding] = useState(false);
+
+  // Load dismissed notifications from localStorage on mount
+  useEffect(() => {
+    const storedDismissed = localStorage.getItem(
+      "notification_banner_dismissed"
+    );
+    if (storedDismissed) {
+      try {
+        const dismissedArray = JSON.parse(storedDismissed);
+        setDismissedIds(new Set(dismissedArray));
+      } catch (e) {
+        console.error("Failed to parse dismissed notifications:", e);
+      }
+    }
+  }, []);
 
   // Filter notifications by category and get first active one
   useEffect(() => {
@@ -43,10 +59,23 @@ export function NotificationBanner({
   }, [notifications, dismissedIds]);
 
   const handleDismiss = () => {
+    if (!visibleNotification) return;
+
     setIsHiding(true);
     // Wait for animation to complete before hiding from DOM
     setTimeout(() => {
-      setDismissedIds((prev) => new Set([...prev, visibleNotification!.id]));
+      const newDismissedIds = new Set([
+        ...dismissedIds,
+        visibleNotification.id,
+      ]);
+      setDismissedIds(newDismissedIds);
+
+      // Persist to localStorage so dismissal persists across page refreshes
+      localStorage.setItem(
+        "notification_banner_dismissed",
+        JSON.stringify(Array.from(newDismissedIds))
+      );
+
       setIsHiding(false);
     }, 300);
   };

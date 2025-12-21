@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { NotificationBanner } from "./notification-banner";
 
@@ -13,9 +14,19 @@ import { NotificationBanner } from "./notification-banner";
  * - Filters notifications by category: "updates" or "all"
  * - Dismisses locally without API calls
  * - No loading skeleton (banner only shows when data is ready)
+ * - Only fetches when user is authenticated
  */
 export function HomeNotificationBanner() {
-  const { data, isLoading, error } = useNotifications();
+  const { user } = useAuth();
+
+  // Always call the hook (required by Rules of Hooks)
+  // The enabled flag prevents API calls when user is not authenticated
+  const { data, isLoading, error } = useNotifications(!!user);
+
+  // If user not authenticated, don't show anything
+  if (!user) {
+    return null;
+  }
 
   // If loading or error or no data, don't show anything
   if (isLoading || error || !data?.data?.notifications) {

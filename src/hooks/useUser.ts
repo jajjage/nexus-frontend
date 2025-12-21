@@ -1,12 +1,13 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userService } from "@/services/user.service";
 import {
-  UpdateProfileRequest,
-  UpdatePasswordRequest,
-  SetPinRequest,
   GetPurchasesParams,
+  GetSupplierMarkupParams,
+  SetPinRequest,
   TopupRequest,
+  UpdatePasswordRequest,
+  UpdateProfileRequest,
 } from "@/types/user.types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 
@@ -19,6 +20,11 @@ export const userKeys = {
     list: (params?: GetPurchasesParams) =>
       [...userKeys.purchases.all(), params] as const,
     detail: (id: string) => [...userKeys.purchases.all(), id] as const,
+  },
+  markup: {
+    all: () => [...userKeys.all, "supplier-markup"] as const,
+    list: (params?: GetSupplierMarkupParams) =>
+      [...userKeys.markup.all(), params] as const,
   },
 };
 
@@ -100,6 +106,25 @@ export const usePurchases = (params?: GetPurchasesParams) => {
     retry: 2,
   });
 };
+/**
+ * Get supplier markup percentages
+ */
+export const useMarkup = (params?: GetSupplierMarkupParams, enabled = true) => {
+  const query = useQuery({
+    queryKey: userKeys.markup.list(params),
+    queryFn: async () => {
+      console.log("[useMarkup] Fetching markups...");
+      const data = await userService.getMarkupPercent(params);
+      console.log("[useMarkup] Received:", data);
+      return data;
+    },
+    staleTime: 1000 * 60 * 3, // 3 minutes
+    retry: 2,
+    enabled,
+  });
+
+  return query;
+};
 
 /**
  * Get single purchase by ID
@@ -149,6 +174,7 @@ export const useCreateTopup = () => {
     onSuccess: (data) => {
       // Invalidate purchases to show new purchase
       queryClient.invalidateQueries({ queryKey: userKeys.purchases.all() });
+      queryClient.invalidateQueries({ queryKey: userKeys.markup.all() });
       // Invalidate wallet balance as it changed
       queryClient.invalidateQueries({ queryKey: ["wallet", "balance"] });
       queryClient.invalidateQueries({ queryKey: ["wallet", "transactions"] });

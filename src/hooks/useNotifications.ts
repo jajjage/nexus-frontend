@@ -1,6 +1,6 @@
 import { notificationsService } from "@/services/notifications.service";
 import { NotificationsResponse } from "@/types/notification.types";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 
@@ -11,12 +11,13 @@ export const notificationsKeys = {
   unreadCount: () => [...notificationsKeys.all, "unread-count"] as const,
 };
 
-export function useNotifications() {
+export function useNotifications(enabled = true) {
   return useQuery({
     queryKey: notificationsKeys.list(),
     queryFn: () => notificationsService.getNotifications(),
     staleTime: 30 * 1000, // 30 seconds
     refetchOnWindowFocus: true,
+    enabled,
   });
 }
 
@@ -70,16 +71,30 @@ export function useMarkAllNotificationsAsRead() {
 }
 
 export function useDeleteNotification() {
+  const queryClient = useQueryClient();
+
   return useMutation<NotificationsResponse, AxiosError<any>, string>({
     mutationFn: (notificationId) =>
       notificationsService.deleteNotification(notificationId),
     onSuccess: () => {
+      // Invalidate queries to refetch notifications
+      queryClient.invalidateQueries({ queryKey: notificationsKeys.list() });
       toast.success("Notification deleted");
     },
     onError: (error) => {
-      const errorMessage =
-        error.response?.data?.message || "Failed to delete notification";
-      toast.error(errorMessage);
+      // Handle 404 errors gracefully - notification may have been deleted elsewhere
+      if (error.response?.status === 404) {
+        console.warn(
+          "Notification not found - may have been deleted elsewhere"
+        );
+        // Still invalidate to refresh the list
+        queryClient.invalidateQueries({ queryKey: notificationsKeys.list() });
+        toast.info("Notification was already deleted");
+      } else {
+        const errorMessage =
+          error.response?.data?.message || "Failed to delete notification";
+        toast.error(errorMessage);
+      }
     },
   });
 }

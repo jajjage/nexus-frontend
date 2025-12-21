@@ -123,7 +123,7 @@ const processQueue = (error: any = null) => {
  * For cross-session persistence, see sessionExpiredCallback
  */
 let refreshAttemptCount = 0;
-const MAX_REFRESH_ATTEMPTS = 2; // After 2 failures, consider session expired
+const MAX_REFRESH_ATTEMPTS = 3; // Allow 3 attempts to handle token refresh
 
 /**
  * Callback to notify when session is expired
@@ -246,8 +246,11 @@ apiClient.interceptors.response.use(
     ) {
       console.log("[AUTH] 401 Unauthorized - Attempting token refresh", {
         url: originalRequest.url,
+        method: originalRequest.method,
         refreshAttemptCount,
         maxAttempts: MAX_REFRESH_ATTEMPTS,
+        hasRefreshToken: !!getCookie("refreshToken"),
+        cookies: document.cookie,
       });
 
       // If we've already tried refreshing too many times, session is expired
@@ -257,11 +260,11 @@ apiClient.interceptors.response.use(
         });
 
         // Signal that we're redirecting due to invalid session
-        if (setAuthLoadingCallback) {
-          setAuthLoadingCallback(true, "redirecting");
+        if (authLoadingCallback) {
+          authLoadingCallback(true, "redirecting");
         }
-        if (setRedirectReasonCallback) {
-          setRedirectReasonCallback("session-invalid");
+        if (redirectReasonCallback) {
+          redirectReasonCallback("session-invalid");
         }
 
         // Notify React components that session has expired
@@ -299,23 +302,31 @@ apiClient.interceptors.response.use(
       refreshAttemptCount++;
 
       // Signal that we're attempting to revalidate session
-      if (setAuthLoadingCallback) {
-        setAuthLoadingCallback(true, "revalidating");
+      if (authLoadingCallback) {
+        authLoadingCallback(true, "revalidating");
       }
 
       try {
         console.log("[AUTH] Starting token refresh", {
           attempt: refreshAttemptCount,
           maxAttempts: MAX_REFRESH_ATTEMPTS,
+          hasRefreshToken: !!getCookie("refreshToken"),
         });
 
         // Call refresh endpoint
         // Backend will set new accessToken cookie in response
-        await apiClient.post("/auth/refresh", {});
+        const refreshResponse = await apiClient.post("/auth/refresh", {});
 
         console.log("[AUTH] Token refresh successful", {
           attempt: refreshAttemptCount,
+          status: refreshResponse.status,
+          responseData: refreshResponse.data,
         });
+
+        // Clear loading state - refresh succeeded
+        if (authLoadingCallback) {
+          authLoadingCallback(false);
+        }
 
         // Process all queued requests
         processQueue();
@@ -333,6 +344,8 @@ apiClient.interceptors.response.use(
           status: refreshStatus,
           message: refreshError.message,
           attempt: refreshAttemptCount,
+          refreshErrorData: refreshError.response?.data,
+          url: refreshError.config?.url,
         });
 
         // Reject all queued requests
@@ -340,13 +353,14 @@ apiClient.interceptors.response.use(
         isRefreshing = false;
 
         // Check if we should treat this as session expired
+        // Only mark as expired on auth-specific errors, not temporary server errors
         const shouldExpireSession =
           refreshAttemptCount >= MAX_REFRESH_ATTEMPTS ||
-          refreshStatus === 401 || // Unauthorized - token invalid
-          refreshStatus === 400 || // Bad Request - might mean invalid token
-          refreshStatus === 403 || // Forbidden
-          refreshStatus === 404 || // Not Found - user removed or invalid endpoint
-          refreshStatus === 500; // Server error on refresh endpoint
+          refreshStatus === 401 || // Unauthorized - refresh token invalid
+          refreshStatus === 403 || // Forbidden - no permission
+          refreshStatus === 404; // Not Found - user removed or invalid endpoint
+
+        // Don't expire on 400 or 500 - those might be temporary
 
         if (shouldExpireSession) {
           console.log("[AUTH] Session expired - refresh failed with status", {
@@ -356,17 +370,17 @@ apiClient.interceptors.response.use(
           });
 
           // Set redirect reason based on status
-          if (setRedirectReasonCallback) {
+          if (redirectReasonCallback) {
             if (refreshStatus === 404) {
-              setRedirectReasonCallback("user-deleted");
+              redirectReasonCallback("user-deleted");
             } else {
-              setRedirectReasonCallback("session-invalid");
+              redirectReasonCallback("session-invalid");
             }
           }
 
           // Signal that we're redirecting
-          if (setAuthLoadingCallback) {
-            setAuthLoadingCallback(true, "redirecting");
+          if (authLoadingCallback) {
+            authLoadingCallback(true, "redirecting");
           }
 
           // Notify React components
@@ -383,6 +397,12 @@ apiClient.interceptors.response.use(
           return Promise.reject(new Error("Session expired"));
         }
 
+        // Temporary error - clear loading state and retry
+        // The original request will retry later when conditions improve
+        if (authLoadingCallback) {
+          authLoadingCallback(false);
+        }
+
         return Promise.reject(refreshError);
       }
     }
@@ -397,13 +417,13 @@ apiClient.interceptors.response.use(
       });
 
       // Set redirect reason
-      if (setRedirectReasonCallback) {
-        setRedirectReasonCallback("session-invalid");
+      if (redirectReasonCallback) {
+        redirectReasonCallback("session-invalid");
       }
 
       // Signal that we're redirecting
-      if (setAuthLoadingCallback) {
-        setAuthLoadingCallback(true, "redirecting");
+      if (authLoadingCallback) {
+        authLoadingCallback(true, "redirecting");
       }
 
       // Notify React components
@@ -425,13 +445,13 @@ apiClient.interceptors.response.use(
       });
 
       // Set redirect reason
-      if (setRedirectReasonCallback) {
-        setRedirectReasonCallback("user-deleted");
+      if (redirectReasonCallback) {
+        redirectReasonCallback("user-deleted");
       }
 
       // Signal that we're redirecting
-      if (setAuthLoadingCallback) {
-        setAuthLoadingCallback(true, "redirecting");
+      if (authLoadingCallback) {
+        authLoadingCallback(true, "redirecting");
       }
 
       // Notify React components

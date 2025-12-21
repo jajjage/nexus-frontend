@@ -60,15 +60,23 @@ const authKeys = {
  * Fetch user profile from server
  *
  * Strategy:
- * - Runs once on component mount
- * - Result cached for 5 minutes
+ * - Only fetches when user was previously authenticated (cached in localStorage)
+ * - Checks localStorage cache, not just cookie existence
+ * - Result cached for 3 minutes
  * - No automatic refetch unless explicitly triggered
  * - Updates AuthContext on success
+ * - 401 errors are handled by axios interceptor
  */
 function useCurrentUserQuery() {
   const { setUser, setIsLoading, markSessionAsExpired, setIsSessionExpired } =
     useAuthContext();
   const router = useRouter();
+
+  // Check if user was previously authenticated (cached in localStorage)
+  // This is more reliable than checking cookies, as it only exists when user successfully logged in
+  const hasCachedUser =
+    typeof window !== "undefined" &&
+    localStorage.getItem("auth_user_cache") !== null;
 
   const query = useQuery<User | null, AxiosError>({
     queryKey: authKeys.currentUser(),
@@ -102,8 +110,12 @@ function useCurrentUserQuery() {
     refetchOnReconnect: true, // Only refetch if network reconnected
 
     // ERROR HANDLING
-    retry: 0, // Don't retry here - let axios interceptor handle it
-    enabled: true, // Always enabled, but checks cache first
+    // Don't retry here - let axios interceptor handle all 401 errors and token refresh
+    // The interceptor will automatically retry the request after refreshing the token
+    retry: 0,
+    // Only fetch if user was previously authenticated (has cache)
+    // This prevents calls on public routes and prevents redirect loops
+    enabled: hasCachedUser,
   });
 
   // Handle success - update context when user data is fetched
@@ -132,6 +144,8 @@ function useCurrentUserQuery() {
       });
 
       // Mark session as expired on auth errors
+      // The axios interceptor has already attempted refresh on 401
+      // If we still get 401 here, it means refresh failed
       if (
         status === 401 ||
         status === 400 ||
@@ -139,12 +153,13 @@ function useCurrentUserQuery() {
         status === 404
       ) {
         console.error(
-          "[AUTH] Auth error detected in query - marking session as expired",
+          "[AUTH] Auth error detected - marking session as expired",
           { status }
         );
-        // Call markSessionAsExpired which updates context AND also call setIsSessionExpired
+
+        // Mark session as expired
         markSessionAsExpired();
-        setIsSessionExpired(true); // Ensure the context state is also updated
+        setIsSessionExpired(true);
 
         // For 404 (user deleted), immediately trigger redirect
         if (status === 404) {
@@ -154,7 +169,6 @@ function useCurrentUserQuery() {
           console.error(
             "[AUTH] User not found (404) - forcing immediate redirect"
           );
-          // Force immediate redirect without waiting for effect
           setTimeout(() => {
             console.log("[AUTH] Executing immediate 404 redirect");
             if (typeof window !== "undefined") {
