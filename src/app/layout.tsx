@@ -1,5 +1,6 @@
 import { AuthRedirectLoader } from "@/components/auth-redirect-loader";
 import { MarkupSyncer } from "@/components/MarkupSyncer";
+import { ServiceWorkerNavigationListener } from "@/components/ServiceWorkerNavigationListener";
 import { AuthProvider } from "@/context/AuthContext";
 import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
@@ -34,6 +35,7 @@ export default function RootLayout({
             <AuthProvider>
               <AuthRedirectLoader />
               <MarkupSyncer />
+              <ServiceWorkerNavigationListener />
               {/* <FcmSyncer /> */}
               <Toaster richColors position="top-right" />
               {children}

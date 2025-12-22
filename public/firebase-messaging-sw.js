@@ -25,59 +25,63 @@ self.addEventListener("message", (event) => {
       messaging = firebase.messaging();
       isInitialized = true;
       console.log("[SW] Firebase initialized via postMessage");
+
+      // Set up background message handler AFTER Firebase is initialized
+      try {
+        messaging.onBackgroundMessage((payload) => {
+          console.log("[SW] ========== BACKGROUND MESSAGE RECEIVED ==========");
+          console.log("[SW] Background message received:", payload);
+          console.log("[SW] Notification object:", payload.notification);
+          console.log("[SW] Data object:", payload.data);
+
+          const notificationTitle =
+            payload.notification?.title || "New Message";
+          const notificationId = payload.data?.notificationId || "";
+
+          console.log("[SW] Notification ID:", notificationId);
+          console.log(
+            "[SW] Showing notification with title:",
+            notificationTitle
+          );
+
+          const notificationOptions = {
+            body: payload.notification?.body || "You have a new notification",
+            icon:
+              payload.notification?.image || "/images/notification-icon.png",
+            badge: "/images/notification-badge.png",
+            click_action: payload.fcmOptions?.link || "/",
+            tag: notificationId || "notification",
+            requireInteraction: false,
+            data: {
+              notificationId: notificationId,
+              ...payload.data,
+            },
+          };
+
+          console.log("[SW] Full notification options:", notificationOptions);
+
+          try {
+            self.registration.showNotification(
+              notificationTitle,
+              notificationOptions
+            );
+            console.log(
+              "[SW] Notification shown successfully for ID:",
+              notificationId
+            );
+          } catch (error) {
+            console.error("[SW] Failed to show notification:", error);
+          }
+        });
+        console.log("[SW] onBackgroundMessage handler set up successfully");
+      } catch (error) {
+        console.error("[SW] Error setting up onBackgroundMessage:", error);
+      }
     } catch (error) {
       console.error("[SW] Firebase initialization error:", error);
     }
   }
 });
-
-// Background message handler
-if (
-  typeof firebase !== "undefined" &&
-  typeof firebase.messaging !== "undefined"
-) {
-  try {
-    const messagingInstance = firebase.messaging();
-
-    messagingInstance.onBackgroundMessage((payload) => {
-      console.log("[SW] Background message received:", payload);
-
-      const notificationTitle = payload.notification?.title || "New Message";
-      const notificationId = payload.data?.notificationId || "";
-
-      console.log("[SW] Notification ID:", notificationId);
-      console.log("[SW] Showing notification with title:", notificationTitle);
-
-      const notificationOptions = {
-        body: payload.notification?.body || "You have a new notification",
-        icon: payload.notification?.image || "/images/notification-icon.png",
-        badge: "/images/notification-badge.png",
-        click_action: payload.fcmOptions?.link || "/",
-        tag: notificationId || "notification",
-        requireInteraction: false,
-        data: {
-          notificationId: notificationId,
-          ...payload.data,
-        },
-      };
-
-      try {
-        self.registration.showNotification(
-          notificationTitle,
-          notificationOptions
-        );
-        console.log(
-          "[SW] Notification shown successfully for ID:",
-          notificationId
-        );
-      } catch (error) {
-        console.error("[SW] Failed to show notification:", error);
-      }
-    });
-  } catch (error) {
-    console.error("[SW] Error setting up background message handler:", error);
-  }
-}
 
 // Handle notification close
 self.addEventListener("notificationclose", (event) => {
@@ -86,15 +90,25 @@ self.addEventListener("notificationclose", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   console.log("[SW] Notification clicked:", event.notification);
+  console.log(
+    "[SW] Full notification data:",
+    JSON.stringify(event.notification.data)
+  );
   event.notification.close();
 
   const notificationId = event.notification.data?.notificationId;
-  const transactionId = event.notification.data?.id;
+  const transactionId = event.notification.data?.transactionId;
   let urlToOpen = "/dashboard";
 
+  console.log("[SW] Extracted notificationId:", notificationId);
+  console.log("[SW] Extracted transactionId:", transactionId);
+
+  // If notificationId exists, navigate to notifications page
   if (notificationId) {
-    urlToOpen = "/dashboard/notifications/" + notificationId;
-  } else if (transactionId) {
+    urlToOpen = "/dashboard/notifications/";
+  }
+  // If only transactionId exists, navigate to transaction detail page
+  else if (transactionId) {
     urlToOpen = "/dashboard/transactions/" + transactionId;
   }
 
@@ -116,13 +130,15 @@ self.addEventListener("notificationclick", (event) => {
             if ("focus" in client) {
               client.focus();
             }
-            if ("navigate" in client) {
-              client.navigate(urlToOpen);
-              console.log("[SW] Used client.navigate()");
-            } else {
-              client.postMessage({ type: "navigate", url: urlToOpen });
-              console.log("[SW] Used client.postMessage()");
-            }
+
+            // Send navigation message to the client
+            client.postMessage({
+              type: "navigate",
+              url: urlToOpen,
+              notificationId: notificationId,
+              transactionId: transactionId,
+            });
+            console.log("[SW] Sent navigation message to client");
             return;
           }
         }

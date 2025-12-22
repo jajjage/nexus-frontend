@@ -94,12 +94,12 @@ self.addEventListener('notificationclick', (event) => {
 
   // Extract notificationId and transactionId from notification.data
   const notificationId = event.notification.data?.notificationId;
-  const transactionId = event.notification.data?.id;
+  const transactionId = event.notification.data?.transactionId;
   let urlToOpen = '/dashboard';
 
-  // If notificationId exists, navigate to notifications detail page
+  // If notificationId exists, navigate to notifications page
   if (notificationId) {
-    urlToOpen = '/dashboard/notifications/' + notificationId;
+    urlToOpen = '/dashboard/notifications/';
   }
   // If only transactionId exists, navigate to transaction detail page
   else if (transactionId) {
@@ -107,7 +107,6 @@ self.addEventListener('notificationclick', (event) => {
   }
 
   console.log('[SW] Opening URL:', urlToOpen);
-  console.log('[SW] Available clients:', event.clientId);
 
   event.waitUntil(
     clients
@@ -123,18 +122,20 @@ self.addEventListener('notificationclick', (event) => {
           if (client.url.includes(self.location.origin)) {
             console.log('[SW] Found matching client, navigating...');
 
-            // Focus the existing window and navigate to the notification
+            // Focus the existing window
             if ('focus' in client) {
               client.focus();
             }
-            // Use navigate if available (more reliable), fallback to postMessage
-            if ('navigate' in client) {
-              client.navigate(urlToOpen);
-              console.log('[SW] Used client.navigate()');
-            } else {
-              client.postMessage({ type: 'navigate', url: urlToOpen });
-              console.log('[SW] Used client.postMessage()');
-            }
+
+            // Send navigation message to the client
+            // The client must listen for 'navigate' messages and handle routing
+            client.postMessage({
+              type: 'navigate',
+              url: urlToOpen,
+              notificationId: notificationId,
+              transactionId: transactionId
+            });
+            console.log('[SW] Sent navigation message to client');
             return;
           }
         }
