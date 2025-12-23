@@ -47,13 +47,15 @@ export default function NotificationsPage() {
     refetch,
   } = useNotifications();
   const { mutate: markAsRead } = useMarkNotificationAsRead();
-  const { mutate: deleteNotification } = useDeleteNotification();
+  const { mutate: deleteNotification, isPending: isDeleting } =
+    useDeleteNotification();
   const { mutate: markAllAsRead } = useMarkAllNotificationsAsRead();
 
   const notifications = notificationsResponse?.data?.notifications || [];
   const unreadCount = notificationsResponse?.data?.unreadCount || 0;
 
   const [filter, setFilter] = React.useState<"all" | "unread">("all");
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
   const handleMarkAsRead = (notificationId: string) => {
     markAsRead(notificationId, {
@@ -64,9 +66,14 @@ export default function NotificationsPage() {
   };
 
   const handleDelete = (notificationId: string) => {
+    setDeletingId(notificationId);
     deleteNotification(notificationId, {
       onSuccess: () => {
+        setDeletingId(null);
         refetch();
+      },
+      onError: () => {
+        setDeletingId(null);
       },
     });
   };
@@ -257,8 +264,11 @@ export default function NotificationsPage() {
                           size="sm"
                           onClick={() => handleDelete(notification.id)}
                           title="Delete"
+                          disabled={deletingId === notification.id}
                         >
-                          <Trash2 className="text-destructive size-4" />
+                          <Trash2
+                            className={`${deletingId === notification.id ? "opacity-50" : "text-destructive"} size-4`}
+                          />
                         </Button>
                       </div>
                     </div>

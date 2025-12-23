@@ -49,7 +49,8 @@ export default function NotificationDetailPage() {
   } = useNotificationById(notificationId);
 
   const { mutate: markAsRead } = useMarkNotificationAsRead();
-  const { mutate: deleteNotification } = useDeleteNotification();
+  const { mutate: deleteNotification, isPending: isDeleting } =
+    useDeleteNotification();
 
   const notification = notificationResponse?.data?.notifications?.[0];
   const notifData = notification?.notification;
@@ -152,7 +153,8 @@ export default function NotificationDetailPage() {
             variant="ghost"
             size="icon"
             onClick={handleDelete}
-            className="text-red-500 hover:bg-red-50 hover:text-red-600"
+            disabled={isDeleting}
+            className={`${isDeleting ? "cursor-not-allowed opacity-50" : "text-red-500 hover:bg-red-50 hover:text-red-600"}`}
           >
             <Trash2 className="size-5" />
           </Button>
