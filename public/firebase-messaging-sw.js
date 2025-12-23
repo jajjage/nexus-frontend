@@ -1,16 +1,114 @@
-// Simple Firebase Cloud Messaging Service Worker
-// Handles background message notifications and navigation
+// Service Worker with PWA offline support and Firebase Cloud Messaging
+const CACHE_NAME = "nexus-data-v1";
+const STATIC_ASSETS = ["/", "/manifest.json", "/images/logo.svg"];
 
 // Immediately activate this service worker when installed
 self.addEventListener("install", (event) => {
   console.log("[SW] Service worker installing");
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log("[SW] Caching static assets");
+      return cache.addAll(STATIC_ASSETS).catch((error) => {
+        console.warn("[SW] Error caching some assets:", error);
+        // Don't fail installation if some assets fail to cache
+        // Continue even if optional assets fail
+        return Promise.resolve();
+      });
+    })
+  );
   self.skipWaiting();
 });
 
 // Claim clients when activated
 self.addEventListener("activate", (event) => {
   console.log("[SW] Service worker activating");
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log("[SW] Deleting old cache:", cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+// Network-first strategy for API calls, cache-first for static assets
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Skip cross-origin requests and non-GET requests
+  if (url.origin !== self.location.origin || request.method !== "GET") {
+    return;
+  }
+
+  // API requests: network-first strategy
+  if (url.pathname.includes("/api/")) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clonedResponse = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, clonedResponse);
+          });
+          return response;
+        })
+        .catch(() => {
+          return caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) {
+              console.log("[SW] Serving cached API response:", url.pathname);
+              return cachedResponse;
+            }
+            // Return offline fallback response
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: "Offline - cached data may not be available",
+              }),
+              { status: 503, headers: { "Content-Type": "application/json" } }
+            );
+          });
+        })
+    );
+    return;
+  }
+
+  // Static assets: cache-first strategy
+  event.respondWith(
+    caches
+      .match(request)
+      .then((response) => {
+        if (response) {
+          return response;
+        }
+        return fetch(request).then((response) => {
+          // Cache successful responses for images and fonts
+          if (
+            response.ok &&
+            (url.pathname.match(/\.(png|svg|jpg|jpeg|gif|woff|woff2)$/) ||
+              request.destination === "image" ||
+              request.destination === "font")
+          ) {
+            const clonedResponse = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, clonedResponse);
+            });
+          }
+          return response;
+        });
+      })
+      .catch(() => {
+        // Return offline page or icon if available
+        if (request.destination === "image") {
+          return caches.match("/images/notification-icon.png");
+        }
+      })
+  );
 });
 
 // Try to load Firebase scripts for token generation

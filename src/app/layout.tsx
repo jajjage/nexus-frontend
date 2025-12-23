@@ -1,5 +1,6 @@
 import { AuthRedirectLoader } from "@/components/auth-redirect-loader";
 import { MarkupSyncer } from "@/components/MarkupSyncer";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { ServiceWorkerNavigationListener } from "@/components/ServiceWorkerNavigationListener";
 import { AuthProvider } from "@/context/AuthContext";
 import { QueryProvider } from "@/providers/query-provider";
@@ -12,8 +13,25 @@ export const metadata: Metadata = {
   title: "Nexus Data",
   description:
     "Welcome to Nexus Data - Your Gateway to Seamless Data Management",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Nexus Data",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
     icon: "/images/favicon-1.svg",
+    apple: "/images/logo.svg",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
+    "apple-mobile-web-app-title": "Nexus Data",
+    "theme-color": "#000000",
   },
 };
 
@@ -24,6 +42,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+        <meta name="theme-color" content="#000000" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="Nexus Data" />
+      </head>
       <body className="antialiased">
         <ThemeProvider
           attribute="class"
@@ -36,6 +68,7 @@ export default function RootLayout({
               <AuthRedirectLoader />
               <MarkupSyncer />
               <ServiceWorkerNavigationListener />
+              <PWAInstallPrompt />
               {/* <FcmSyncer /> */}
               <Toaster richColors position="top-right" />
               {children}

@@ -1,0 +1,55 @@
+{
+  "name": "Nexus Data",
+  "short_name": "Nexus Data",
+  "description": "Your Gateway to Seamless Data Management",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/images/logo-3.png",
+      "sizes": "500x420",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["business", "finance"],
+  "shortcuts": [
+    {
+      "name": "Notifications",
+      "short_name": "Notifications",
+      "description": "View your notifications",
+      "url": "/dashboard/notifications?source=shortcut",
+      "icons": [
+        {
+          "src": "/images/logo-3.png",
+          "sizes": "500x420",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Go to your dashboard",
+      "url": "/dashboard?source=shortcut",
+      "icons": [
+        {
+          "src": "/images/logo-3.png",
+          "sizes": "500x420",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false
+}

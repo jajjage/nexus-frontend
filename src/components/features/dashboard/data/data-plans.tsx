@@ -391,8 +391,8 @@ export function DataPlans() {
         </div>
       )}
 
-      {/* Checkout Modal */}
-      {selectedProduct && (
+      {/* Checkout Modal - Unmount when PIN modal is open */}
+      {selectedProduct && !showPinModal && (
         <CheckoutModal
           isOpen={isCheckoutOpen}
           onClose={() => setIsCheckoutOpen(false)}
