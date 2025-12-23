@@ -1,85 +1,94 @@
-// Bootstrap service worker: Firebase configuration
-// This file contains inline Firebase imports and background message handling
-// All configuration is injected at build/deployment time
+// Simple Firebase Cloud Messaging Service Worker
+// Handles background message notifications and navigation
 
-importScripts(
-  "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"
-);
-importScripts(
-  "https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"
-);
+// Immediately activate this service worker when installed
+self.addEventListener("install", (event) => {
+  console.log("[SW] Service worker installing");
+  self.skipWaiting();
+});
 
-// Configuration will be set via postMessage from the main app
-let messaging = null;
-let isInitialized = false;
+// Claim clients when activated
+self.addEventListener("activate", (event) => {
+  console.log("[SW] Service worker activating");
+  event.waitUntil(self.clients.claim());
+});
 
-// Listen for initialization message from the main app
-self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "INIT_FIREBASE") {
-    const firebaseConfig = event.data.firebaseConfig;
+// Try to load Firebase scripts for token generation
+// If CDN fails, we'll still handle push events
+let firebaseLoaded = false;
 
-    try {
-      if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-      }
-      messaging = firebase.messaging();
-      isInitialized = true;
-      console.log("[SW] Firebase initialized via postMessage");
+// Try multiple CDN sources
+const firebaseScripts = [
+  {
+    app: "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js",
+    messaging:
+      "https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js",
+  },
+  {
+    app: "https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.js",
+    messaging:
+      "https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-messaging-compat.js",
+  },
+];
 
-      // Set up background message handler AFTER Firebase is initialized
-      try {
-        messaging.onBackgroundMessage((payload) => {
-          console.log("[SW] ========== BACKGROUND MESSAGE RECEIVED ==========");
-          console.log("[SW] Background message received:", payload);
-          console.log("[SW] Notification object:", payload.notification);
-          console.log("[SW] Data object:", payload.data);
+for (const scripts of firebaseScripts) {
+  try {
+    console.log(`[SW] Attempting to load Firebase from: ${scripts.app}`);
+    importScripts(scripts.app, scripts.messaging);
+    firebaseLoaded = true;
+    console.log("[SW] Firebase scripts loaded successfully");
+    break;
+  } catch (error) {
+    console.warn(`[SW] Failed to load from ${scripts.app}:`, error.message);
+  }
+}
 
-          const notificationTitle =
-            payload.notification?.title || "New Message";
-          const notificationId = payload.data?.notificationId || "";
+if (!firebaseLoaded) {
+  console.warn(
+    "[SW] Could not load Firebase from any CDN, will use push event handler only"
+  );
+}
 
-          console.log("[SW] Notification ID:", notificationId);
-          console.log(
-            "[SW] Showing notification with title:",
-            notificationTitle
-          );
+// Handle push notifications from Firebase Cloud Messaging
+self.addEventListener("push", (event) => {
+  console.log("[SW] Push event received");
 
-          const notificationOptions = {
-            body: payload.notification?.body || "You have a new notification",
-            icon:
-              payload.notification?.image || "/images/notification-icon.png",
-            badge: "/images/notification-badge.png",
-            click_action: payload.fcmOptions?.link || "/",
-            tag: notificationId || "notification",
-            requireInteraction: false,
-            data: {
-              notificationId: notificationId,
-              ...payload.data,
-            },
-          };
+  if (!event.data) {
+    console.log("[SW] No data in push event");
+    return;
+  }
 
-          console.log("[SW] Full notification options:", notificationOptions);
+  try {
+    const payload = event.data.json();
+    console.log("[SW] FCM Payload:", payload);
 
-          try {
-            self.registration.showNotification(
-              notificationTitle,
-              notificationOptions
-            );
-            console.log(
-              "[SW] Notification shown successfully for ID:",
-              notificationId
-            );
-          } catch (error) {
-            console.error("[SW] Failed to show notification:", error);
-          }
-        });
-        console.log("[SW] onBackgroundMessage handler set up successfully");
-      } catch (error) {
-        console.error("[SW] Error setting up onBackgroundMessage:", error);
-      }
-    } catch (error) {
-      console.error("[SW] Firebase initialization error:", error);
-    }
+    const notificationTitle = payload.notification?.title || "New Notification";
+    const notificationBody = payload.notification?.body || "";
+    const notificationId = payload.data?.notificationId || "";
+    const transactionId = payload.data?.transactionId || "";
+
+    console.log("[SW] Notification ID:", notificationId);
+    console.log("[SW] Transaction ID:", transactionId);
+
+    const notificationOptions = {
+      body: notificationBody,
+      icon: payload.notification?.image || "/images/notification-icon.png",
+      badge: "/images/notification-badge.png",
+      tag: notificationId || "notification",
+      requireInteraction: false,
+      data: {
+        notificationId: notificationId,
+        transactionId: transactionId,
+        ...payload.data,
+      },
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(notificationTitle, notificationOptions)
+    );
+    console.log("[SW] Notification shown successfully");
+  } catch (error) {
+    console.error("[SW] Error handling push:", error);
   }
 });
 
@@ -88,6 +97,7 @@ self.addEventListener("notificationclose", (event) => {
   console.log("[SW] Notification closed:", event.notification.tag);
 });
 
+// Handle notification click
 self.addEventListener("notificationclick", (event) => {
   console.log("[SW] Notification clicked:", event.notification);
   console.log(

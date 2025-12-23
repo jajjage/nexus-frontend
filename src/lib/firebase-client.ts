@@ -55,25 +55,29 @@ export async function registerServiceWorker() {
     );
     console.log("Service Worker registered:", registration);
 
-    // Send Firebase config to the service worker after registration
-    if (registration.active) {
-      registration.active.postMessage({
-        type: "INIT_FIREBASE",
-        firebaseConfig: firebaseConfig,
-      });
-      console.log("Firebase config sent to service worker");
-    } else if (registration.installing) {
-      // If still installing, wait for it to become active
-      registration.installing.addEventListener("statechange", (event: any) => {
-        if (event.target.state === "activated") {
-          event.target.postMessage({
-            type: "INIT_FIREBASE",
-            firebaseConfig: firebaseConfig,
-          });
-          console.log("Firebase config sent to activated service worker");
-        }
-      });
+    // Handle waiting service worker - skip waiting and activate new one
+    if (registration.waiting) {
+      console.log(
+        "[SW] Waiting service worker found, activating new version..."
+      );
+      registration.waiting.postMessage({ type: "SKIP_WAITING" });
     }
+
+    // Listen for new service workers and activate them
+    registration.addEventListener("updatefound", () => {
+      const newWorker = registration.installing;
+      if (newWorker) {
+        newWorker.addEventListener("statechange", () => {
+          if (
+            newWorker.state === "installed" &&
+            navigator.serviceWorker.controller
+          ) {
+            console.log("[SW] New service worker installed, activating...");
+            newWorker.postMessage({ type: "SKIP_WAITING" });
+          }
+        });
+      }
+    });
   } catch (err) {
     console.warn("Service Worker registration failed:", err);
   }
@@ -118,24 +122,79 @@ export async function requestAndGetFcmToken(vapidKey?: string | null) {
     const messaging = getMessaging();
     const validVapidKey = vapidKey ?? undefined;
 
+    console.log("Waiting for service worker...");
+
     // Ensure service worker is registered before getting token
     const swRegistration = await navigator.serviceWorker.ready;
-    console.log("Service worker ready, getting FCM token...");
-
-    const currentToken = await getToken(messaging, {
-      vapidKey: validVapidKey,
-      serviceWorkerRegistration: swRegistration,
+    console.log("Service worker ready, SW details:", {
+      scope: swRegistration.scope,
+      active: !!swRegistration.active,
     });
 
-    if (currentToken) {
-      console.log("FCM token obtained successfully");
-      return currentToken;
-    } else {
-      console.warn("No FCM token received from Firebase");
+    console.log(
+      "Getting FCM token with VAPID key:",
+      validVapidKey ? "provided" : "not provided"
+    );
+
+    // Retry logic for token request
+    let currentToken = null;
+    let lastError: Error | null = null;
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds between retries
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(
+          `[Attempt ${attempt}/${maxRetries}] Requesting FCM token...`
+        );
+
+        const tokenPromise = getToken(messaging, {
+          vapidKey: validVapidKey,
+          serviceWorkerRegistration: swRegistration,
+        });
+
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(`Token request timeout (${attempt}/${maxRetries})`)
+              ),
+            15000
+          )
+        );
+
+        currentToken = await Promise.race([tokenPromise, timeoutPromise]);
+
+        if (currentToken) {
+          console.log("FCM token obtained successfully on attempt", attempt);
+          return currentToken;
+        }
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.warn(`Attempt ${attempt} failed:`, lastError.message);
+
+        if (attempt < maxRetries) {
+          console.log(`Retrying in ${retryDelay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+
+    // All retries failed
+    if (!currentToken) {
+      console.error(
+        "Failed to get FCM token after all retries. Last error:",
+        lastError?.message
+      );
       return null;
     }
+
+    return currentToken;
   } catch (err) {
-    console.error("Error getting FCM token:", err);
+    console.error("Error in FCM token request:", err);
+    if (err instanceof Error) {
+      console.error("Error details:", err.message);
+    }
     return null;
   }
 }
