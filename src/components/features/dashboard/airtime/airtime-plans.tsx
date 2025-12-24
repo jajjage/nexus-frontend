@@ -110,6 +110,16 @@ export function AirtimePlans() {
     }
   }, [operators, selectedNetwork]);
 
+  // Auto-detect and navigate to operator when phone number changes
+  useEffect(() => {
+    if (phoneNumber && phoneNumber.length >= 4 && operators.length > 0) {
+      const detectedOp = detectNetworkProvider(phoneNumber);
+      if (detectedOp) {
+        handleNetworkDetected(detectedOp);
+      }
+    }
+  }, [phoneNumber, operators]);
+
   // Handle Smart Network Detection
   const handleNetworkDetected = (networkKey: string) => {
     const matchedOperator = operators.find((op) =>
@@ -377,8 +387,8 @@ export function AirtimePlans() {
         </div>
       )}
 
-      {/* Checkout Modal - Unmount when PIN modal is open */}
-      {selectedProduct && !showPinModal && (
+      {/* Checkout Modal - Show initially or after mutation completes, hide during processing */}
+      {selectedProduct && !showPinModal && !topupMutation.isPending && (
         <CheckoutModal
           isOpen={isCheckoutOpen}
           onClose={() => setIsCheckoutOpen(false)}
