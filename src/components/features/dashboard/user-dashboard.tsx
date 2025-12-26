@@ -27,6 +27,8 @@ import { ReferralsCard } from "./referrals-card";
 import { TransactionHistory } from "./transaction-history";
 import { UserInfo } from "./user-info";
 
+import { DesktopSidebar } from "./desktop-sidebar";
+
 /**
  * User Dashboard
  * Main dashboard view for regular users
@@ -122,84 +124,104 @@ export function UserDashboard() {
   };
 
   return (
-    <>
-      <PullToRefresh onRefresh={handleRefresh}>
-        <div className="bg-muted/40 relative flex min-h-screen w-full flex-col pb-28">
-          {/* Main content */}
-          <div className="flex flex-col gap-6 p-4">
-            {/* Top Header Section */}
-            <header className="flex w-full items-center justify-between">
-              <Avatar className="size-10">
-                <AvatarImage
-                  src={user.profilePictureUrl || undefined}
-                  alt={user.fullName}
+    <div className="bg-muted/40 flex min-h-screen w-full">
+      <DesktopSidebar className="hidden md:flex" />
+
+      <main className="flex-1">
+        <PullToRefresh onRefresh={handleRefresh}>
+          <div className="relative flex min-h-screen w-full flex-col pb-28 md:pb-8">
+            {/* Main content container - centered on desktop */}
+            <div className="mx-auto w-full max-w-2xl flex-col gap-6 p-4 md:p-6 lg:p-8">
+              {/* Top Header Section */}
+              <header className="mb-6 flex w-full items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="size-10">
+                    <AvatarImage
+                      src={user.profilePictureUrl || undefined}
+                      alt={user.fullName}
+                    />
+                    <AvatarFallback>
+                      {getInitials(user.fullName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="hidden md:block">
+                    <h1 className="text-lg font-semibold">Welcome back,</h1>
+                    <p className="text-muted-foreground text-sm">
+                      {user.fullName}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" asChild>
+                    <Link href="/dashboard/rewards">
+                      <Gift className="size-5" />
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" size="icon">
+                    <Signal className="size-5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    asChild
+                    className="relative"
+                  >
+                    <Link href="/dashboard/notifications">
+                      <Bell className="size-5" />
+                      {unreadNotificationCount > 0 && (
+                        <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                          {unreadNotificationCount > 9
+                            ? "9+"
+                            : unreadNotificationCount}
+                        </span>
+                      )}
+                    </Link>
+                  </Button>
+                </div>
+              </header>
+
+              <div className="flex flex-col gap-6">
+                <NotificationBanner />
+
+                {/* User Info Section (Mobile Only) */}
+                <div className="md:hidden">
+                  <UserInfo fullName={user.fullName} phone={user.phoneNumber} />
+                </div>
+
+                {/* Balance Card */}
+                <BalanceCard
+                  balance={parseFloat(user.balance)}
+                  isVisible={isBalanceVisible}
+                  setIsVisible={setIsBalanceVisible}
+                  accountName={user.fullName}
+                  accountNumber={user.accountNumber}
+                  providerName={user.providerName}
                 />
-                <AvatarFallback>{getInitials(user.fullName)}</AvatarFallback>
-              </Avatar>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" asChild>
-                  <Link href="/dashboard/rewards">
-                    <Gift className="size-5" />
-                  </Link>
-                </Button>
-                <Button variant="ghost" size="icon">
-                  <Signal className="size-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  asChild
-                  className="relative"
-                >
-                  <Link href="/dashboard/notifications">
-                    <Bell className="size-5" />
-                    {unreadNotificationCount > 0 && (
-                      <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                        {unreadNotificationCount > 9
-                          ? "9+"
-                          : unreadNotificationCount}
-                      </span>
-                    )}
-                  </Link>
-                </Button>
+
+                {/* Recent Transactions */}
+                <div className="-mt-12">
+                  <TransactionHistory isVisible={isBalanceVisible} />
+                </div>
+
+                {/* Referrals Balance */}
+                <ReferralsCard />
+
+                {/* Make Payment Actions */}
+                <ActionButtons />
+
+                {/* Ads Carousel */}
+                <AdsCarousel />
+
+                {/* Promotional Banner */}
+                <PromoBanner />
               </div>
-            </header>
-
-            <NotificationBanner />
-
-            {/* User Info Section */}
-            <UserInfo fullName={user.fullName} phone={user.phoneNumber} />
-
-            {/* Balance Card */}
-            <BalanceCard
-              balance={parseFloat(user.balance)}
-              isVisible={isBalanceVisible}
-              setIsVisible={setIsBalanceVisible}
-              accountName={user.fullName}
-              accountNumber={user.accountNumber}
-              providerName={user.providerName}
-            />
-
-            {/* Recent Transactions */}
-            <div className="-mt-12">
-              <TransactionHistory isVisible={isBalanceVisible} />
             </div>
-
-            {/* Referrals Balance */}
-            <ReferralsCard />
-
-            {/* Make Payment Actions */}
-            <ActionButtons />
-
-            {/* Ads Carousel */}
-            <AdsCarousel />
-
-            {/* Promotional Banner */}
-            <PromoBanner />
           </div>
-        </div>
-      </PullToRefresh>
-      {/* Bottom Navigation */}
+        </PullToRefresh>
+      </main>
+
+      {/* Bottom Navigation (Mobile Only) */}
       <BottomNav />
 
       {/* PIN Setup Modal */}
@@ -209,6 +231,6 @@ export function UserDashboard() {
         onSuccess={handlePinSetupSuccess}
         isLoading={isUpdatingPin}
       />
-    </>
+    </div>
   );
 }

@@ -129,6 +129,15 @@ export default function proxy(request: NextRequest) {
       });
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
+
+    // If user is admin but tries to access user dashboard
+    if (userRole === "admin" && pathname === "/dashboard") {
+      console.log("[PROXY] Admin user accessing user dashboard", {
+        pathname,
+        userRole,
+      });
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+    }
   }
 
   // ========================================================================

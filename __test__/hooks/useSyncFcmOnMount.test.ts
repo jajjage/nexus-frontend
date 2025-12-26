@@ -213,14 +213,13 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
 
   describe("Session state scenarios", () => {
     it("should sync token when user becomes authenticated after loading", async () => {
-      const { rerender } = renderHook(() => {
-        (useAuth as jest.Mock).mockReturnValue({
-          user: null,
-          isLoading: true,
-          isAuthenticated: false,
-        });
-        return useSyncFcmOnMount();
+      (useAuth as jest.Mock).mockReturnValue({
+        user: null,
+        isLoading: true,
+        isAuthenticated: false,
       });
+
+      const { rerender } = renderHook(() => useSyncFcmOnMount());
 
       await new Promise((resolve) => setTimeout(resolve, 100));
       expect(syncFcmToken).not.toHaveBeenCalled();

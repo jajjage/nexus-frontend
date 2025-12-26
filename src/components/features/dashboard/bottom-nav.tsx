@@ -23,7 +23,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <div className="bg-card fixed bottom-0 left-0 z-50 h-20 w-full border-t">
+    <div className="bg-card fixed bottom-0 left-0 z-50 h-20 w-full border-t md:hidden">
       <div className="grid h-full grid-cols-4 items-center">
         {navItems.map((item) => (
           <Link

@@ -43,13 +43,10 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       const result = await syncFcmToken("web");
 
       expect(result).toBe(true);
-      expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
-        {
-          token: userAToken,
-          platform: "web",
-        }
-      );
+      expect(apiClient.post).toHaveBeenCalledWith("/notifications/tokens", {
+        token: userAToken,
+        platform: "web",
+      });
       expect(localStorage.getItem("last_fcm_token")).toBe(userAToken);
     });
   });
@@ -67,13 +64,10 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       const result = await syncFcmToken("web");
 
       expect(result).toBe(true);
-      expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
-        {
-          token: userAToken,
-          platform: "web",
-        }
-      );
+      expect(apiClient.post).toHaveBeenCalledWith("/notifications/tokens", {
+        token: userAToken,
+        platform: "web",
+      });
     });
 
     it("should skip sync if token unchanged since last login", async () => {
@@ -122,13 +116,10 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       const result = await syncFcmToken("web");
 
       expect(result).toBe(true);
-      expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
-        {
-          token: newUserAToken,
-          platform: "web",
-        }
-      );
+      expect(apiClient.post).toHaveBeenCalledWith("/notifications/tokens", {
+        token: newUserAToken,
+        platform: "web",
+      });
       expect(localStorage.getItem("last_fcm_token")).toBe(newUserAToken);
     });
 
@@ -148,13 +139,10 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       const result = await syncFcmToken("web");
 
       expect(result).toBe(true);
-      expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
-        {
-          token: userAToken,
-          platform: "web",
-        }
-      );
+      expect(apiClient.post).toHaveBeenCalledWith("/notifications/tokens", {
+        token: userAToken,
+        platform: "web",
+      });
       expect(localStorage.getItem("last_fcm_token")).toBe(userAToken);
     });
 
@@ -176,7 +164,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       expect(result).toBe(true);
       // Should detect difference and sync new token
       expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
+        "/notifications/tokens",
         expect.objectContaining({
           token: newUserAToken,
         })
@@ -202,13 +190,10 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       const result = await syncFcmToken("web");
 
       expect(result).toBe(true);
-      expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
-        {
-          token: newUserAToken,
-          platform: "web",
-        }
-      );
+      expect(apiClient.post).toHaveBeenCalledWith("/notifications/tokens", {
+        token: newUserAToken,
+        platform: "web",
+      });
       expect(localStorage.getItem("last_fcm_token")).toBe(newUserAToken);
     });
 
@@ -229,7 +214,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       (requestAndGetFcmToken as jest.Mock).mockResolvedValue(tokenA);
       await syncFcmToken("web");
       expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
+        "/notifications/tokens",
         expect.objectContaining({ token: tokenA })
       );
 
@@ -239,7 +224,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       (apiClient.post as jest.Mock).mockResolvedValue({ status: 200 });
       await syncFcmToken("web");
       expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
+        "/notifications/tokens",
         expect.objectContaining({ token: tokenB })
       );
 
@@ -249,7 +234,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       (apiClient.post as jest.Mock).mockResolvedValue({ status: 200 });
       await syncFcmToken("web");
       expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
+        "/notifications/tokens",
         expect.objectContaining({ token: tokenC })
       );
 
@@ -275,7 +260,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
 
       expect(result).toBe(true);
       expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/unlink-token",
+        "/notifications/tokens/unlink",
         {
           token: userAToken,
         }
@@ -318,13 +303,10 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       // User A registers/logs in
       const registerResult = await syncFcmToken("web");
       expect(registerResult).toBe(true);
-      expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
-        {
-          token: userAToken,
-          platform: "web",
-        }
-      );
+      expect(apiClient.post).toHaveBeenCalledWith("/notifications/tokens", {
+        token: userAToken,
+        platform: "web",
+      });
 
       const tokenInStorageAfterUserALogin =
         localStorage.getItem("last_fcm_token");
@@ -337,7 +319,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       const unlinkResult = await unlinkFcmToken();
       expect(unlinkResult).toBe(true);
       expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/unlink-token",
+        "/notifications/tokens/unlink",
         {
           token: userAToken,
         }
@@ -358,13 +340,10 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       expect(userBLoginResult).toBe(true);
 
       // User B's token should be synced
-      expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
-        {
-          token: userBToken,
-          platform: "web",
-        }
-      );
+      expect(apiClient.post).toHaveBeenCalledWith("/notifications/tokens", {
+        token: userBToken,
+        platform: "web",
+      });
 
       // Verify User B's token is now in storage
       const tokenAfterUserBLogin = localStorage.getItem("last_fcm_token");
@@ -392,7 +371,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
 
       await syncFcmToken("web");
       expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
+        "/notifications/tokens",
         expect.objectContaining({ token: userAToken })
       );
 
@@ -401,7 +380,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       (apiClient.post as jest.Mock).mockResolvedValue({ status: 200 });
       await unlinkFcmToken();
       expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/unlink-token",
+        "/notifications/tokens/unlink",
         expect.objectContaining({ token: userAToken })
       );
 
@@ -414,7 +393,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
 
       // Verify User B's token registered, not User A's
       expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
+        "/notifications/tokens",
         expect.objectContaining({ token: userBToken })
       );
 
@@ -475,7 +454,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
 
       expect(secondResult).toBe(true);
       expect(apiClient.post).toHaveBeenCalledWith(
-        "/notifications/register-token",
+        "/notifications/tokens",
         expect.objectContaining({ token: userAToken })
       );
       expect(localStorage.getItem("last_fcm_token")).toBe(userAToken);
