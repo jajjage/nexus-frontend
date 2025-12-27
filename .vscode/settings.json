@@ -20,5 +20,13 @@
   "git.confirmSync": false,
   "explorer.confirmDelete": false,
   "explorer.confirmDragAndDrop": false,
-  "cSpell.words": ["Airtel", "notif", "Syncer", "TOPUP", "tranx", "Xtra"]
+  "cSpell.words": [
+    "Airtel",
+    "notif",
+    "Syncer",
+    "TOPUP",
+    "tranx",
+    "webauthn",
+    "Xtra"
+  ]
 }

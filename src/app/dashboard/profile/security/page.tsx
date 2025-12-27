@@ -2,7 +2,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronRight, KeyRound, Lock } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  Fingerprint,
+  KeyRound,
+  Lock,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -21,6 +27,12 @@ export default function SecurityPage() {
       description: "Set or update your transaction PIN",
       icon: KeyRound,
       href: "/dashboard/profile/security/pin",
+    },
+    {
+      title: "Biometric Authentication",
+      description: "Manage fingerprint or face ID",
+      icon: Fingerprint,
+      href: "/dashboard/profile/security/biometric",
     },
   ];
 
