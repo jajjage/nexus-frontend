@@ -47,6 +47,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Skip Next.js internal requests (static chunks, data, etc.) to prevent errors
+  if (url.pathname.startsWith("/_next/")) {
+    return;
+  }
+
   // API requests: network-first strategy
   if (url.pathname.includes("/api/")) {
     event.respondWith(
@@ -107,6 +112,11 @@ self.addEventListener("fetch", (event) => {
         if (request.destination === "image") {
           return caches.match("/images/notification-icon.png");
         }
+        // Return a generic error response for other assets to prevent SW failure
+        return new Response("Network error", {
+          status: 408,
+          headers: { "Content-Type": "text/plain" },
+        });
       })
   );
 });

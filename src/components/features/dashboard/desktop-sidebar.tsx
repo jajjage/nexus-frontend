@@ -14,6 +14,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLogout } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/dashboard" },
@@ -29,12 +30,19 @@ export function DesktopSidebar({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "bg-card sticky top-0 left-0 z-50 flex h-screen w-64 flex-col border-r px-4 py-6",
+        "bg-card sticky top-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col border-r px-4 py-6",
         className
       )}
     >
       <div className="mb-8 flex items-center gap-2 px-2">
-        <div className="bg-primary size-8 rounded-full" />
+        <div className="relative size-8 overflow-hidden rounded-full">
+          <Image
+            src="/images/logo.svg"
+            alt="Nexus Data"
+            fill
+            className="object-cover"
+          />
+        </div>
         <span className="text-xl font-bold">Nexus Data</span>
       </div>
 

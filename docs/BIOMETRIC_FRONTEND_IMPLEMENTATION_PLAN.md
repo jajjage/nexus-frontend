@@ -2,7 +2,7 @@
 
 ## Overview
 
-Complete plan to implement biometric authentication on the frontend, integrating with the fully-tested backend API (38/38 tests passing).
+Complete plan to implement WebAuthn-based biometric authentication on the frontend, integrating with the fully-tested backend API (103/103 tests passing). This implementation uses the standard WebAuthn Options → Verify flow for both registration and authentication.
 
 ---
 
@@ -44,43 +44,113 @@ npm install date-fns                     # Date formatting
 Create `/src/types/biometric.types.ts`:
 
 ```typescript
-// Mirror backend types from API_DOCUMENTATION.md
+// WebAuthn-based biometric types
+export interface PublicKeyCredentialCreationOptions {
+  challenge: BufferSource;
+  rp: PublicKeyCredentialRpEntity;
+  user: PublicKeyCredentialUserEntity;
+  pubKeyCredParams: PublicKeyCredentialParameters[];
+  timeout?: number;
+  attestation?: AttestationConveyancePreference;
+  authenticatorSelection?: AuthenticatorSelectionCriteria;
+  extensions?: AuthenticationExtensionsClientInputs;
+}
+
+export interface PublicKeyCredentialRequestOptions {
+  challenge: BufferSource;
+  timeout?: number;
+  rpId?: string;
+  allowCredentials?: PublicKeyCredentialDescriptor[];
+  userVerification?: UserVerificationRequirement;
+  extensions?: AuthenticationExtensionsClientInputs;
+}
+
 export interface BiometricEnrollment {
   id: string;
-  userId: string;
-  biometricType: "fingerprint" | "face" | "iris";
-  deviceId: string;
+  user_id: string;
+  device_id: string;
+  device_name: string;
+  platform: "ios" | "android" | "macos" | "windows" | "web";
+  authenticator_attachment: "platform" | "cross-platform";
+  is_active: boolean;
+  enrolled_at: string;
+  last_verified_at?: string;
+  verification_count: number;
+}
+
+export interface WebAuthnRegistrationResponse {
+  id: string;
+  rawId: string;
+  response: {
+    clientDataJSON: string;
+    attestationObject: string;
+  };
+  type: "public-key";
   deviceName?: string;
-  platform: "ios" | "android" | "web";
-  isActive: boolean;
-  enrolledAt: string;
-  lastVerifiedAt?: string;
-  verificationCount: number;
-  confidenceThreshold: number;
+  platform?: string;
+  authenticatorAttachment?: string;
 }
 
-export interface BiometricChallenge {
-  challengeId: string;
-  challenge: string;
-  nonce: string;
-  expiresIn: number;
-}
-
-export interface BiometricVerificationResult {
-  jwt: string;
-  sessionId: string;
-  expiresIn: number;
-  refreshToken: string;
+export interface WebAuthnAuthenticationResponse {
+  id: string;
+  rawId: string;
+  response: {
+    clientDataJSON: string;
+    authenticatorData: string;
+    signature: string;
+  };
+  type: "public-key";
 }
 
 export interface BiometricAuditLog {
   id: string;
-  userId: string;
-  actionType: "enroll" | "verify" | "revoke";
-  actionStatus: "success" | "failure";
-  biometricType?: string;
-  deviceId?: string;
-  timestamp: string;
+  user_id: string;
+  action_type: "register" | "authenticate" | "revoke" | "update";
+  action_status: "success" | "failed" | "blocked";
+  enrollment_id?: string | null;
+  failure_reason?: string | null;
+  created_at: string;
+}
+
+export interface RegistrationOptionsResponse {
+  challenge: string;
+  rp: {
+    name: string;
+    id: string;
+  };
+  user: {
+    id: string;
+    name: string;
+    displayName: string;
+  };
+  pubKeyCredParams: Array<{
+    alg: number;
+    type: string;
+  }>;
+  timeout?: number;
+  attestation?: string;
+  authenticatorSelection?: {
+    authenticatorAttachment?: string;
+    residentKey?: string;
+    userVerification?: string;
+  };
+}
+
+export interface AuthenticationOptionsResponse {
+  challenge: string;
+  rpId?: string;
+  timeout?: number;
+  userVerification?: string;
+  allowCredentials?: Array<{
+    id: string;
+    type: string;
+    transports?: string[];
+  }>;
+}
+
+export interface VerificationResponse {
+  enrollmentId: string;
+  credentialId: string;
 }
 ```
 
@@ -96,8 +166,11 @@ Create `/src/services/biometricApi.service.ts`:
 import axios, { AxiosInstance } from "axios";
 import {
   BiometricEnrollment,
-  BiometricChallenge,
-  BiometricVerificationResult,
+  WebAuthnRegistrationResponse,
+  WebAuthnAuthenticationResponse,
+  RegistrationOptionsResponse,
+  AuthenticationOptionsResponse,
+  VerificationResponse,
   BiometricAuditLog,
 } from "../types/biometric.types";
 
@@ -109,56 +182,82 @@ export class BiometricApiService {
   constructor() {
     this.api = axios.create({
       baseURL: this.baseURL,
-      withCredentials: true, // For cookie-based auth
+      withCredentials: true,
     });
   }
 
-  // USER ENDPOINTS
+  // ===================================================================
+  // REGISTRATION ENDPOINTS (OPTIONS → VERIFY flow)
+  // ===================================================================
 
   /**
-   * Enroll a new biometric
-   * POST /biometric/enroll
+   * STEP 1: Get registration options
+   * GET /biometric/register/options
+   *
+   * Returns WebAuthn registration options with challenge
    */
-  async enrollBiometric(data: {
-    biometricType: "fingerprint" | "face" | "iris";
-    deviceId: string;
-    deviceName?: string;
-    platform: "ios" | "android" | "web";
-    template: string;
-    enrollmentName?: string;
-    deviceFingerprint?: string;
-  }): Promise<{ enrollmentId: string }> {
-    const response = await this.api.post("/biometric/enroll", data);
+  async getRegistrationOptions(): Promise<RegistrationOptionsResponse> {
+    const response = await this.api.get("/biometric/register/options");
     return response.data.data;
   }
 
   /**
-   * Request a biometric challenge
-   * POST /biometric/challenge
+   * STEP 2: Verify registration response
+   * POST /biometric/register/verify
+   *
+   * Sends WebAuthn attestation response and device info
    */
-  async requestChallenge(data: {
-    enrollmentId: string;
-    deviceId: string;
-    platform: "ios" | "android" | "web";
-    deviceFingerprint?: string;
-  }): Promise<BiometricChallenge> {
-    const response = await this.api.post("/biometric/challenge", data);
+  async verifyRegistration(
+    attestationResponse: WebAuthnRegistrationResponse
+  ): Promise<VerificationResponse> {
+    const response = await this.api.post("/biometric/register/verify", {
+      id: attestationResponse.id,
+      rawId: attestationResponse.rawId,
+      response: attestationResponse.response,
+      type: attestationResponse.type,
+      deviceName: attestationResponse.deviceName,
+      platform: attestationResponse.platform,
+      authenticatorAttachment: attestationResponse.authenticatorAttachment,
+    });
+    return response.data.data;
+  }
+
+  // ===================================================================
+  // AUTHENTICATION ENDPOINTS (OPTIONS → VERIFY flow)
+  // ===================================================================
+
+  /**
+   * STEP 1: Get authentication options
+   * GET /biometric/auth/options
+   *
+   * Returns WebAuthn authentication challenge
+   */
+  async getAuthenticationOptions(): Promise<AuthenticationOptionsResponse> {
+    const response = await this.api.get("/biometric/auth/options");
     return response.data.data;
   }
 
   /**
-   * Verify biometric and get JWT
-   * POST /biometric/verify
+   * STEP 2: Verify authentication response
+   * POST /biometric/auth/verify
+   *
+   * Sends WebAuthn assertion response for verification
    */
-  async verifyBiometric(data: {
-    challengeId: string;
-    confidenceScore: number;
-    verificationMethod?: string;
-    deviceFingerprint?: string;
-  }): Promise<BiometricVerificationResult> {
-    const response = await this.api.post("/biometric/verify", data);
+  async verifyAuthentication(
+    assertionResponse: WebAuthnAuthenticationResponse
+  ): Promise<VerificationResponse> {
+    const response = await this.api.post("/biometric/auth/verify", {
+      id: assertionResponse.id,
+      rawId: assertionResponse.rawId,
+      response: assertionResponse.response,
+      type: assertionResponse.type,
+    });
     return response.data.data;
   }
+
+  // ===================================================================
+  // ENROLLMENT MANAGEMENT ENDPOINTS
+  // ===================================================================
 
   /**
    * List user's biometric enrollments
@@ -173,7 +272,7 @@ export class BiometricApiService {
   }
 
   /**
-   * Get enrollment details
+   * Get specific enrollment details
    * GET /biometric/enrollments/:enrollmentId
    */
   async getEnrollmentDetails(
@@ -195,8 +294,12 @@ export class BiometricApiService {
     });
   }
 
+  // ===================================================================
+  // AUDIT LOG ENDPOINTS
+  // ===================================================================
+
   /**
-   * Get audit logs
+   * Get user's audit logs
    * GET /biometric/audit-log
    */
   async getAuditLog(
@@ -212,10 +315,12 @@ export class BiometricApiService {
     return response.data.data;
   }
 
+  // ===================================================================
   // ADMIN ENDPOINTS
+  // ===================================================================
 
   /**
-   * Admin: Revoke all enrollments for user
+   * Admin: Revoke all enrollments for a user
    * POST /admin/biometric/revoke-all
    */
   async adminRevokeAll(userId: string): Promise<{ revokedCount: number }> {
@@ -233,7 +338,7 @@ export class BiometricApiService {
     userId: string;
     enrollments: BiometricEnrollment[];
     count: number;
-    activeCount: number;
+    active_count: number;
   }> {
     const response = await this.api.get(
       `/admin/biometric/enrollments/${userId}`
@@ -274,7 +379,10 @@ export class BiometricApiService {
     return response.data.data;
   }
 
-  // Error handling
+  // ===================================================================
+  // AUTH MANAGEMENT
+  // ===================================================================
+
   setAuthToken(token: string) {
     this.api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   }
@@ -407,111 +515,265 @@ export const useBiometricStore = create<BiometricState>((set, get) => ({
 
 ---
 
-## Phase 4: Native Biometric Integration
+## Phase 4: WebAuthn Integration Service
 
-### 4.1 Create Biometric Capture Service
+### 4.1 Create WebAuthn Service
 
-Create `/src/services/biometricCapture.service.ts`:
+Create `/src/services/webauthn.service.ts`:
 
 ```typescript
-import * as React from "react";
+import { biometricApi } from "./biometricApi.service";
+import {
+  RegistrationOptionsResponse,
+  AuthenticationOptionsResponse,
+  WebAuthnRegistrationResponse,
+  WebAuthnAuthenticationResponse,
+} from "../types/biometric.types";
 
-export class BiometricCaptureService {
+/**
+ * WebAuthn Service
+ * Handles the Options → Verify flow for both registration and authentication
+ * Uses the standard Web Authentication API
+ */
+export class WebAuthnService {
   /**
-   * Check if device supports biometrics
+   * Check if WebAuthn is supported on this device
    */
-  static async isBiometricAvailable(): Promise<boolean> {
-    if (!window.PublicKeyCredential) {
-      return false;
-    }
-    try {
-      return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-    } catch {
-      return false;
-    }
+  static async isWebAuthnSupported(): Promise<boolean> {
+    return (
+      !!window.PublicKeyCredential &&
+      (await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable?.())
+    );
   }
 
   /**
-   * Get device fingerprint for additional security
+   * REGISTRATION FLOW
+   * Step 1: Get registration options from backend
+   * Step 2: Create credential using WebAuthn
+   * Step 3: Verify credential on backend
    */
-  static async getDeviceFingerprint(): Promise<string> {
-    const navigator = window.navigator;
-    const fingerprint = {
-      userAgent: navigator.userAgent,
-      language: navigator.language,
-      platform: navigator.platform,
-      hardwareConcurrency: navigator.hardwareConcurrency,
-      deviceMemory: (navigator as any).deviceMemory,
-      screenResolution: `${window.screen.width}x${window.screen.height}`,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+
+  /**
+   * Get registration options from backend
+   */
+  static async getRegistrationOptions(): Promise<RegistrationOptionsResponse> {
+    return await biometricApi.getRegistrationOptions();
+  }
+
+  /**
+   * Create WebAuthn credential (uses the options from step 1)
+   */
+  static async createCredential(
+    options: RegistrationOptionsResponse
+  ): Promise<WebAuthnRegistrationResponse> {
+    // Convert challenge from string to ArrayBuffer
+    const challengeBuffer = this.bufferFromString(options.challenge);
+    const userIdBuffer = this.bufferFromString(options.user.id);
+
+    const credentialOptions: CredentialCreationOptions = {
+      publicKey: {
+        challenge: challengeBuffer,
+        rp: options.rp,
+        user: {
+          id: userIdBuffer,
+          name: options.user.name,
+          displayName: options.user.displayName,
+        },
+        pubKeyCredParams: options.pubKeyCredParams as any,
+        timeout: options.timeout || 60000,
+        attestation: (options.attestation ||
+          "direct") as AttestationConveyancePreference,
+        authenticatorSelection:
+          options.authenticatorSelection as AuthenticatorSelectionCriteria,
+      },
     };
-    return JSON.stringify(fingerprint);
-  }
 
-  /**
-   * Capture biometric template
-   * MOCK: In production, use native biometric APIs or WebAuthn
-   */
-  static async captureBiometric(
-    type: "fingerprint" | "face" | "iris",
-    options?: { timeout?: number }
-  ): Promise<string> {
-    // For web: Use WebAuthn API
-    // For mobile: Use react-native-biometrics
+    const credential = (await navigator.credentials.create(
+      credentialOptions
+    )) as any;
 
-    // Mock template for demo
-    return `${type}-template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }
+    if (!credential) {
+      throw new Error("Failed to create WebAuthn credential");
+    }
 
-  /**
-   * Request biometric verification
-   * Returns confidence score
-   */
-  static async verifyBiometric(
-    challenge: string,
-    type: "fingerprint" | "face" | "iris",
-    options?: { timeout?: number }
-  ): Promise<{ template: string; confidenceScore: number }> {
-    // In production, integrate with:
-    // - WebAuthn for web
-    // - react-native-biometrics for React Native
-    // - Platform-specific biometric APIs
-
-    // Mock response
     return {
-      template: `${type}-template-${Date.now()}`,
-      confidenceScore: 0.98 + Math.random() * 0.02, // 0.98-1.0
+      id: credential.id,
+      rawId: this.bufferToString(credential.rawId),
+      response: {
+        clientDataJSON: this.bufferToString(credential.response.clientDataJSON),
+        attestationObject: this.bufferToString(
+          credential.response.attestationObject
+        ),
+      },
+      type: credential.type,
     };
   }
 
   /**
-   * Get platform and device info
+   * Verify credential on backend
    */
-  static getPlatformInfo() {
+  static async verifyCredential(
+    credential: WebAuthnRegistrationResponse,
+    deviceInfo?: {
+      deviceName?: string;
+      platform?: string;
+      authenticatorAttachment?: string;
+    }
+  ) {
+    return await biometricApi.verifyRegistration({
+      ...credential,
+      ...deviceInfo,
+    });
+  }
+
+  /**
+   * AUTHENTICATION FLOW
+   * Step 1: Get authentication options from backend
+   * Step 2: Sign assertion using WebAuthn
+   * Step 3: Verify assertion on backend
+   */
+
+  /**
+   * Get authentication options from backend
+   */
+  static async getAuthenticationOptions(): Promise<AuthenticationOptionsResponse> {
+    return await biometricApi.getAuthenticationOptions();
+  }
+
+  /**
+   * Sign assertion using WebAuthn
+   */
+  static async signAssertion(
+    options: AuthenticationOptionsResponse
+  ): Promise<WebAuthnAuthenticationResponse> {
+    const challengeBuffer = this.bufferFromString(options.challenge);
+
+    const assertionOptions: CredentialRequestOptions = {
+      publicKey: {
+        challenge: challengeBuffer,
+        timeout: options.timeout || 60000,
+        rpId: options.rpId,
+        userVerification: (options.userVerification ||
+          "preferred") as UserVerificationRequirement,
+        allowCredentials: options.allowCredentials?.map((cred) => ({
+          id: this.bufferFromString(cred.id),
+          type: cred.type as CredentialMediationRequirement,
+          transports: cred.transports as AuthenticatorTransport[],
+        })) as PublicKeyCredentialDescriptor[],
+      },
+    };
+
+    const assertion = (await navigator.credentials.get(
+      assertionOptions
+    )) as any;
+
+    if (!assertion) {
+      throw new Error("Failed to sign WebAuthn assertion");
+    }
+
+    return {
+      id: assertion.id,
+      rawId: this.bufferToString(assertion.rawId),
+      response: {
+        clientDataJSON: this.bufferToString(assertion.response.clientDataJSON),
+        authenticatorData: this.bufferToString(
+          assertion.response.authenticatorData
+        ),
+        signature: this.bufferToString(assertion.response.signature),
+      },
+      type: assertion.type,
+    };
+  }
+
+  /**
+   * Verify assertion on backend
+   */
+  static async verifyAssertion(assertion: WebAuthnAuthenticationResponse) {
+    return await biometricApi.verifyAuthentication(assertion);
+  }
+
+  /**
+   * HELPER METHODS
+   */
+
+  /**
+   * Convert ArrayBuffer to base64 string
+   */
+  private static bufferToString(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+
+  /**
+   * Convert base64 string to ArrayBuffer
+   */
+  private static bufferFromString(str: string): ArrayBuffer {
+    const binary = atob(str);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+
+  /**
+   * Get device/platform information
+   */
+  static getDeviceInfo() {
     const ua = navigator.userAgent;
-    let platform: "ios" | "android" | "web" = "web";
+    let platform: "ios" | "android" | "macos" | "windows" | "web" = "web";
 
     if (/iPad|iPhone|iPod/.test(ua)) {
       platform = "ios";
     } else if (/Android/.test(ua)) {
       platform = "android";
+    } else if (/Mac/.test(ua)) {
+      platform = "macos";
+    } else if (/Win/.test(ua)) {
+      platform = "windows";
     }
 
     return {
       platform,
-      deviceId: this.getOrCreateDeviceId(),
-      deviceName: navigator.userAgent.split(" ")[0],
+      deviceName: this.getDeviceName(),
+      userAgent: ua,
     };
   }
 
   /**
-   * Get or create unique device ID
+   * Get device name/model
+   */
+  private static getDeviceName(): string {
+    const ua = navigator.userAgent;
+
+    // iPhone
+    if (/iPhone/.test(ua)) return "iPhone";
+    if (/iPad/.test(ua)) return "iPad";
+    if (/iPod/.test(ua)) return "iPod Touch";
+
+    // Android
+    if (/Android/.test(ua)) return "Android Device";
+
+    // Desktop
+    if (/Macintosh/.test(ua)) return "Mac";
+    if (/Windows/.test(ua)) return "Windows PC";
+    if (/Linux/.test(ua)) return "Linux Device";
+
+    return "Unknown Device";
+  }
+
+  /**
+   * Get or create persistent device ID
    */
   static getOrCreateDeviceId(): string {
-    let deviceId = localStorage.getItem("biometric_device_id");
+    let deviceId = localStorage.getItem("webauthn_device_id");
     if (!deviceId) {
       deviceId = `device-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem("biometric_device_id", deviceId);
+      localStorage.setItem("webauthn_device_id", deviceId);
     }
     return deviceId;
   }
@@ -522,152 +784,165 @@ export class BiometricCaptureService {
 
 ## Phase 5: UI Components
 
-### 5.1 Enrollment Flow Component
+### 5.1 Registration/Enrollment Component
 
-Create `/src/components/BiometricEnrollment.tsx`:
+Create `/src/components/BiometricRegistration.tsx`:
 
 ```typescript
 import React, { useState } from 'react';
 import { useBiometricStore } from '../store/biometricStore';
-import { BiometricCaptureService } from '../services/biometricCapture.service';
+import { WebAuthnService } from '../services/webauthn.service';
 import { toast } from 'react-toastify';
 
-export const BiometricEnrollment: React.FC = () => {
-  const [biometricType, setBiometricType] = useState<'fingerprint' | 'face' | 'iris'>('fingerprint');
+export const BiometricRegistration: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const enrollBiometric = useBiometricStore((state) => state.enrollBiometric);
+  const [error, setError] = useState<string | null>(null);
+  const [deviceName, setDeviceName] = useState<string>('');
 
-  const handleEnroll = async () => {
+  const handleRegister = async () => {
     setLoading(true);
+    setError(null);
+
     try {
-      // Check device support
-      const available = await BiometricCaptureService.isBiometricAvailable();
-      if (!available) {
-        throw new Error('Biometric not available on this device');
+      // Step 1: Check WebAuthn support
+      const supported = await WebAuthnService.isWebAuthnSupported();
+      if (!supported) {
+        throw new Error('WebAuthn is not supported on this device');
       }
 
-      // Capture biometric
-      const template = await BiometricCaptureService.captureBiometric(biometricType);
-      const platformInfo = BiometricCaptureService.getPlatformInfo();
-      const fingerprint = await BiometricCaptureService.getDeviceFingerprint();
+      // Step 2: Get registration options from backend
+      const options = await WebAuthnService.getRegistrationOptions();
 
-      // Call API
-      const enrollmentId = await enrollBiometric({
-        biometricType,
-        template,
-        ...platformInfo,
-        enrollmentName: `${biometricType} - ${new Date().toLocaleDateString()}`,
-        deviceFingerprint: fingerprint,
+      // Step 3: Create WebAuthn credential
+      const credential = await WebAuthnService.createCredential(options);
+
+      // Step 4: Get device info
+      const deviceInfo = WebAuthnService.getDeviceInfo();
+
+      // Step 5: Verify credential on backend
+      const result = await WebAuthnService.verifyCredential(credential, {
+        deviceName: deviceName || deviceInfo.deviceName,
+        platform: deviceInfo.platform,
+        authenticatorAttachment: (credential as any).authenticatorAttachment,
       });
 
-      toast.success('Biometric enrolled successfully!');
-    } catch (error) {
-      toast.error(error.message || 'Enrollment failed');
+      toast.success(`Device registered successfully! ID: ${result.enrollmentId}`);
+      // Refresh enrollments
+      const { fetchEnrollments } = useBiometricStore.getState();
+      await fetchEnrollments();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Registration failed';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="enrollment-container">
-      <h2>Enroll Biometric</h2>
-      <select
-        value={biometricType}
-        onChange={(e) => setBiometricType(e.target.value as any)}
+    <div className="registration-container">
+      <h2>Register Biometric Authentication</h2>
+
+      <div className="form-group">
+        <label htmlFor="deviceName">Device Name (optional)</label>
+        <input
+          id="deviceName"
+          type="text"
+          value={deviceName}
+          onChange={(e) => setDeviceName(e.target.value)}
+          placeholder="e.g., My iPhone, Work Laptop"
+          disabled={loading}
+        />
+      </div>
+
+      {error && <div className="error-message">{error}</div>}
+
+      <button
+        onClick={handleRegister}
         disabled={loading}
+        className="btn-primary"
       >
-        <option value="fingerprint">Fingerprint</option>
-        <option value="face">Face</option>
-        <option value="iris">Iris</option>
-      </select>
-      <button onClick={handleEnroll} disabled={loading}>
-        {loading ? 'Enrolling...' : 'Enroll Biometric'}
+        {loading ? 'Registering...' : 'Register Biometric'}
       </button>
+
+      <p className="info-text">
+        You will be prompted to authenticate using your device's biometric sensor.
+      </p>
     </div>
   );
 };
 ```
 
-### 5.2 Verification/Login Component
+### 5.2 Authentication/Login Component
 
-Create `/src/components/BiometricVerification.tsx`:
+Create `/src/components/BiometricAuthentication.tsx`:
 
 ```typescript
-import React, { useState, useEffect } from 'react';
-import { useBiometricStore } from '../store/biometricStore';
-import { BiometricCaptureService } from '../services/biometricCapture.service';
+import React, { useState } from 'react';
+import { WebAuthnService } from '../services/webauthn.service';
 import { biometricApi } from '../services/biometricApi.service';
 import { toast } from 'react-toastify';
 
-export const BiometricVerification: React.FC<{
-  enrollmentId: string;
-  onSuccess?: (jwt: string) => void;
-}> = ({ enrollmentId, onSuccess }) => {
+export const BiometricAuthentication: React.FC<{
+  onSuccess?: (enrollmentId: string) => void;
+}> = ({ onSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const [challenge, setChallenge] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    requestChallenge();
-  }, [enrollmentId]);
-
-  const requestChallenge = async () => {
-    try {
-      const platformInfo = BiometricCaptureService.getPlatformInfo();
-      const challengeData = await biometricApi.requestChallenge({
-        enrollmentId,
-        ...platformInfo,
-      });
-      setChallenge(challengeData);
-    } catch (error) {
-      toast.error('Failed to request challenge');
-    }
-  };
-
-  const handleVerify = async () => {
-    if (!challenge) return;
-
+  const handleAuthenticate = async () => {
     setLoading(true);
+    setError(null);
+
     try {
-      // Capture and verify biometric
-      const { template, confidenceScore } = await BiometricCaptureService.verifyBiometric(
-        challenge.challenge,
-        'fingerprint' // Or dynamic based on enrollment
-      );
+      // Step 1: Check WebAuthn support
+      const supported = await WebAuthnService.isWebAuthnSupported();
+      if (!supported) {
+        throw new Error('WebAuthn is not supported on this device');
+      }
 
-      // Send verification
-      const result = await biometricApi.verifyBiometric({
-        challengeId: challenge.challengeId,
-        confidenceScore,
-      });
+      // Step 2: Get authentication options from backend
+      const options = await WebAuthnService.getAuthenticationOptions();
 
-      // Store JWT
-      localStorage.setItem('accessToken', result.jwt);
-      biometricApi.setAuthToken(result.jwt);
+      // Step 3: Sign assertion using WebAuthn
+      const assertion = await WebAuthnService.signAssertion(options);
 
-      toast.success('Verification successful!');
-      onSuccess?.(result.jwt);
-    } catch (error) {
-      toast.error(error.message || 'Verification failed');
-      // Request new challenge
-      await requestChallenge();
+      // Step 4: Verify assertion on backend
+      const result = await WebAuthnService.verifyAssertion(assertion);
+
+      toast.success('Authentication successful!');
+      onSuccess?.(result.enrollmentId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Authentication failed';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="verification-container">
-      <h2>Biometric Login</h2>
-      <p>Place your finger on the sensor</p>
-      <button onClick={handleVerify} disabled={loading || !challenge}>
-        {loading ? 'Verifying...' : 'Verify Biometric'}
+    <div className="authentication-container">
+      <h2>Biometric Authentication</h2>
+
+      {error && <div className="error-message">{error}</div>}
+
+      <button
+        onClick={handleAuthenticate}
+        disabled={loading}
+        className="btn-primary"
+      >
+        {loading ? 'Authenticating...' : 'Authenticate with Biometric'}
       </button>
+
+      <p className="info-text">
+        Place your finger on the sensor or look at the camera.
+      </p>
     </div>
   );
 };
 ```
 
-### 5.3 Management/Settings Component
+### 5.3 Enrollment Management Component
 
 Create `/src/components/BiometricManagement.tsx`:
 
@@ -675,66 +950,78 @@ Create `/src/components/BiometricManagement.tsx`:
 import React, { useEffect } from 'react';
 import { useBiometricStore } from '../store/biometricStore';
 import { toast } from 'react-toastify';
+import { formatDistanceToNow } from 'date-fns';
 
 export const BiometricManagement: React.FC = () => {
-  const { enrollments, loading, fetchEnrollments, revokeEnrollment } = useBiometricStore();
+  const {
+    enrollments,
+    loading,
+    error,
+    fetchEnrollments,
+    revokeEnrollment,
+  } = useBiometricStore();
 
   useEffect(() => {
     fetchEnrollments();
   }, []);
 
-  const handleRevoke = async (enrollmentId: string) => {
-    if (window.confirm('Are you sure you want to revoke this biometric?')) {
+  const handleRevoke = async (enrollmentId: string, deviceName: string) => {
+    if (window.confirm(`Revoke "${deviceName}"?`)) {
       try {
         await revokeEnrollment(enrollmentId);
         toast.success('Biometric revoked');
-      } catch (error) {
-        toast.error(error.message);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to revoke');
       }
     }
   };
 
   return (
-    <div className="biometric-management">
-      <h2>Your Biometric Enrollments</h2>
+    <div className="management-container">
+      <h2>Your Registered Devices</h2>
+
+      {error && <div className="error-message">{error}</div>}
+
       {loading ? (
         <p>Loading...</p>
       ) : enrollments.length === 0 ? (
-        <p>No biometric enrollments yet</p>
+        <p className="empty-state">No devices registered yet</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Type</th>
-              <th>Device</th>
-              <th>Enrolled</th>
-              <th>Last Used</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {enrollments.map((enrollment) => (
-              <tr key={enrollment.id}>
-                <td>{enrollment.biometric_type}</td>
-                <td>{enrollment.device_name}</td>
-                <td>{new Date(enrollment.enrolled_at).toLocaleDateString()}</td>
-                <td>
-                  {enrollment.last_verified_at
-                    ? new Date(enrollment.last_verified_at).toLocaleDateString()
-                    : 'Never'}
-                </td>
-                <td>
-                  <button
-                    onClick={() => handleRevoke(enrollment.id)}
-                    className="btn-danger"
-                  >
-                    Revoke
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="enrollments-list">
+          {enrollments.map((enrollment) => (
+            <div key={enrollment.id} className="enrollment-card">
+              <div className="device-info">
+                <h3>{enrollment.device_name}</h3>
+                <p className="platform">{enrollment.platform.toUpperCase()}</p>
+              </div>
+
+              <div className="enrollment-details">
+                <p>
+                  <strong>Registered:</strong>{' '}
+                  {formatDistanceToNow(new Date(enrollment.enrolled_at), { addSuffix: true })}
+                </p>
+                {enrollment.last_verified_at && (
+                  <p>
+                    <strong>Last Used:</strong>{' '}
+                    {formatDistanceToNow(new Date(enrollment.last_verified_at), { addSuffix: true })}
+                  </p>
+                )}
+                <p>
+                  <strong>Uses:</strong> {enrollment.verification_count}
+                </p>
+              </div>
+
+              <div className="actions">
+                <button
+                  onClick={() => handleRevoke(enrollment.id, enrollment.device_name)}
+                  className="btn-danger"
+                >
+                  Revoke
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -750,24 +1037,24 @@ export const BiometricManagement: React.FC = () => {
 Update your routing file (e.g., `/src/routes/index.tsx`):
 
 ```typescript
-import { BiometricEnrollment } from '../components/BiometricEnrollment';
-import { BiometricVerification } from '../components/BiometricVerification';
+import { BiometricRegistration } from '../components/BiometricRegistration';
+import { BiometricAuthentication } from '../components/BiometricAuthentication';
 import { BiometricManagement } from '../components/BiometricManagement';
 
 export const biometricRoutes = [
   {
     path: '/settings/biometric',
     element: <BiometricManagement />,
-    label: 'Biometric Settings',
+    label: 'Biometric Devices',
   },
   {
-    path: '/biometric/enroll',
-    element: <BiometricEnrollment />,
-    label: 'Enroll Biometric',
+    path: '/biometric/register',
+    element: <BiometricRegistration />,
+    label: 'Register Biometric',
   },
   {
-    path: '/biometric/login',
-    element: <BiometricVerification enrollmentId="..." />,
+    path: '/biometric/auth',
+    element: <BiometricAuthentication />,
     label: 'Biometric Login',
   },
 ];
@@ -886,23 +1173,79 @@ describe("Biometric Flow", () => {
 
 ## Success Criteria
 
-- ✅ All 38 backend tests passing
-- ✅ Frontend components render without errors
-- ✅ Enrollment flow works end-to-end
-- ✅ Verification/login flow works end-to-end
-- ✅ Management UI displays enrollments
-- ✅ Revocation removes enrollments
-- ✅ Audit logs display correctly
-- ✅ Error handling displays proper messages
-- ✅ Security measures implemented
-- ✅ Mobile responsiveness tested
+- ✅ Backend: All 103 tests passing (38 API tests + 14 model tests + services)
+- ✅ Frontend: WebAuthn Options → Verify flow implemented
+- ✅ Registration: User can register biometric credential
+- ✅ Authentication: User can authenticate using registered biometric
+- ✅ Management: User can view and revoke biometric enrollments
+- ✅ Audit Log: User can view audit trail of biometric actions
+- ✅ Error Handling: Proper error messages for all failure scenarios
+- ✅ Device Support: Works on Web, iOS, Android, macOS, Windows
+- ✅ Security: No raw biometric data stored locally, challenge-response verification
+- ✅ UX: Smooth flow with proper loading/error states
 
----
+## Key Implementation Notes
 
-## Next Steps
+### WebAuthn Flow Architecture
 
-1. **Start Phase 1**: Install dependencies
-2. **Follow the implementation order**: Each phase builds on the previous
-3. **Test incrementally**: Don't wait until the end
-4. **Reference API docs**: `/workspace/API_DOCUMENTATION.md` for endpoint details
-5. **Review backend code**: Check controller implementations for expected data structures
+The implementation uses the standard WebAuthn protocol with the Options → Verify pattern:
+
+**Registration (Enrollment):**
+
+```
+User clicks Register → GetOptions (backend) → CreateCredential (browser) → Verify (backend) → Stored
+```
+
+**Authentication (Login):**
+
+```
+User clicks Login → GetOptions (backend) → SignAssertion (browser) → Verify (backend) → Authenticated
+```
+
+### Security Considerations
+
+1. **Never send raw biometric data**: All biometric validation happens on the authenticator (device)
+2. **Challenge-Response**: Backend generates random challenges to prevent replay attacks
+3. **Credential Storage**: Public keys stored server-side; private keys never leave the device
+4. **Counter Validation**: Authenticator counter validates signatures haven't been replayed
+5. **Device Binding**: Enrollments tied to specific devices; can't use credentials across devices
+6. **Audit Trail**: All actions logged for security review
+
+### Browser Support
+
+- Chrome 67+
+- Firefox 60+
+- Safari 13+ (iOS 13+)
+- Edge 18+
+
+### Platform-Specific Considerations
+
+**Web:**
+
+- Use WebAuthn API directly
+- Supports USB security keys and platform authenticators
+
+**iOS:**
+
+- FaceID and Touch ID via WebAuthn
+- Requires HTTPS
+
+**Android:**
+
+- Fingerprint via WebAuthn
+- Requires HTTPS
+
+**macOS:**
+
+- Touch ID via WebAuthn
+- Requires HTTPS
+
+### Error Handling
+
+Common errors to handle:
+
+- `NotSupportedError`: WebAuthn not available
+- `InvalidStateError`: Credential already exists
+- `SecurityError`: HTTPS required
+- `NotAllowedError`: User cancelled / authentication failed
+- `TimeoutError`: Operation timed out

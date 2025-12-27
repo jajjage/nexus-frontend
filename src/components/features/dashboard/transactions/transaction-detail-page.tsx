@@ -194,8 +194,8 @@ export function TransactionDetailPage({
 
   if (isLoading) {
     return (
-      <div className="bg-background min-h-screen p-4 sm:p-6 lg:p-8">
-        <div className="mx-auto max-w-4xl">
+      <div className="w-full p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto max-w-2xl">
           <TransactionDetailSkeleton />
         </div>
       </div>
@@ -204,8 +204,8 @@ export function TransactionDetailPage({
 
   if (error) {
     return (
-      <div className="bg-background min-h-screen p-4 sm:p-6 lg:p-8">
-        <div className="mx-auto max-w-4xl">
+      <div className="w-full p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto max-w-2xl">
           <header className="flex items-center gap-4">
             <Button asChild variant="outline" size="icon">
               <Link href={backLink}>
@@ -231,8 +231,8 @@ export function TransactionDetailPage({
 
   if (!transaction) {
     return (
-      <div className="bg-background min-h-screen p-4 sm:p-6 lg:p-8">
-        <div className="mx-auto max-w-4xl">
+      <div className="w-full p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto max-w-2xl">
           <header className="flex items-center gap-4">
             <Button asChild variant="outline" size="icon">
               <Link href={backLink}>
@@ -273,8 +273,8 @@ export function TransactionDetailPage({
   const isIconUrl = typeof transactionIcon === "string";
 
   return (
-    <div className="bg-background min-h-screen p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-4xl space-y-6">
+    <div className="w-full p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-2xl space-y-6">
         <header className="flex items-center gap-4">
           <Button asChild variant="outline" size="icon">
             <Link href={backLink}>
@@ -291,8 +291,8 @@ export function TransactionDetailPage({
           {/* Header Section with Transaction Info */}
           <div className="px-6 py-8 sm:py-12">
             <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-4">
-                <Avatar className="flex size-16 items-center justify-center rounded-full">
+              <div className="flex w-full items-center gap-4 sm:w-auto">
+                <Avatar className="flex size-16 shrink-0 items-center justify-center rounded-full">
                   {isIconUrl ? (
                     <AvatarImage
                       src={transactionIcon}
@@ -304,16 +304,18 @@ export function TransactionDetailPage({
                   </AvatarFallback>
                 </Avatar>
 
-                <div className="flex-1">
-                  <h1 className="text-2xl font-bold">
+                <div className="flex-1 overflow-hidden">
+                  <h1 className="truncate text-xl font-bold sm:text-2xl">
                     {getTransactionTypeLabel(transaction)}
                   </h1>
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-muted-foreground truncate text-sm">
                     {getTransactionDescription(transaction)}
                   </p>
                 </div>
               </div>
-              <p className="text-5xl font-bold">{formattedAmount}</p>
+              <p className="text-3xl font-bold sm:text-5xl">
+                {formattedAmount}
+              </p>
               <div className="flex justify-center">
                 {transaction.related?.status && (
                   <Badge

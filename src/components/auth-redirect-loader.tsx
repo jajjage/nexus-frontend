@@ -67,20 +67,32 @@ export function AuthRedirectLoader() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
-      <div className="space-y-4 text-center">
+    <div className="bg-background/95 fixed inset-0 z-[100] flex flex-col items-center justify-center backdrop-blur-md transition-all duration-300">
+      <div className="flex flex-col items-center space-y-8 p-6">
         {/* Animated loading skeleton */}
-        <div className="inline-block">
-          <div className="animate-pulse space-y-4">
-            <div className="mx-auto h-12 w-12 rounded-full bg-gray-200" />
-            <div className="space-y-2">
-              <div className="mx-auto h-4 w-40 rounded bg-gray-200" />
-              <div className="mx-auto h-3 w-32 rounded bg-gray-100" />
+        <div className="flex flex-col items-center space-y-6">
+          <div className="animate-pulse space-y-4 text-center">
+            <div className="bg-primary/20 ring-primary/10 mx-auto h-16 w-16 rounded-full ring-4" />
+            <div className="space-y-3">
+              <div className="bg-muted mx-auto h-4 w-48 rounded-full" />
+              <div className="bg-muted/60 mx-auto h-3 w-36 rounded-full" />
             </div>
           </div>
         </div>
-        <p className="min-h-6 text-base font-medium text-gray-700">{message}</p>
-        <p className="min-h-5 text-sm text-gray-500">{description}</p>
+
+        <div className="max-w-xs space-y-2 text-center">
+          <h2 className="text-foreground text-xl font-semibold tracking-tight">
+            {message}
+          </h2>
+          <p className="text-muted-foreground text-sm">{description}</p>
+        </div>
+
+        {/* Subtle loading indicator */}
+        <div className="flex gap-1.5">
+          <div className="bg-primary h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:-0.3s]" />
+          <div className="bg-primary h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:-0.15s]" />
+          <div className="bg-primary h-1.5 w-1.5 animate-bounce rounded-full" />
+        </div>
       </div>
     </div>
   );

@@ -108,7 +108,8 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
       {/* Content */}
       <div
         style={{
-          transform: `translateY(${pullDistance}px)`,
+          transform:
+            pullDistance > 0 ? `translateY(${pullDistance}px)` : "none",
           transition: isRefreshing
             ? "transform 0.2s"
             : "transform 0.2s ease-out",
