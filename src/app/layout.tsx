@@ -1,4 +1,5 @@
 import { AuthRedirectLoader } from "@/components/auth-redirect-loader";
+import { SecurityGuard } from "@/components/guards/SecurityGuard";
 import { MarkupSyncer } from "@/components/MarkupSyncer";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { ServiceWorkerNavigationListener } from "@/components/ServiceWorkerNavigationListener";
@@ -65,13 +66,15 @@ export default function RootLayout({
         >
           <QueryProvider>
             <AuthProvider>
-              <AuthRedirectLoader />
-              <MarkupSyncer />
-              <ServiceWorkerNavigationListener />
-              <PWAInstallPrompt />
-              {/* <FcmSyncer /> */}
-              <Toaster richColors position="top-right" />
-              {children}
+              <SecurityGuard>
+                <AuthRedirectLoader />
+                <MarkupSyncer />
+                <ServiceWorkerNavigationListener />
+                <PWAInstallPrompt />
+                {/* <FcmSyncer /> */}
+                <Toaster richColors position="top-right" />
+                {children}
+              </SecurityGuard>
             </AuthProvider>
           </QueryProvider>
         </ThemeProvider>

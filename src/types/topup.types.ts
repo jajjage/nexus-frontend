@@ -2,7 +2,8 @@ export interface TopupRequest {
   amount: number;
   productCode: string;
   recipientPhone: string;
-  pin: number;
+  pin?: string; // Optional - use PIN OR verificationToken
+  verificationToken?: string; // Optional - use biometric token OR PIN
   supplierSlug?: string;
   supplierMappingId?: string;
   useCashback?: boolean;

@@ -14,6 +14,12 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Allowlist dev origins (useful when tunneling with ngrok).
+  // Set ALLOWED_DEV_ORIGINS in your environment to a comma-separated list
+  // e.g. ALLOWED_DEV_ORIGINS="https://abcd.ngrok-free.dev,https://localhost:3000"
+  allowedDevOrigins: process.env.ALLOWED_DEV_ORIGINS
+    ? process.env.ALLOWED_DEV_ORIGINS.split(",")
+    : [],
   /* config options here */
 };
 

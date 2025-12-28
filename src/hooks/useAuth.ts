@@ -214,12 +214,16 @@ function useCurrentUserQuery() {
 export function useAuth(): {
   user: User | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
   isAuthLoading: boolean;
   isError: boolean;
   refetch: () => void;
   checkPermission: (permission: string) => boolean;
   checkRole: (role: string) => boolean;
+  hasPermission: (permission: string) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
+  hasAllPermissions: (permissions: string[]) => boolean;
 } {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -337,10 +341,13 @@ export function useAuth(): {
   const isAuthenticated =
     !!user && !isSessionExpired && user.isSuspended === false;
 
+  const isAdmin = user?.role === "admin" ?? false;
+
   return {
     // User data
     user: user || null,
     isAuthenticated,
+    isAdmin,
 
     // Loading states
     isLoading: isLoading || isFetching,
@@ -359,6 +366,26 @@ export function useAuth(): {
     checkRole: (role: string): boolean => {
       if (!user) return false;
       return user.role === role;
+    },
+
+    // Alias methods for permission checking (same as checkPermission)
+    hasPermission: (permission: string): boolean => {
+      if (!user) return false;
+      return user.permissions?.includes(permission) ?? false;
+    },
+
+    hasAnyPermission: (permissions: string[]): boolean => {
+      if (!user || !permissions.length) return false;
+      return permissions.some(
+        (permission) => user.permissions?.includes(permission) ?? false
+      );
+    },
+
+    hasAllPermissions: (permissions: string[]): boolean => {
+      if (!user || !permissions.length) return false;
+      return permissions.every(
+        (permission) => user.permissions?.includes(permission) ?? false
+      );
     },
   };
 }

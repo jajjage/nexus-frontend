@@ -16,6 +16,18 @@ export function ServiceWorkerNavigationListener() {
       return;
     }
 
+    // Register the client service worker if not already registered
+    const registerSW = async () => {
+      try {
+        const reg = await navigator.serviceWorker.register("/sw.js");
+        console.log("[Client] Service worker registered:", reg.scope);
+      } catch (err) {
+        console.warn("[Client] Service worker registration failed:", err);
+      }
+    };
+
+    registerSW();
+
     // Listen for messages from the service worker
     const messageListener = (event: Event) => {
       const messageEvent = event as MessageEvent;

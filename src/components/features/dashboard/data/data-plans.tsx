@@ -1,5 +1,7 @@
 "use client";
 
+import { BiometricVerificationModal } from "@/components/auth/BiometricVerificationModal";
+import { PinVerificationModal } from "@/components/auth/PinVerificationModal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,7 +19,6 @@ import { CheckoutModal } from "../shared/checkout-modal";
 import { NetworkDetector } from "../shared/network-detector";
 import { NetworkSelector } from "../shared/network-selector";
 import { ProductCard } from "../shared/product-card";
-import { TransactionPinModal } from "../shared/transaction-pin-modal";
 import { CategoryTabs } from "./category-tabs";
 
 export function DataPlans() {
@@ -41,15 +42,17 @@ export function DataPlans() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedMarkupPercent, setSelectedMarkupPercent] = useState(0);
   const [isSuccess, setIsSuccess] = useState(false);
+  // const [pinMode, setPinMode] = useState<"setup" | "enter">("enter")
 
-  // PIN Modal State
+  // Verification Modal State - Biometric First, then PIN Fallback
+  const [showBiometricModal, setShowBiometricModal] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
-  const [pinMode, setPinMode] = useState<"setup" | "enter">("enter");
   const [pendingPaymentData, setPendingPaymentData] = useState<{
     useCashback: boolean;
     amount?: number;
+    verificationToken?: string;
+    pin?: string;
   } | null>(null);
-  const [transactionPin, setTransactionPin] = useState<string | null>(null);
 
   // Initialize phone number from user profile ONLY ONCE
   useEffect(() => {
@@ -198,39 +201,46 @@ export function DataPlans() {
     setIsCheckoutOpen(true);
   };
 
-  // Handle PIN Setup Success
-  const handlePinSetupSuccess = (pin: string) => {
-    updateProfile(
-      { pin },
-      {
-        onSuccess: () => {
-          toast.success("PIN set successfully!");
-          setTransactionPin(pin);
-          setShowPinModal(false);
-          setShowPinModal(true); // Re-open in "enter" mode
-          setPinMode("enter");
-          refetchUser();
-        },
-        onError: (error: any) => {
-          const errorMsg = error.response?.data?.message || "Failed to set PIN";
-          toast.error(errorMsg);
-        },
-      }
-    );
+  // Handle Biometric Verification Success
+  const handleBiometricSuccess = (verificationToken: string) => {
+    console.log("[DataPlans] Biometric verification successful");
+    setShowBiometricModal(false);
+
+    // Update pending payment with verification token
+    if (pendingPaymentData) {
+      setPendingPaymentData({
+        ...pendingPaymentData,
+        verificationToken,
+      });
+
+      // Proceed directly to payment (no PIN needed)
+      proceedWithPayment(pendingPaymentData.useCashback, verificationToken);
+    }
+  };
+
+  // Handle Biometric Unavailable - Fall back to PIN
+  const handleBiometricUnavailable = () => {
+    console.log("[DataPlans] Biometric unavailable, falling back to PIN");
+    setShowBiometricModal(false);
+
+    // Show PIN modal instead
+    setTimeout(() => {
+      setShowPinModal(true);
+    }, 300);
   };
 
   // Handle PIN Entry Success
   const handlePinEntrySuccess = (pin: string) => {
-    setTransactionPin(pin);
+    console.log("[DataPlans] PIN verification successful");
     setShowPinModal(false);
 
-    // Proceed with payment
+    // Proceed with payment with PIN
     if (pendingPaymentData) {
-      proceedWithPayment(pendingPaymentData.useCashback, pin);
+      proceedWithPayment(pendingPaymentData.useCashback, undefined, pin);
     }
   };
 
-  // Handle Payment - Check for PIN first
+  // Handle Payment - Try Biometric First, PIN Fallback
   const handlePayment = (useCashback: boolean) => {
     if (!selectedProduct) return;
 
@@ -256,26 +266,33 @@ export function DataPlans() {
       ? Math.max(0, sellingPrice - userCashbackBalance)
       : sellingPrice;
 
-    // Check if user has PIN
-    if (!user?.hasPin) {
-      // No PIN - show setup modal
-      setPinMode("setup");
-      setPendingPaymentData({ useCashback, amount: payableAmount });
-      setShowPinModal(true);
-    } else {
-      // Has PIN - show entry modal
-      setPinMode("enter");
-      setPendingPaymentData({ useCashback, amount: payableAmount });
-      setShowPinModal(true);
-    }
+    // Store pending payment data
+    setPendingPaymentData({ useCashback, amount: payableAmount });
+
+    // BIOMETRIC-FIRST FLOW
+    // Try biometric verification first, fall back to PIN if needed
+    console.log(
+      "[DataPlans] Starting verification flow - attempting biometric first"
+    );
+    setShowBiometricModal(true);
   };
 
   // Execute the actual payment
-  const proceedWithPayment = (useCashback: boolean, pin: string) => {
+  const proceedWithPayment = (
+    useCashback: boolean,
+    verificationToken?: string,
+    pin?: string
+  ) => {
     if (!selectedProduct) return;
 
     const amount = parseFloat(selectedProduct.denomAmount || "0");
     const offer = selectedProduct.supplierOffers?.[0];
+
+    console.log("[DataPlans] Proceeding with payment", {
+      method: verificationToken ? "biometric" : "pin",
+      hasToken: !!verificationToken,
+      hasPin: !!pin,
+    });
 
     topupMutation.mutate(
       {
@@ -285,7 +302,8 @@ export function DataPlans() {
         supplierSlug: offer?.supplierSlug,
         supplierMappingId: offer?.mappingId,
         useCashback,
-        pin: parseInt(pin, 10), // Include PIN in the request, converted to number
+        verificationToken, // Include verification token if biometric was used
+        pin, // Include PIN if PIN verification was used
       },
       {
         onSuccess: () => {
@@ -402,36 +420,53 @@ export function DataPlans() {
       )}
 
       {/* Checkout Modal - Show initially or after mutation completes, hide during processing */}
-      {selectedProduct && !showPinModal && !topupMutation.isPending && (
-        <CheckoutModal
-          isOpen={isCheckoutOpen}
-          onClose={() => setIsCheckoutOpen(false)}
-          product={selectedProduct}
-          phoneNumber={phoneNumber}
-          networkLogo={currentLogo}
-          networkName={selectedNetwork}
-          userBalance={parseFloat(user?.balance || "0")}
-          userCashbackBalance={user?.cashback?.availableBalance || 0}
-          onConfirm={handlePayment}
-          isProcessing={topupMutation.isPending}
-          isSuccess={isSuccess}
-          markupPercent={selectedMarkupPercent}
-        />
-      )}
+      {selectedProduct &&
+        !showBiometricModal &&
+        !showPinModal &&
+        !topupMutation.isPending && (
+          <CheckoutModal
+            isOpen={isCheckoutOpen}
+            onClose={() => setIsCheckoutOpen(false)}
+            product={selectedProduct}
+            phoneNumber={phoneNumber}
+            networkLogo={currentLogo}
+            networkName={selectedNetwork}
+            userBalance={parseFloat(user?.balance || "0")}
+            userCashbackBalance={user?.cashback?.availableBalance || 0}
+            onConfirm={handlePayment}
+            isProcessing={topupMutation.isPending}
+            isSuccess={isSuccess}
+            markupPercent={selectedMarkupPercent}
+          />
+        )}
 
-      {/* Transaction PIN Modal */}
-      <TransactionPinModal
-        isOpen={showPinModal}
+      {/* Biometric Verification Modal - Biometric First */}
+      <BiometricVerificationModal
+        open={showBiometricModal}
+        onClose={() => {
+          setShowBiometricModal(false);
+          setPendingPaymentData(null);
+        }}
+        onSuccess={handleBiometricSuccess}
+        onBiometricUnavailable={handleBiometricUnavailable}
+        transactionAmount={pendingPaymentData?.amount?.toString()}
+        productCode={selectedProduct?.productCode}
+        phoneNumber={phoneNumber}
+      />
+
+      {/* PIN Verification Modal - Fallback if Biometric Fails */}
+      <PinVerificationModal
+        open={showPinModal}
         onClose={() => {
           setShowPinModal(false);
           setPendingPaymentData(null);
         }}
-        onSuccess={
-          pinMode === "setup" ? handlePinSetupSuccess : handlePinEntrySuccess
-        }
-        isLoading={isUpdatingPin || topupMutation.isPending}
-        mode={pinMode}
-        amount={pendingPaymentData?.amount}
+        onSuccess={handlePinEntrySuccess}
+        useCashback={pendingPaymentData?.useCashback || false}
+        reason="transaction"
+        transactionAmount={pendingPaymentData?.amount?.toString()}
+        productCode={selectedProduct?.productCode}
+        phoneNumber={phoneNumber}
       />
     </div>
   );

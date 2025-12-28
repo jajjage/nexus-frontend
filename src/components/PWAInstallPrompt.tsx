@@ -16,7 +16,44 @@ export function PWAInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
 
+  // Dismissal tracking
+  const DISMISS_KEY = "pwa_install_dismiss_time";
+  const DISMISS_COOLDOWN_DAYS = 7; // Show again after 7 days
+
+  const isDismissedRecently = (): boolean => {
+    if (typeof window === "undefined") return false;
+
+    const dismissTime = localStorage.getItem(DISMISS_KEY);
+    if (!dismissTime) return false;
+
+    const dismissedAt = parseInt(dismissTime, 10);
+    const now = Date.now();
+    const daysPassed = (now - dismissedAt) / (1000 * 60 * 60 * 24);
+
+    return daysPassed < DISMISS_COOLDOWN_DAYS;
+  };
+
+  const recordDismissal = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(DISMISS_KEY, Date.now().toString());
+    }
+  };
+
+  const clearDismissal = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(DISMISS_KEY);
+    }
+  };
+
   useEffect(() => {
+    console.log("[PWA] Checking installability and display mode");
+
+    // Check if recently dismissed
+    if (isDismissedRecently()) {
+      console.log("[PWA] Prompt was dismissed recently, skipping");
+      return;
+    }
+
     // Detect iOS
     const detectIOS = () => {
       return (
@@ -45,6 +82,7 @@ export function PWAInstallPrompt() {
 
     // For other platforms, listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log("[PWA] beforeinstallprompt event fired", e);
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowPrompt(true);

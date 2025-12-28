@@ -438,29 +438,90 @@ apiClient.interceptors.response.use(
     // ========================================================================
     // HANDLE 404 - USER NOT FOUND
     // ========================================================================
+    // HANDLE 404 - NOT FOUND (do NOT logout user)
+    // ========================================================================
+    // 404 means the endpoint/resource doesn't exist or bad request structure
+    // This is NOT an authentication failure - should NOT trigger session expiration
+    // Only auth errors (401, 403) should trigger logout
 
-    if (error.response?.status === 404 && !isAuthEndpoint) {
-      console.error("[AUTH] 404 - User/resource not found", {
+    if (error.response?.status === 404) {
+      console.warn("[HTTP] 404 - Resource not found", {
         url: originalRequest.url,
+        method: originalRequest.method,
       });
 
-      // Set redirect reason
-      if (redirectReasonCallback) {
-        redirectReasonCallback("user-deleted");
+      // Simply reject the error - let the caller handle it
+      // Do NOT clear session/cookies
+      return Promise.reject(error);
+    }
+
+    // ========================================================================
+    // HANDLE VERIFICATION ENDPOINT ERRORS (Special handling)
+    // ========================================================================
+    // Verification endpoints (/biometric/auth/verify, /user/topup) have specific
+    // error handling. They should NOT trigger session expiration on business logic
+    // errors (4xx errors from the verification service itself, not auth failures).
+    // Only auth-level failures (401, 403) should trigger session expiration.
+
+    const isVerificationEndpoint =
+      originalRequest.url?.includes("/biometric/auth/verify") ||
+      originalRequest.url?.includes("/user/topup");
+
+    if (isVerificationEndpoint && !isAuthEndpoint) {
+      // Verification endpoints may return 401 for two very different reasons:
+      // 1) Auth-level failure (invalid/expired tokens) -> should expire session
+      // 2) Business logic failure (e.g. "Challenge not found or expired") ->
+      //    should NOT expire the session; caller handles it.
+      const status = error.response?.status;
+      if (status === 401 || status === 403) {
+        // Inspect message to distinguish auth failure vs business logic error
+        const message =
+          (error.response?.data && (error.response.data as any).message) || "";
+        const normalized = String(message).toLowerCase();
+
+        // Heuristic: treat it as an auth failure only when the message
+        // clearly references tokens/authorization or contains typical auth
+        // keywords. Business errors like "challenge not found" should not
+        // log the user out.
+        const authFailureKeywords = [
+          "token",
+          "access",
+          "refresh",
+          "unauthor",
+          "not authenticated",
+          "not authorized",
+          "invalid credentials",
+        ];
+
+        const looksLikeAuthFailure = authFailureKeywords.some((k) =>
+          normalized.includes(k)
+        );
+
+        console.error("[AUTH] Verification endpoint auth failure", {
+          status: error.response.status,
+          url: originalRequest.url,
+          message,
+          looksLikeAuthFailure,
+        });
+
+        if (looksLikeAuthFailure) {
+          if (sessionExpiredCallback) {
+            sessionExpiredCallback();
+          }
+
+          clearSessionCookies();
+        } else {
+          // Business logic 401 - do not expire session; let caller handle it
+          console.log(
+            "[AUTH] Verification endpoint returned business 401 - not expiring session",
+            { url: originalRequest.url, message }
+          );
+        }
       }
 
-      // Signal that we're redirecting
-      if (authLoadingCallback) {
-        authLoadingCallback(true, "redirecting");
-      }
-
-      // Notify React components
-      if (sessionExpiredCallback) {
-        sessionExpiredCallback();
-      }
-
-      clearSessionCookies();
-      return Promise.reject(new Error("User not found"));
+      // For all verification endpoint errors, return the error as-is
+      // The caller (verification.service.ts) will handle business logic errors
+      return Promise.reject(error);
     }
 
     // ========================================================================

@@ -10,16 +10,28 @@
   "background_color": "#ffffff",
   "icons": [
     {
-      "src": "/images/logo-3.png",
-      "sizes": "500x420",
+      "src": "/images/logo-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/images/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/images/logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "maskable"
+      "purpose": "any"
     }
   ],
   "categories": ["business", "finance"],
@@ -31,8 +43,8 @@
       "url": "/dashboard/notifications?source=shortcut",
       "icons": [
         {
-          "src": "/images/logo-3.png",
-          "sizes": "500x420",
+          "src": "/images/logo-192.png",
+          "sizes": "192x192",
           "type": "image/png"
         }
       ]
@@ -44,8 +56,8 @@
       "url": "/dashboard?source=shortcut",
       "icons": [
         {
-          "src": "/images/logo-3.png",
-          "sizes": "500x420",
+          "src": "/images/logo-192.png",
+          "sizes": "192x192",
           "type": "image/png"
         }
       ]
