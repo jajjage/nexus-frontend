@@ -8,23 +8,23 @@ interface ExportReceiptProps {
   operatorLogo?: string;
 }
 
-// Get status badge styling
-const getStatusBadgeStyle = (status: string) => {
+// Get status text color
+const getStatusColor = (status: string) => {
   const statusLower = status.toLowerCase();
   switch (statusLower) {
-    case "pending":
-      return { bg: "#FCD34D", color: "#92400E" }; // yellow/amber
     case "completed":
     case "received":
-      return { bg: "#86EFAC", color: "#166534" }; // green
+      return "#166534"; // green-800
+    case "pending":
+      return "#B45309"; // amber-700
     case "failed":
-      return { bg: "#FCA5A5", color: "#7F1D1D" }; // red
+      return "#991B1B"; // red-800
     case "cancelled":
-      return { bg: "#D1D5DB", color: "#374151" }; // gray
+      return "#374151"; // gray-700
     case "reversed":
-      return { bg: "#FDBA74", color: "#92400E" }; // orange
+      return "#9A3412"; // orange-800
     default:
-      return { bg: "#D1D5DB", color: "#374151" };
+      return "#374151";
   }
 };
 
@@ -67,22 +67,19 @@ const getCashbackUsed = (transaction: Transaction): string => {
 
   if (isDebit && transaction.relatedType === "topup_request") {
     const cashbackUsed = transaction.cashbackUsed || 0;
-    const formattedBalance = cashbackUsed.toLocaleString("en-NG", {
+    return cashbackUsed.toLocaleString("en-NG", {
       style: "currency",
       currency: "NGN",
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
     });
-    return formattedBalance;
   }
-  const formattedBalance = transaction.cashbackUsed.toLocaleString("en-NG", {
+  return transaction.cashbackUsed.toLocaleString("en-NG", {
     style: "currency",
     currency: "NGN",
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
   });
-  return formattedBalance;
 };
+
 // Get transaction type label
 const getTransactionTypeLabel = (transaction: Transaction): string => {
   if (transaction.relatedType === "topup_request") {
@@ -95,7 +92,7 @@ const getTransactionTypeLabel = (transaction: Transaction): string => {
   return transaction.direction === "debit" ? "Withdrawal" : "Deposit";
 };
 
-// Get transaction description (like "Airtime to MTN - 08135342817")
+// Get transaction description
 const getTransactionDescription = (transaction: Transaction): string => {
   if (transaction.relatedType === "topup_request") {
     const type = transaction.related?.type?.toLowerCase() || "topup";
@@ -141,9 +138,7 @@ export const ExportReceipt = React.forwardRef<
   });
 
   const logoUrl = getOperatorLogo(transaction, operatorLogo);
-  const statusStyle = getStatusBadgeStyle(
-    transaction.related?.status || "pending"
-  );
+  const statusColor = getStatusColor(transaction.related?.status || "pending");
 
   const operatorName =
     transaction.productCode || transaction.productCode || "N/A";
@@ -152,80 +147,72 @@ export const ExportReceipt = React.forwardRef<
     <div
       ref={ref}
       style={{
-        width: "100%",
+        width: "400px", // Fixed width for export consistency
         backgroundColor: "#ffffff",
-        padding: "20px",
-        maxWidth: 400,
+        padding: "32px",
         margin: "0 auto",
-        boxSizing: "border-box",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        fontFamily: "Arial, sans-serif",
         color: "#1F2937",
+        border: "1px solid #E5E7EB",
       }}
     >
-      {/* Top: Operator Logo and Description */}
-      <div style={{ textAlign: "center", marginBottom: 16 }}>
-        {transaction.relatedType === "topup_request" && logoUrl && (
-          <img
-            src={logoUrl}
-            alt="operator"
-            style={{
-              height: 64,
-              width: "auto",
-              maxWidth: 100,
-              objectFit: "contain",
-              marginBottom: 8,
-              borderRadius: 50,
-            }}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
-        )}
-        {/* Display Landmark icon for incoming payments */}
-        {transaction.direction === "credit" &&
-          transaction.relatedType === "incoming_payment" && (
-            <div
+      {/* Header Section */}
+      <div style={{ textAlign: "center", marginBottom: "24px" }}>
+        {/* Logo */}
+        <div
+          style={{
+            width: "64px",
+            height: "64px",
+            margin: "0 auto 16px auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#F9FAFB",
+            borderRadius: "50%",
+            border: "1px solid #E5E7EB",
+            overflow: "hidden",
+          }}
+        >
+          {transaction.relatedType === "topup_request" && logoUrl ? (
+            <img
+              src={logoUrl}
+              alt="operator"
               style={{
-                display: "flex",
-                justifyContent: "center",
-                marginBottom: 8,
+                width: "40px",
+                height: "40px",
+                objectFit: "contain",
               }}
+            />
+          ) : isCredit ? (
+            <span
+              style={{ fontSize: "14px", fontWeight: "bold", color: "#166534" }}
             >
-              <svg
-                width="64"
-                height="64"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#16a34a"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{
-                  display: "block",
-                }}
-              >
-                <path d="M3 21h18" />
-                <path d="M5 21V5c0-1 .75-3 3-3s3 2 3 3v16" />
-                <path d="M11 21V9c0-1 .75-3 3-3s3 2 3 3v12" />
-                <path d="M17 21v-8c0-1 .75-3 3-3s3 2 3 3v8" />
-              </svg>
-            </div>
+              IN
+            </span>
+          ) : (
+            <span
+              style={{ fontSize: "24px", fontWeight: "bold", color: "#9CA3AF" }}
+            >
+              #
+            </span>
           )}
+        </div>
+
+        {/* Title */}
         <h2
           style={{
             margin: "0 0 4px 0",
-            fontSize: 16,
-            fontWeight: 600,
-            color: "#1F2937",
+            fontSize: "18px",
+            fontWeight: "bold",
+            color: "#111827",
           }}
         >
           {getTransactionTypeLabel(transaction)}
         </h2>
         <p
           style={{
-            margin: "0 0 12px 0",
-            fontSize: 13,
+            margin: "0",
+            fontSize: "14px",
             color: "#6B7280",
           }}
         >
@@ -233,173 +220,222 @@ export const ExportReceipt = React.forwardRef<
         </p>
       </div>
 
-      {/* Main Amount (Large, centered) */}
-      <div style={{ textAlign: "center", marginBottom: 12 }}>
-        <p
+      {/* Amount Section */}
+      <div style={{ textAlign: "center", marginBottom: "24px" }}>
+        <h1
           style={{
-            margin: 0,
-            fontSize: 40,
-            fontWeight: 700,
-            color: "#1F2937",
+            margin: "0 0 8px 0",
+            fontSize: "36px",
+            fontWeight: "bold",
+            color: "#111827",
+            letterSpacing: "-0.5px",
           }}
         >
           {formattedAmount}
-        </p>
-      </div>
+        </h1>
 
-      {/* Status Badge (centered) */}
-      <div style={{ textAlign: "center", marginBottom: 8 }}>
-        {transaction.related?.status && (
-          <span
-            style={{
-              display: "inline-block",
-              backgroundColor: statusStyle.bg,
-              color: statusStyle.color,
-              padding: "4px 16px",
-              borderRadius: 20,
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "capitalize",
-            }}
-          >
-            {transaction.related.status}
-          </span>
-        )}
-      </div>
-
-      {/* Date (centered) */}
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <p
+        {/* Status as Text */}
+        <div
           style={{
-            margin: 0,
-            fontSize: 12,
-            color: "#6B7280",
+            fontSize: "14px",
+            fontWeight: "600",
+            color: statusColor,
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
           }}
         >
+          {transaction.related?.status || "PENDING"}
+        </div>
+
+        <p style={{ margin: "8px 0 0 0", fontSize: "12px", color: "#9CA3AF" }}>
           {formatDate(transaction.createdAt)}
         </p>
       </div>
 
-      {/* Transaction Details Section */}
-      <div style={{ borderTop: "1px solid #E5E7EB", paddingTop: 16 }}>
-        <p
+      {/* Divider */}
+      <div
+        style={{
+          borderTop: "2px dashed #E5E7EB",
+          margin: "0 0 24px 0",
+        }}
+      />
+
+      {/* Details Section */}
+      <div>
+        <h3
           style={{
-            margin: "0 0 12px 0",
-            fontSize: 11,
-            fontWeight: 600,
+            margin: "0 0 16px 0",
+            fontSize: "12px",
+            fontWeight: "bold",
             color: "#9CA3AF",
             textTransform: "uppercase",
             letterSpacing: "0.5px",
           }}
         >
           Transaction Details
+        </h3>
+
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <tbody>
+            {transaction.related?.recipient_phone && (
+              <tr>
+                <td
+                  style={{
+                    padding: "8px 0",
+                    fontSize: "14px",
+                    color: "#6B7280",
+                  }}
+                >
+                  Recipient Phone
+                </td>
+                <td
+                  style={{
+                    padding: "8px 0",
+                    textAlign: "right",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "#111827",
+                  }}
+                >
+                  {transaction.related.recipient_phone}
+                </td>
+              </tr>
+            )}
+
+            {transaction.amount && (
+              <tr>
+                <td
+                  style={{
+                    padding: "8px 0",
+                    fontSize: "14px",
+                    color: "#6B7280",
+                  }}
+                >
+                  Amount Paid
+                </td>
+                <td
+                  style={{
+                    padding: "8px 0",
+                    textAlign: "right",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "#111827",
+                  }}
+                >
+                  {formattedAmountPaid}
+                </td>
+              </tr>
+            )}
+
+            {transaction.relatedType === "topup_request" && (
+              <tr>
+                <td
+                  style={{
+                    padding: "8px 0",
+                    fontSize: "14px",
+                    color: "#6B7280",
+                  }}
+                >
+                  Cashback Used
+                </td>
+                <td
+                  style={{
+                    padding: "8px 0",
+                    textAlign: "right",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "#EF4444",
+                  }}
+                >
+                  -{getCashbackUsed(transaction)}
+                </td>
+              </tr>
+            )}
+
+            {transaction.related?.type && (
+              <tr>
+                <td
+                  style={{
+                    padding: "8px 0",
+                    fontSize: "14px",
+                    color: "#6B7280",
+                    verticalAlign: "top",
+                  }}
+                >
+                  Service
+                </td>
+                <td
+                  style={{
+                    padding: "8px 0",
+                    textAlign: "right",
+                    verticalAlign: "top",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      color: "#111827",
+                    }}
+                  >
+                    {transaction.related.type === "airtime"
+                      ? "Airtime"
+                      : "Data Bundle"}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#6B7280" }}>
+                    {operatorName}
+                  </div>
+                </td>
+              </tr>
+            )}
+
+            <tr>
+              <td
+                style={{
+                  padding: "8px 0",
+                  fontSize: "14px",
+                  color: "#6B7280",
+                }}
+              >
+                Transaction ID
+              </td>
+              <td
+                style={{
+                  padding: "8px 0",
+                  textAlign: "right",
+                  fontSize: "12px",
+                  fontWeight: "500",
+                  color: "#374151",
+                  fontFamily: "monospace",
+                  wordBreak: "break-all",
+                }}
+              >
+                {transaction.id}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer */}
+      <div
+        style={{
+          marginTop: "32px",
+          textAlign: "center",
+          borderTop: "1px solid #E5E7EB",
+          paddingTop: "16px",
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontSize: "12px",
+            color: "#9CA3AF",
+            fontWeight: "500",
+          }}
+        >
+          nexus-data.com
         </p>
-
-        <div style={{ marginTop: "8px" }}>
-          {/* Recipient Phone */}
-          {transaction.related?.recipient_phone && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingBottom: 8,
-                marginBottom: 8,
-                borderBottom: "1px solid #F3F4F6",
-                fontSize: 13,
-              }}
-            >
-              <span style={{ color: "#6B7280" }}>Recipient Phone</span>
-              <span style={{ fontWeight: 500, color: "#1F2937" }}>
-                {transaction.related.recipient_phone}
-              </span>
-            </div>
-          )}
-
-          {/* Amount Paid */}
-          {transaction.amount && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingBottom: 8,
-                marginBottom: 8,
-                borderBottom: "1px solid #F3F4F6",
-                fontSize: 13,
-              }}
-            >
-              <span style={{ color: "#6B7280" }}>Amount Paid</span>
-              <span style={{ fontWeight: 500, color: "#1F2937" }}>
-                {formattedAmountPaid}
-              </span>
-            </div>
-          )}
-
-          {/* Cashback Used */}
-          {transaction.relatedType === "topup-request" && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingBottom: 8,
-                marginBottom: 8,
-                borderBottom: "1px solid #F3F4F6",
-                fontSize: 13,
-              }}
-            >
-              <span style={{ color: "#6B7280" }}>Cashback Used</span>
-              <span style={{ fontWeight: 500, color: "#EF4444" }}>
-                -₦{getCashbackUsed(transaction)}
-              </span>
-            </div>
-          )}
-
-          {/* Service Type (Airtime/Data) */}
-          {transaction.related?.type && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingBottom: 8,
-                marginBottom: 8,
-                borderBottom: "1px solid #F3F4F6",
-                fontSize: 13,
-              }}
-            >
-              <span style={{ color: "#6B7280" }}>
-                {transaction.related.type === "airtime"
-                  ? "Airtime"
-                  : transaction.related.type === "data"
-                    ? "Data Bundle"
-                    : "Service"}
-              </span>
-              <span style={{ fontWeight: 500, color: "#1F2937" }}>
-                {`${operatorName} ${transaction.related.type === "airtime" ? "Airtime" : "Data"}`}
-              </span>
-            </div>
-          )}
-
-          {/* Transaction ID */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: 13,
-            }}
-          >
-            <span style={{ color: "#6B7280" }}>Transaction ID</span>
-            <span
-              style={{
-                fontWeight: 500,
-                color: "#1F2937",
-                fontFamily: "monospace",
-                fontSize: 12,
-                wordBreak: "break-all",
-              }}
-            >
-              {transaction.id}
-            </span>
-          </div>
-        </div>
       </div>
     </div>
   );

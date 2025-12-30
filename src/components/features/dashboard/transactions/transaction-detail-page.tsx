@@ -9,12 +9,16 @@ import { useTransaction } from "@/hooks/useWallet";
 import { cn } from "@/lib/utils";
 import type { Transaction } from "@/types/wallet.types";
 import {
+  AlertCircle,
   ArrowDown,
   ArrowLeft,
-  ArrowUp,
+  CheckCircle2,
+  Clock,
   Copy,
+  CreditCard,
   Landmark,
   Share2,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -26,24 +30,59 @@ interface TransactionDetailPageProps {
   transactionId: string;
 }
 
-// Helper to determine status badge color
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case "pending":
-      return "bg-yellow-500 text-yellow-50";
+// Get status icon and color configuration
+const getStatusConfig = (status: string) => {
+  const statusLower = status.toLowerCase();
+  switch (statusLower) {
     case "completed":
     case "received":
-      return "bg-green-500 text-green-50";
+      return {
+        icon: CheckCircle2,
+        color: "text-green-600",
+        label: "Successful",
+        bgColor: "bg-green-50",
+        borderColor: "ring-green-100",
+      };
+    case "pending":
+      return {
+        icon: Clock,
+        color: "text-amber-600",
+        label: "Pending",
+        bgColor: "bg-amber-50",
+        borderColor: "ring-amber-100",
+      };
     case "failed":
-      return "bg-red-500 text-red-50";
+      return {
+        icon: XCircle,
+        color: "text-red-600",
+        label: "Failed",
+        bgColor: "bg-red-50",
+        borderColor: "ring-red-100",
+      };
     case "cancelled":
-      return "bg-gray-400 text-gray-50";
+      return {
+        icon: XCircle,
+        color: "text-gray-600",
+        label: "Cancelled",
+        bgColor: "bg-gray-50",
+        borderColor: "ring-gray-100",
+      };
     case "reversed":
-      return "bg-orange-500 text-orange-50";
-    case "retry":
-      return "bg-blue-500 text-blue-50";
+      return {
+        icon: AlertCircle,
+        color: "text-orange-600",
+        label: "Reversed",
+        bgColor: "bg-orange-50",
+        borderColor: "ring-orange-100",
+      };
     default:
-      return "bg-gray-400 text-gray-50";
+      return {
+        icon: AlertCircle,
+        color: "text-gray-600",
+        label: status,
+        bgColor: "bg-gray-50",
+        borderColor: "ring-gray-100",
+      };
   }
 };
 
@@ -53,25 +92,30 @@ const getTransactionIcon = (transaction: Transaction) => {
 
   if (isDebit) {
     if (transaction.relatedType === "topup_request") {
-      if (transaction.related?.operatorCode === "MTN") {
+      const operatorCode = transaction.related?.operatorCode?.toUpperCase();
+      if (operatorCode === "MTN") {
         return "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/New-mtn-logo.jpg/960px-New-mtn-logo.jpg?20220217143058";
       }
-      if (transaction.related?.operatorCode === "AIRTEL") {
+      if (operatorCode === "AIRTEL") {
         return "https://upload.wikimedia.org/wikipedia/commons/1/18/Airtel_logo.svg";
       }
-      if (transaction.related?.operatorCode === "GLO") {
+      if (operatorCode === "GLO") {
         return "https://upload.wikimedia.org/wikipedia/commons/8/86/Glo_button.png";
       }
-      if (transaction.related?.operatorCode === "9MOBILE") {
+      if (operatorCode === "9MOBILE") {
         return "https://logosandtypes.com/wp-content/uploads/2020/10/9mobile-1.svg";
       }
     }
     // Default debit icon
-    return <ArrowUp className="text-destructive size-8" />;
+    return <CreditCard className="size-8 text-slate-400" />;
   } else {
     // isCredit
     if (transaction.relatedType === "incoming_payment") {
-      return <Landmark className="size-8 text-green-600" />;
+      return (
+        <div className="flex flex-col items-center justify-center text-green-600">
+          <span className="text-xs font-bold">IN</span>
+        </div>
+      );
     }
     // Default credit icon
     return <ArrowDown className="size-8 text-green-600" />;
@@ -271,6 +315,11 @@ export function TransactionDetailPage({
 
   const transactionIcon = getTransactionIcon(transaction);
   const isIconUrl = typeof transactionIcon === "string";
+  const logoUrl = isIconUrl ? transactionIcon : null;
+  const statusConfig = getStatusConfig(
+    transaction.related?.status || "pending"
+  );
+  const StatusIcon = statusConfig.icon;
 
   return (
     <div className="w-full p-4 sm:p-6 lg:p-8">
@@ -281,169 +330,189 @@ export function TransactionDetailPage({
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
-          <h1 className="flex-1 shrink-0 text-xl font-semibold tracking-tight whitespace-nowrap sm:grow-0">
+          <h1 className="flex-1 shrink-0 text-lg font-semibold tracking-tight whitespace-nowrap sm:grow-0">
             {backLabel}
           </h1>
         </header>
 
-        {/* Main Transaction Card - Single Card Layout */}
-        <Card className="overflow-hidden">
-          {/* Header Section with Transaction Info */}
-          <div className="px-6 py-8 sm:py-12">
-            <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-center">
-              <div className="flex w-full items-center gap-4 sm:w-auto">
-                <Avatar className="flex size-16 shrink-0 items-center justify-center rounded-full">
-                  {isIconUrl ? (
-                    <AvatarImage
-                      src={transactionIcon}
-                      className="object-contain"
-                    />
-                  ) : null}
-                  <AvatarFallback>
-                    {isIconUrl ? null : transactionIcon}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="flex-1 overflow-hidden">
-                  <h1 className="truncate text-xl font-bold sm:text-2xl">
-                    {getTransactionTypeLabel(transaction)}
-                  </h1>
-                  <p className="text-muted-foreground truncate text-sm">
-                    {getTransactionDescription(transaction)}
-                  </p>
-                </div>
-              </div>
-              <p className="text-3xl font-bold sm:text-5xl">
-                {formattedAmount}
-              </p>
-              <div className="flex justify-center">
-                {transaction.related?.status && (
-                  <Badge
-                    className={cn(
-                      "text-1xl capitalize",
-                      getStatusColor(transaction.related.status)
-                    )}
-                  >
-                    {transaction.related.status}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-center font-medium">
-                {formatDate(transaction.createdAt)}
-              </p>
+        {/* Main Transaction Card */}
+        <Card className="overflow-hidden border-0 shadow-lg ring-1 ring-slate-200">
+          {/* Header Section - Centralized */}
+          <div className="flex flex-col items-center p-8 pb-4">
+            {/* Logo / Icon Container */}
+            <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-slate-50 shadow-sm ring-1 ring-slate-100">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt="operator"
+                  className="size-10 object-contain"
+                />
+              ) : (
+                transactionIcon
+              )}
             </div>
+
+            <h2 className="mb-1 text-center text-lg font-semibold text-slate-900">
+              {getTransactionTypeLabel(transaction)}
+            </h2>
+            <p className="mb-6 max-w-[280px] text-center text-sm text-slate-500">
+              {getTransactionDescription(transaction)}
+            </p>
+
+            {/* Amount */}
+            <div className="mb-4 text-center">
+              <span className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                {formattedAmount}
+              </span>
+            </div>
+
+            {/* Status Line */}
+            <div
+              className={cn(
+                "mb-3 flex items-center gap-2 rounded-full px-3 py-1 ring-1",
+                statusConfig.bgColor,
+                statusConfig.borderColor
+              )}
+            >
+              <StatusIcon className={cn("h-4 w-4", statusConfig.color)} />
+              <span className={cn("text-sm font-medium", statusConfig.color)}>
+                {statusConfig.label}
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-400">
+              {formatDate(transaction.createdAt)}
+            </p>
+          </div>
+
+          {/* Dotted Separator */}
+          <div className="relative flex items-center justify-center px-6">
+            <div className="h-px w-full border-t-2 border-dashed border-slate-200" />
           </div>
 
           {/* Details Section */}
-          <CardContent className="mt-0 space-y-8 px-6 py-8">
-            {/* Transaction Note */}
-            {transaction.note && (
-              <div className="border-t pt-6">
-                <p className="text-muted-foreground mb-2 text-sm font-medium tracking-wide uppercase">
-                  Note
-                </p>
-                <p className="bg-muted/30 rounded-lg p-4">{transaction.note}</p>
-              </div>
-            )}
+          <CardContent className="space-y-6 px-6 py-8">
+            <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+              Transaction Details
+            </p>
 
-            {/* Related Information */}
-            {transaction.related &&
-              Object.keys(transaction.related).length > 0 && (
-                <div className="border-t pt-6">
-                  <p className="text-muted-foreground mb-4 text-sm font-medium tracking-wide uppercase">
-                    Transaction Details
-                  </p>
-                  <div className="space-y-3">
-                    {transaction.related.recipient_phone && (
-                      <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
-                        <span className="font-medium">Recipient Phone</span>
-                        <span className="text-right">
-                          {transaction.related.recipient_phone}
-                        </span>
-                      </div>
-                    )}
-                    <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
-                      <span className="font-medium">Amount Paid</span>
-                      <span className="text-right">{formattedAmountPaid}</span>
-                    </div>
-                    {transaction.relatedType === "topup_request" && (
-                      <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
-                        <span className="font-medium"> Cashback Used </span>
-                        <span className="text-right">
-                          <span className="text-right">
-                            -₦{getCashbackUsed(transaction)}
-                          </span>
-                        </span>
-                      </div>
-                    )}
-                    {transaction.relatedType === "incoming_payment" ? (
-                      <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
-                        <span className="font-medium">Incoming Transfer</span>
-                        <span className="capitalize">{transaction.method}</span>
-                      </div>
-                    ) : transaction.related?.type === "data" ? (
-                      <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
-                        <span className="font-medium">Data</span>
-                        <span className="capitalize">
-                          {transaction.productCode}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
-                        <span className="font-medium">Airtime</span>
-                        <span className="capitalize">
-                          {transaction.productCode}
-                        </span>
-                      </div>
-                    )}
-                    {transaction.reference && (
-                      <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
-                        <span className="font-medium"> Reference </span>
-                        <div className="flex items-center gap-2">
-                          <code className="bg-muted rounded px-2 py-1 font-mono text-sm">
-                            {transaction.reference}
-                          </code>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              copyToClipboard(
-                                transaction.reference || "",
-                                "Reference"
-                              )
-                            }
-                          >
-                            {}
-                            <Copy className="size-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                    <div className="bg-muted/30 flex items-center justify-between rounded-lg p-4">
-                      <span className="font-medium"> Transaction ID </span>
-                      <span className="text-right">
-                        <code className="bg-muted rounded px-2 py-1 font-mono text-sm">
-                          {transaction.id.slice(0, 16)}...
-                        </code>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            copyToClipboard(transaction.id, "Transaction ID")
-                          }
-                        >
-                          {}
-                          <Copy className="size-4" />
-                        </Button>
-                      </span>
-                    </div>
-                  </div>
+            <div className="space-y-4">
+              {/* Recipient Phone */}
+              {transaction.related?.recipient_phone && (
+                <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
+                  <span className="text-slate-500">Recipient Phone</span>
+                  <span className="font-medium text-slate-900">
+                    {transaction.related.recipient_phone}
+                  </span>
                 </div>
               )}
+
+              {/* Amount Paid */}
+              {transaction.amount && (
+                <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
+                  <span className="text-slate-500">Amount Paid</span>
+                  <span className="font-medium text-slate-900">
+                    {formattedAmountPaid}
+                  </span>
+                </div>
+              )}
+
+              {/* Cashback Used */}
+              {transaction.relatedType === "topup_request" && (
+                <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
+                  <span className="text-slate-500">Cashback Used</span>
+                  <span className="font-medium text-red-500">
+                    -{getCashbackUsed(transaction)}
+                  </span>
+                </div>
+              )}
+
+              {/* Service Type */}
+              <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
+                <span className="text-slate-500">Service</span>
+                <div className="text-right">
+                  <span className="block font-medium text-slate-900">
+                    {transaction.relatedType === "incoming_payment"
+                      ? "Incoming Transfer"
+                      : transaction.related?.type === "data"
+                        ? "Data Bundle"
+                        : "Airtime"}
+                  </span>
+                  {transaction.productCode && (
+                    <span className="text-xs text-slate-400">
+                      {transaction.productCode}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Method (for Transfers) */}
+              {transaction.relatedType === "incoming_payment" &&
+                transaction.method && (
+                  <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
+                    <span className="text-slate-500">Method</span>
+                    <span className="font-medium text-slate-900 capitalize">
+                      {transaction.method}
+                    </span>
+                  </div>
+                )}
+
+              {/* Reference */}
+              {transaction.reference && (
+                <div className="space-y-1 border-b border-slate-50 pb-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Reference</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-slate-400 hover:text-slate-900"
+                      onClick={() =>
+                        copyToClipboard(transaction.reference!, "Reference")
+                      }
+                    >
+                      <Copy className="size-3" />
+                    </Button>
+                  </div>
+                  <code className="block font-mono text-xs break-all text-slate-600">
+                    {transaction.reference}
+                  </code>
+                </div>
+              )}
+
+              {/* Transaction ID */}
+              <div className="space-y-1 pt-1 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Transaction ID</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-slate-400 hover:text-slate-900"
+                    onClick={() =>
+                      copyToClipboard(transaction.id, "Transaction ID")
+                    }
+                  >
+                    <Copy className="size-3" />
+                  </Button>
+                </div>
+                <code className="block font-mono text-xs break-all text-slate-600">
+                  {transaction.id}
+                </code>
+              </div>
+            </div>
+
+            {/* Transaction Note */}
+            {transaction.note && (
+              <div className="mt-6 rounded-lg bg-slate-50 p-4 ring-1 ring-slate-100">
+                <p className="mb-1 text-xs font-semibold text-slate-400 uppercase">
+                  Note
+                </p>
+                <p className="text-sm text-slate-700">{transaction.note}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Share Button Footer - Outside Card */}
+        {/* Share Button Footer */}
         <div className="flex justify-center pb-4">
           <Button
             onClick={() => setIsShareOpen(true)}

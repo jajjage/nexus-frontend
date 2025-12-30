@@ -1,31 +1,69 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { Transaction } from "@/types/wallet.types";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Copy,
+  CreditCard,
+  Share2,
+  XCircle,
+} from "lucide-react";
 import React from "react";
+import { toast } from "sonner";
 
 interface TransactionReceiptProps {
   transaction: Transaction;
   showLogo?: boolean;
   operatorLogo?: string;
+  className?: string;
 }
 
-// Get status badge styling
-const getStatusBadgeStyle = (status: string) => {
+// Get status icon and color
+const getStatusConfig = (status: string) => {
   const statusLower = status.toLowerCase();
   switch (statusLower) {
-    case "pending":
-      return { bg: "#FCD34D", color: "#92400E" }; // yellow/amber
     case "completed":
     case "received":
-      return { bg: "#86EFAC", color: "#166534" }; // green
+      return {
+        icon: CheckCircle2,
+        color: "text-green-600",
+        label: "Successful",
+      };
+    case "pending":
+      return {
+        icon: Clock,
+        color: "text-amber-600",
+        label: "Pending",
+      };
     case "failed":
-      return { bg: "#FCA5A5", color: "#7F1D1D" }; // red
+      return {
+        icon: XCircle,
+        color: "text-red-600",
+        label: "Failed",
+      };
     case "cancelled":
-      return { bg: "#D1D5DB", color: "#374151" }; // gray
+      return {
+        icon: XCircle,
+        color: "text-gray-600",
+        label: "Cancelled",
+      };
     case "reversed":
-      return { bg: "#FDBA74", color: "#92400E" }; // orange
+      return {
+        icon: AlertCircle,
+        color: "text-orange-600",
+        label: "Reversed",
+      };
     default:
-      return { bg: "#D1D5DB", color: "#374151" };
+      return {
+        icon: AlertCircle,
+        color: "text-gray-600",
+        label: status,
+      };
   }
 };
 
@@ -67,24 +105,20 @@ const getCashbackUsed = (transaction: Transaction): string => {
 
   if (isDebit && transaction.relatedType === "topup_request") {
     const cashbackUsed = transaction.cashbackUsed || 0;
-    const formattedBalance = cashbackUsed.toLocaleString("en-NG", {
+    return cashbackUsed.toLocaleString("en-NG", {
       style: "currency",
       currency: "NGN",
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
     });
-    return formattedBalance;
   }
-  const formattedBalance = transaction.cashbackUsed.toLocaleString("en-NG", {
+  return transaction.cashbackUsed.toLocaleString("en-NG", {
     style: "currency",
     currency: "NGN",
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
   });
-  return formattedBalance;
 };
 
-// Get transaction description (like "Airtime to MTN - 08135342817")
+// Get transaction description
 const getTransactionDescription = (transaction: Transaction): string => {
   if (transaction.relatedType === "topup_request") {
     const type = transaction.related?.type?.toLowerCase() || "topup";
@@ -112,7 +146,7 @@ const formatDate = (date: Date | string | undefined): string => {
 export const TransactionReceipt = React.forwardRef<
   HTMLDivElement,
   TransactionReceiptProps
->(({ transaction, showLogo = true }, ref) => {
+>(({ transaction, showLogo = true, className }, ref) => {
   const isCredit = transaction.direction === "credit";
   const formattedAmount = isCredit
     ? transaction.amount.toLocaleString("en-NG", {
@@ -130,176 +164,92 @@ export const TransactionReceipt = React.forwardRef<
   });
 
   const logoUrl = getOperatorLogo(transaction);
-  const statusStyle = getStatusBadgeStyle(
+  const statusConfig = getStatusConfig(
     transaction.related?.status || "pending"
   );
+  const StatusIcon = statusConfig.icon;
 
   const operatorName =
     transaction.productCode || transaction.productCode || "N/A";
 
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(transaction.id);
+    toast.success("Transaction ID copied");
+  };
+
   return (
-    <div
+    <Card
       ref={ref}
-      style={{
-        width: "100%",
-        backgroundColor: "#ffffff",
-        padding: "20px",
-        maxWidth: 400,
-        margin: "0 auto",
-        boxSizing: "border-box",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-        color: "#1F2937",
-      }}
+      className={cn(
+        "relative mx-auto w-full max-w-[400px] overflow-hidden border-0 bg-white shadow-none ring-1 ring-slate-200 sm:border sm:shadow-lg sm:ring-0",
+        className
+      )}
     >
-      {/* Top: Operator Logo and Description */}
-      <div style={{ textAlign: "center", marginBottom: 16 }}>
-        {showLogo && transaction.relatedType === "topup_request" && logoUrl && (
-          <img
-            src={logoUrl}
-            alt="operator"
-            style={{
-              height: 64,
-              width: "auto",
-              maxWidth: 100,
-              objectFit: "contain",
-              marginBottom: 8,
-              borderRadius: 50,
-            }}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
-        )}
-        {/* Display Landmark icon for incoming payments */}
-        {transaction.direction === "credit" &&
-          transaction.relatedType === "incoming_payment" && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginBottom: 8,
-              }}
-            >
-              <svg
-                width="64"
-                height="64"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#16a34a"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="3" y1="21" x2="21" y2="21" />
-                <line x1="6" y1="18" x2="6" y2="21" />
-                <line x1="10" y1="18" x2="10" y2="21" />
-                <line x1="14" y1="18" x2="14" y2="21" />
-                <line x1="18" y1="18" x2="18" y2="21" />
-                <polygon points="12 2 20 7 20 18 4 18 4 7" />
-                <line x1="7" y1="13" x2="17" y2="13" />
-                <line x1="9" y1="9" x2="15" y2="9" />
-              </svg>
+      {/* Receipt Top Section */}
+      <div className="flex flex-col items-center p-6 pb-4">
+        {/* Logo / Icon */}
+        <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-slate-50 shadow-sm ring-1 ring-slate-100">
+          {showLogo &&
+          transaction.relatedType === "topup_request" &&
+          logoUrl ? (
+            <img
+              src={logoUrl}
+              alt="operator"
+              className="size-10 object-contain"
+            />
+          ) : isCredit ? (
+            <div className="flex flex-col items-center justify-center text-green-600">
+              <span className="text-xs font-bold">IN</span>
             </div>
+          ) : (
+            <CreditCard className="size-8 text-slate-400" />
           )}
-        <h2
-          style={{
-            margin: "0 0 4px 0",
-            fontSize: 16,
-            fontWeight: 600,
-            color: "#1F2937",
-          }}
-        >
+        </div>
+
+        <h2 className="mb-1 text-lg font-semibold text-slate-900">
           {getTransactionTypeLabel(transaction)}
         </h2>
-        <p
-          style={{
-            margin: "0 0 12px 0",
-            fontSize: 13,
-            color: "#6B7280",
-          }}
-        >
+        <p className="mb-6 max-w-[250px] text-center text-sm text-slate-500">
           {getTransactionDescription(transaction)}
         </p>
-      </div>
 
-      {/* Main Amount (Large, centered) */}
-      <div style={{ textAlign: "center", marginBottom: 12 }}>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 40,
-            fontWeight: 700,
-            color: "#1F2937",
-          }}
-        >
-          {formattedAmount}
-        </p>
-      </div>
-
-      {/* Status Badge (centered) */}
-      <div style={{ textAlign: "center", marginBottom: 8 }}>
-        {transaction.related?.status && (
-          <span
-            style={{
-              display: "inline-block",
-              backgroundColor: statusStyle.bg,
-              color: statusStyle.color,
-              padding: "4px 16px",
-              borderRadius: 20,
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "capitalize",
-            }}
-          >
-            {transaction.related.status}
+        {/* Amount */}
+        <div className="mb-4 text-center">
+          <span className="text-3xl font-bold tracking-tight text-slate-900">
+            {formattedAmount}
           </span>
-        )}
-      </div>
+        </div>
 
-      {/* Date (centered) */}
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 12,
-            color: "#6B7280",
-          }}
-        >
+        {/* Status Line */}
+        <div className="mb-2 flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-100">
+          <StatusIcon className={cn("h-4 w-4", statusConfig.color)} />
+          <span className={cn("text-sm font-medium", statusConfig.color)}>
+            {statusConfig.label}
+          </span>
+        </div>
+
+        <p className="text-xs text-slate-400">
           {formatDate(transaction.createdAt)}
         </p>
       </div>
 
-      {/* Transaction Details Section */}
-      <div style={{ borderTop: "1px solid #E5E7EB", paddingTop: 16 }}>
-        <p
-          style={{
-            margin: "0 0 12px 0",
-            fontSize: 11,
-            fontWeight: 600,
-            color: "#9CA3AF",
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-          }}
-        >
+      {/* Dotted Separator */}
+      <div className="relative flex items-center justify-center px-4">
+        <div className="h-px w-full border-t-2 border-dashed border-slate-200" />
+      </div>
+
+      {/* Details Section */}
+      <div className="space-y-4 p-6 pt-4">
+        <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
           Transaction Details
         </p>
 
-        <div style={{ marginTop: "8px" }}>
+        <div className="space-y-3">
           {/* Recipient Phone */}
           {transaction.related?.recipient_phone && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingBottom: 8,
-                marginBottom: 8,
-                borderBottom: "1px solid #F3F4F6",
-                fontSize: 13,
-              }}
-            >
-              <span style={{ color: "#6B7280" }}>Recipient Phone</span>
-              <span style={{ fontWeight: 500, color: "#1F2937" }}>
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-500">Recipient Phone</span>
+              <span className="font-medium text-slate-900">
                 {transaction.related.recipient_phone}
               </span>
             </div>
@@ -307,89 +257,66 @@ export const TransactionReceipt = React.forwardRef<
 
           {/* Amount Paid */}
           {transaction.amount && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingBottom: 8,
-                marginBottom: 8,
-                borderBottom: "1px solid #F3F4F6",
-                fontSize: 13,
-              }}
-            >
-              <span style={{ color: "#6B7280" }}>Amount Paid</span>
-              <span style={{ fontWeight: 500, color: "#1F2937" }}>
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-500">Amount Paid</span>
+              <span className="font-medium text-slate-900">
                 {formattedAmountPaid}
               </span>
             </div>
           )}
+
           {/* Cashback Used */}
-          {transaction.relatedType === "topup-request" && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingBottom: 8,
-                marginBottom: 8,
-                borderBottom: "1px solid #F3F4F6",
-                fontSize: 13,
-              }}
-            >
-              <span style={{ color: "#6B7280" }}>Cashback Used</span>
-              <span style={{ fontWeight: 500, color: "#1F2937" }}>
-                -₦{getCashbackUsed(transaction)}
-              </span>
-            </div>
-          )}
-          {/* Service Type (Airtime/Data) */}
-          {transaction.related?.type && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingBottom: 8,
-                marginBottom: 8,
-                borderBottom: "1px solid #F3F4F6",
-                fontSize: 13,
-              }}
-            >
-              <span style={{ color: "#6B7280" }}>
-                {transaction.related.type === "airtime"
-                  ? "Airtime"
-                  : transaction.related.type === "data"
-                    ? "Data Bundle"
-                    : "Service"}
-              </span>
-              <span style={{ fontWeight: 500, color: "#1F2937" }}>
-                {operatorName}
+          {transaction.relatedType === "topup_request" && (
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-500">Cashback Used</span>
+              <span className="font-medium text-red-500">
+                -{getCashbackUsed(transaction)}
               </span>
             </div>
           )}
 
-          {/* Transaction ID */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: 13,
-            }}
-          >
-            <span style={{ color: "#6B7280" }}>Transaction ID</span>
-            <span
-              style={{
-                fontWeight: 500,
-                color: "#1F2937",
-                fontFamily: "monospace",
-                fontSize: 12,
-                wordBreak: "break-all",
-              }}
-            >
+          {/* Service Type */}
+          {transaction.related?.type && (
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-500">Service</span>
+              <div className="text-right">
+                <span className="block font-medium text-slate-900">
+                  {transaction.related.type === "airtime"
+                    ? "Airtime"
+                    : "Data Bundle"}
+                </span>
+                <span className="text-xs text-slate-400">{operatorName}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Reference/ID */}
+          <div className="pt-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-500">Transaction ID</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-slate-400 hover:text-slate-900"
+                onClick={handleCopyId}
+              >
+                <Copy className="size-3" />
+              </Button>
+            </div>
+            <p className="mt-1 font-mono text-xs break-all text-slate-600">
               {transaction.id}
-            </span>
+            </p>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Branding Footer */}
+      <div className="bg-slate-50 p-4 text-center">
+        <div className="flex items-center justify-center gap-2 text-xs font-medium text-slate-400">
+          <span>nexus-data.com</span>
+        </div>
+      </div>
+    </Card>
   );
 });
 

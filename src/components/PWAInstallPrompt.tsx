@@ -49,12 +49,6 @@ export function PWAInstallPrompt() {
   useEffect(() => {
     console.log("[PWA] Checking installability and display mode");
 
-    // Check if recently dismissed
-    if (isDismissedRecently()) {
-      console.log("[PWA] Prompt was dismissed recently, skipping");
-      return;
-    }
-
     // Detect iOS
     const detectIOS = () => {
       return (
@@ -77,16 +71,26 @@ export function PWAInstallPrompt() {
 
     // For iOS, always show the prompt (no beforeinstallprompt event)
     if (iosDevice) {
-      setShowPrompt(true);
+      // Only show if not dismissed recently
+      if (!isDismissedRecently()) {
+        setShowPrompt(true);
+      }
       return;
     }
 
     // For other platforms, listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
       console.log("[PWA] beforeinstallprompt event fired", e);
+      // Always prevent default to stop browser's mini-infobar
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowPrompt(true);
+
+      // Only show our custom UI if not dismissed recently
+      if (!isDismissedRecently()) {
+        setShowPrompt(true);
+      } else {
+        console.log("[PWA] Prompt suppressed due to cooldown");
+      }
     };
 
     // Check if app was successfully installed
@@ -95,6 +99,7 @@ export function PWAInstallPrompt() {
       setIsInstalled(true);
       setShowPrompt(false);
       setDeferredPrompt(null);
+      clearDismissal();
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);

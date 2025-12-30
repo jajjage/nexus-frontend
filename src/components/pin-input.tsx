@@ -31,11 +31,6 @@ export const PinInput = forwardRef<HTMLInputElement, PinInputProps>(
     forwardedRef
   ) => {
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-    // Detect if device has physical keyboard (desktop/tablet with keyboard)
-    const hasPhysicalKeyboard =
-      !/(Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini)/i.test(
-        navigator.userAgent
-      );
     const digits = value
       .split("")
       .concat(Array(length).fill(""))
@@ -128,8 +123,9 @@ export const PinInput = forwardRef<HTMLInputElement, PinInputProps>(
                   }
                 }
               }}
-              type={masked && !hasPhysicalKeyboard ? "password" : "text"}
+              type={masked ? "password" : "text"}
               inputMode="numeric"
+              autoComplete="off"
               maxLength={1}
               value={digits[index] || ""}
               onChange={(e) => handleChange(index, e.target.value)}

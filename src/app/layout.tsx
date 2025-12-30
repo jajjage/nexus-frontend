@@ -1,4 +1,3 @@
-import { AuthRedirectLoader } from "@/components/auth-redirect-loader";
 import { SecurityGuard } from "@/components/guards/SecurityGuard";
 import { MarkupSyncer } from "@/components/MarkupSyncer";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
@@ -68,7 +67,6 @@ export default function RootLayout({
             <AuthProvider>
               <SecurityGuard>
                 <div data-app-root>
-                  <AuthRedirectLoader />
                   <MarkupSyncer />
                   <ServiceWorkerNavigationListener />
                   <PWAInstallPrompt />

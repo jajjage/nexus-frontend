@@ -301,11 +301,6 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
       refreshAttemptCount++;
 
-      // Signal that we're attempting to revalidate session
-      if (authLoadingCallback) {
-        authLoadingCallback(true, "revalidating");
-      }
-
       try {
         console.log("[AUTH] Starting token refresh", {
           attempt: refreshAttemptCount,
@@ -322,11 +317,6 @@ apiClient.interceptors.response.use(
           status: refreshResponse.status,
           responseData: refreshResponse.data,
         });
-
-        // Clear loading state - refresh succeeded
-        if (authLoadingCallback) {
-          authLoadingCallback(false);
-        }
 
         // Process all queued requests
         processQueue();

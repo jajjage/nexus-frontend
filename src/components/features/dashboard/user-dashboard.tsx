@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { PinSetupModal } from "@/components/features/security/pin-setup-modal";
 import NotificationBanner from "@/components/notification/NotificationBanner";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
-import { userKeys, useUpdateProfile } from "@/hooks/useUser";
+import { userKeys } from "@/hooks/useUser";
 import { walletKeys } from "@/hooks/useWallet";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -38,8 +38,6 @@ export function UserDashboard() {
   const [showPinModal, setShowPinModal] = useState(false);
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { mutate: updateProfile, isPending: isUpdatingPin } =
-    useUpdateProfile();
 
   const unreadNotificationCount = unreadCountResponse?.data?.unreadCount || 0;
 
@@ -116,20 +114,9 @@ export function UserDashboard() {
   };
 
   const handlePinSetupSuccess = (pin?: string) => {
-    updateProfile(
-      { pin },
-      {
-        onSuccess: () => {
-          toast.success("Transaction PIN set successfully!");
-          setShowPinModal(false);
-          refetchUser();
-        },
-        onError: (error: any) => {
-          const errorMsg = error.response?.data?.message || "Failed to set PIN";
-          toast.error(errorMsg);
-        },
-      }
-    );
+    toast.success("Transaction PIN set successfully!");
+    setShowPinModal(false);
+    refetchUser();
   };
 
   return (
@@ -185,7 +172,7 @@ export function UserDashboard() {
               </div>
             </header>
 
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4 md:gap-6">
               <NotificationBanner />
 
               {/* User Info Section (Mobile Only) */}
@@ -204,7 +191,7 @@ export function UserDashboard() {
               />
 
               {/* Recent Transactions */}
-              <div className="-mt-12">
+              <div className="-mt-10 md:-mt-12">
                 <TransactionHistory isVisible={isBalanceVisible} />
               </div>
 

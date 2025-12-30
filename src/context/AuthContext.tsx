@@ -25,10 +25,6 @@ interface AuthContextType {
   isSessionExpired: boolean;
   hasRefreshTokens: boolean;
 
-  // Global auth loading state (shown during recovery, revalidation, or redirect)
-  isAuthLoadingGlobal: boolean;
-  authLoadingReason?: "revalidating" | "redirecting" | "recovering";
-
   // Redirect reason
   redirectReason?:
     | "session-expired"
@@ -40,10 +36,6 @@ interface AuthContextType {
   setUser: (user: User | null) => void;
   setIsLoading: (loading: boolean) => void;
   setIsSessionExpired: (expired: boolean) => void;
-  setIsAuthLoadingGlobal: (
-    loading: boolean,
-    reason?: "revalidating" | "redirecting" | "recovering"
-  ) => void;
   setRedirectReason: (
     reason?: "session-expired" | "session-invalid" | "user-deleted" | "error"
   ) => void;
@@ -56,10 +48,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSessionExpired, setIsSessionExpired] = useState(false);
-  const [isAuthLoadingGlobal, setIsAuthLoadingGlobalState] = useState(false);
-  const [authLoadingReason, setAuthLoadingReason] = useState<
-    "revalidating" | "redirecting" | "recovering"
-  >();
   const [redirectReason, setRedirectReasonState] = useState<
     "session-expired" | "session-invalid" | "user-deleted" | "error"
   >();
@@ -101,18 +89,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const setIsAuthLoadingGlobal = (
-    loading: boolean,
-    reason?: "revalidating" | "redirecting" | "recovering"
-  ) => {
-    setIsAuthLoadingGlobalState(loading);
-    if (loading && reason) {
-      setAuthLoadingReason(reason);
-    } else {
-      setAuthLoadingReason(undefined);
-    }
-  };
-
   const setRedirectReason = (
     reason?: "session-expired" | "session-invalid" | "user-deleted" | "error"
   ) => {
@@ -125,13 +101,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!user && !isSessionExpired,
     isSessionExpired,
     hasRefreshTokens,
-    isAuthLoadingGlobal,
-    authLoadingReason,
     redirectReason,
     setUser,
     setIsLoading,
     setIsSessionExpired,
-    setIsAuthLoadingGlobal,
     setRedirectReason,
     markSessionAsExpired,
   };

@@ -64,11 +64,11 @@ export function BalanceCard({
   };
 
   return (
-    <Card className="bg-primary text-primary-foreground relative z-10 w-full rounded-t-2xl rounded-b-none p-6 shadow-lg">
+    <Card className="bg-primary text-primary-foreground relative z-10 w-full rounded-t-2xl rounded-b-none p-4 shadow-lg md:p-6">
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <p className="text-sm opacity-90">Available Balance</p>
+            <p className="text-xs opacity-90 md:text-sm">Available Balance</p>
             <Button
               variant="ghost"
               size="icon"
@@ -77,21 +77,21 @@ export function BalanceCard({
               aria-label={isVisible ? "Hide balance" : "Show balance"}
             >
               {isVisible ? (
-                <Eye className="size-5" />
+                <Eye className="size-4 md:size-5" />
               ) : (
-                <EyeOff className="size-5" />
+                <EyeOff className="size-4 md:size-5" />
               )}
             </Button>
           </div>
-          <p className="mt-1 text-3xl font-bold">
+          <p className="mt-0.5 text-2xl font-bold md:mt-1 md:text-3xl">
             {isVisible ? formattedBalance : "••••••••"}
           </p>
         </div>
 
         <Dialog>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30">
-              <Plus className="size-4" />
+            <Button className="h-9 gap-1.5 rounded-full bg-white/20 px-3 text-xs backdrop-blur-sm hover:bg-white/30 md:h-10 md:gap-2 md:px-4 md:text-sm">
+              <Plus className="size-3.5 md:size-4" />
               <span>Add Money</span>
             </Button>
           </DialogTrigger>

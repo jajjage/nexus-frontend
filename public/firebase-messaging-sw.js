@@ -37,89 +37,11 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Network-first strategy for API calls, cache-first for static assets
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // Skip cross-origin requests and non-GET requests
-  if (url.origin !== self.location.origin || request.method !== "GET") {
-    return;
-  }
-
-  // Skip Next.js internal requests (static chunks, data, etc.) to prevent errors
-  if (url.pathname.startsWith("/_next/")) {
-    return;
-  }
-
-  // API requests: network-first strategy
-  if (url.pathname.includes("/api/")) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const clonedResponse = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, clonedResponse);
-          });
-          return response;
-        })
-        .catch(() => {
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              console.log("[SW] Serving cached API response:", url.pathname);
-              return cachedResponse;
-            }
-            // Return offline fallback response
-            return new Response(
-              JSON.stringify({
-                success: false,
-                message: "Offline - cached data may not be available",
-              }),
-              { status: 503, headers: { "Content-Type": "application/json" } }
-            );
-          });
-        })
-    );
-    return;
-  }
-
-  // Static assets: cache-first strategy
-  event.respondWith(
-    caches
-      .match(request)
-      .then((response) => {
-        if (response) {
-          return response;
-        }
-        return fetch(request).then((response) => {
-          // Cache successful responses for images and fonts
-          if (
-            response.ok &&
-            (url.pathname.match(/\.(png|svg|jpg|jpeg|gif|woff|woff2)$/) ||
-              request.destination === "image" ||
-              request.destination === "font")
-          ) {
-            const clonedResponse = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, clonedResponse);
-            });
-          }
-          return response;
-        });
-      })
-      .catch(() => {
-        // Return offline page or icon if available
-        if (request.destination === "image") {
-          return caches.match("/images/notification-icon.png");
-        }
-        // Return a generic error response for other assets to prevent SW failure
-        return new Response("Network error", {
-          status: 408,
-          headers: { "Content-Type": "text/plain" },
-        });
-      })
-  );
-});
+// NOTE: fetch handler intentionally removed to avoid performance/navigation
+// overhead and the "no-op fetch handler" warning from audits. This service
+// worker now only handles push/notification events. If you need offline
+// caching in future, re-introduce a focused fetch handler that only
+// intercepts specific requests (e.g. navigation or well-scoped assets).
 
 // Try to load Firebase scripts for token generation
 // If CDN fails, we'll still handle push events

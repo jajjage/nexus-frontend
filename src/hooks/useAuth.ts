@@ -14,7 +14,6 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { useEffect, useTransition } from "react";
 import { toast } from "sonner";
-import { useSessionRevalidation } from "./useSessionRevalidation";
 
 /**
  * BEST PRACTICES FOR USER AUTH STATE:
@@ -232,7 +231,6 @@ export function useAuth(): {
     isLoading,
     isSessionExpired,
     setIsSessionExpired,
-    setIsAuthLoadingGlobal,
     setRedirectReason,
   } = useAuthContext();
 
@@ -276,14 +274,6 @@ export function useAuth(): {
       queryClient.clear();
     };
 
-    const handleSetAuthLoading = (
-      loading: boolean,
-      reason?: "revalidating" | "redirecting" | "recovering"
-    ) => {
-      console.log("[AUTH] Setting auth loading state", { loading, reason });
-      setIsAuthLoadingGlobal(loading, reason);
-    };
-
     const handleSetRedirectReason = (
       reason?: "session-expired" | "session-invalid" | "user-deleted" | "error"
     ) => {
@@ -293,7 +283,7 @@ export function useAuth(): {
 
     console.log("[AUTH] Setting up auth callbacks");
     setSessionExpiredCallback(handleSessionExpired);
-    setAuthLoadingCallback(handleSetAuthLoading);
+    // setAuthLoadingCallback(handleSetAuthLoading); // Removed silent refresh loading
     setRedirectReasonCallback(handleSetRedirectReason);
 
     return () => {
@@ -302,12 +292,7 @@ export function useAuth(): {
       setAuthLoadingCallback(() => {});
       setRedirectReasonCallback(() => {});
     };
-  }, [
-    queryClient,
-    setIsSessionExpired,
-    setIsAuthLoadingGlobal,
-    setRedirectReason,
-  ]);
+  }, [queryClient, setIsSessionExpired, setRedirectReason]);
 
   // Handle session expiration state - HIGHEST PRIORITY
   useEffect(() => {
@@ -334,9 +319,6 @@ export function useAuth(): {
       return () => clearTimeout(redirectTimer);
     }
   }, [isSessionExpired, router, queryClient]);
-
-  // Setup session revalidation on app focus/wake from sleep
-  useSessionRevalidation();
 
   const isAuthenticated =
     !!user && !isSessionExpired && user.isSuspended === false;

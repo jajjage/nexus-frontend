@@ -62,18 +62,20 @@ export function TransactionHistory({ isVisible }: TransactionHistoryProps) {
   return (
     <Card className="w-full rounded-2xl shadow-sm">
       {/* Header at the top of the card */}
-      <div className="flex items-center justify-between px-6 pt-4 pb-3">
-        <h2 className="text-foreground text-base font-medium">
+      <div className="flex items-center justify-between px-4 pt-3 pb-2 md:px-6 md:pt-4 md:pb-3">
+        <h2 className="text-foreground text-sm font-medium md:text-base">
           Recent Transactions
         </h2>
         <Link
           href="/dashboard/transactions"
-          className="text-primary text-sm font-medium hover:underline"
+          className="text-primary text-xs font-medium hover:underline md:text-sm"
         >
           See More
         </Link>
       </div>
-      <CardContent className="px-6 pt-0 pb-6">{renderContent()}</CardContent>
+      <CardContent className="px-4 pt-0 pb-4 md:px-6 md:pb-6">
+        {renderContent()}
+      </CardContent>
     </Card>
   );
 }
