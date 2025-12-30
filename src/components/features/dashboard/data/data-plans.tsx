@@ -212,7 +212,8 @@ export function DataPlans() {
   // Handle Biometric Verification Success
   const handleBiometricSuccess = (verificationToken: string) => {
     console.log("[DataPlans] Biometric verification successful");
-    setShowBiometricModal(false);
+    // NOTE: We don't close the modal here anymore.
+    // The modal stays open in a loading state until the mutation completes.
 
     // Update pending payment with verification token
     if (pendingPaymentData) {
@@ -362,8 +363,9 @@ export function DataPlans() {
           // Successful transaction = Reset PIN attempts if PIN was used
           if (pin) recordPinAttempt(true);
 
-          // Close PIN modal and re-open checkout modal to show success state
+          // Close BOTH modals and re-open checkout modal to show success state
           setShowPinModal(false);
+          setShowBiometricModal(false);
           setIsCheckoutOpen(true);
           queryClient.invalidateQueries({ queryKey: ["transactions"] });
           queryClient.invalidateQueries({ queryKey: ["wallet"] });
@@ -384,10 +386,11 @@ export function DataPlans() {
           ) {
             recordPinAttempt(false);
             setErrorMessage(msg);
-            // Keep modal open to show error
+            // Keep PIN modal open to show error
           } else {
-            // Other error - close modal and let hook show toast
+            // Other error - close BOTH modals and let hook show toast
             setShowPinModal(false);
+            setShowBiometricModal(false);
           }
         },
       }
@@ -532,6 +535,7 @@ export function DataPlans() {
         transactionAmount={pendingPaymentData?.amount?.toString()}
         productCode={selectedProduct?.productCode}
         phoneNumber={phoneNumber}
+        isVerifying={topupMutation.isPending}
       />
 
       {/* PIN Verification Modal - Fallback if Biometric Fails */}
