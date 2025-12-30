@@ -7,17 +7,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { verificationService } from "@/services/verification.service";
+import { useAuthContext } from "@/context/AuthContext";
+import { useBiometricTransaction } from "@/hooks/useBiometric";
 import { WebAuthnService } from "@/services/webauthn.service";
 import { AlertCircle, Fingerprint, Loader2 } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
+import { useCallback, useEffect, useState } from "react";
 
 interface BiometricVerificationModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: (verificationToken: string) => void;
   onBiometricUnavailable: () => void; // Fallback to PIN
+  onNoPinSetup?: () => void; // Show PIN setup modal
   transactionAmount?: string;
   productCode?: string;
   phoneNumber?: string;
@@ -35,242 +36,301 @@ interface BiometricVerificationModalProps {
  * 4. Token is used in /user/topup call
  *
  * On Failure/Unavailable:
- * - Call onBiometricUnavailable() to show PIN modal as fallback
+ * - If PIN not set: Show PIN setup modal
+ * - If PIN is set: Show PIN verification modal
  *
  * KEY REQUIREMENTS:
  * - Biometric takes PRIORITY over PIN
  * - User should NOT be prompted for PIN if biometric succeeds
  * - User should ONLY see PIN modal if biometric fails or unavailable
  * - Verification token from biometric is passed to transaction API
+ * - Don't show checkout modal in background while switching modals
  */
 export function BiometricVerificationModal({
   open,
   onClose,
   onSuccess,
   onBiometricUnavailable,
+  onNoPinSetup,
   transactionAmount,
   productCode,
   phoneNumber,
 }: BiometricVerificationModalProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { user } = useAuthContext();
   const [supportedChecked, setSupportedChecked] = useState(false);
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+  const [isAutoRetry, setIsAutoRetry] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
-  // Check biometric support on mount
-  const checkBiometricSupport = async () => {
+  // Use the biometric transaction mutation
+  const {
+    mutate: verifyBiometric,
+    isPending: loading,
+    error: mutationError,
+    reset: resetMutation,
+  } = useBiometricTransaction();
+
+  // Get error message from mutation or use custom error message
+  const error = errorMessage || mutationError?.message || "";
+
+  // Transition to PIN or PIN setup based on whether PIN is set
+  const transitionToNextModal = useCallback(() => {
+    // Immediately check PIN status
+    const hasPin = user?.hasPin;
+
+    // Call appropriate callback to show next modal
+    if (hasPin) {
+      // User has PIN set - show PIN verification modal
+      onBiometricUnavailable();
+    } else {
+      // User doesn't have PIN set - show PIN setup modal instead
+      if (onNoPinSetup) {
+        onNoPinSetup();
+      } else {
+        // Fallback to PIN modal if onNoPinSetup not provided
+        onBiometricUnavailable();
+      }
+    }
+  }, [user?.hasPin, onBiometricUnavailable, onNoPinSetup]);
+
+  // Check biometric support on mount and auto-start verification
+  useEffect(() => {
+    if (!open) {
+      setSupportedChecked(false);
+      setIsTransitioning(false);
+      setErrorMessage("");
+      resetMutation();
+      return;
+    }
+
     if (supportedChecked) return;
 
-    try {
-      const supported = await WebAuthnService.isWebAuthnSupported();
-      setSupportedChecked(true);
-      setIsBiometricSupported(supported);
+    const checkSupport = async () => {
+      try {
+        const supported = await WebAuthnService.isWebAuthnSupported();
+        setSupportedChecked(true);
+        setIsBiometricSupported(supported);
 
-      if (!supported) {
-        setError(
-          "Biometric authentication not available on this device. Please use PIN instead."
-        );
+        if (supported) {
+          // Mark this as auto-retry on first load
+          setIsAutoRetry(true);
+          // Auto-start biometric verification if supported
+          setTimeout(() => {
+            verifyBiometric(undefined, {
+              onSuccess: (verificationToken: string | undefined) => {
+                if (verificationToken) {
+                  onSuccess(verificationToken);
+                  onClose();
+                }
+              },
+              onError: (error: any) => {
+                // Check if it's a counter validation error (don't auto-fallback)
+                if (
+                  error.message &&
+                  error.message.toLowerCase().includes("security check")
+                ) {
+                  // User can retry biometric
+                  setIsAutoRetry(false);
+                  return;
+                }
+
+                // Auto-retry failed - transition immediately
+                console.log(
+                  "[BiometricVerificationModal] Auto-retry failed, transitioning to PIN",
+                  error
+                );
+                setIsAutoRetry(false);
+                setIsTransitioning(true);
+                transitionToNextModal();
+              },
+            });
+          }, 300);
+        } else {
+          // WebAuthn not supported - transition immediately without showing error
+          setIsAutoRetry(false);
+
+          console.log(
+            "[BiometricVerificationModal] WebAuthn not supported, transitioning to PIN"
+          );
+
+          // Transition immediately - no error display
+          setIsTransitioning(true);
+          transitionToNextModal();
+        }
+      } catch (err) {
+        setSupportedChecked(true);
+        setIsBiometricSupported(false);
+        setIsAutoRetry(false);
+
+        console.log("[BiometricVerificationModal] WebAuthn check failed", err);
+
+        // Transition immediately without error display
+        setIsTransitioning(true);
+        transitionToNextModal();
       }
-    } catch (err) {
-      setError("Unable to check biometric support. Please try PIN instead.");
-      setSupportedChecked(true);
-      setIsBiometricSupported(false);
-    }
-  };
+    };
 
-  const handleBiometricVerification = async () => {
-    setLoading(true);
-    setError("");
+    checkSupport();
+  }, [
+    open,
+    supportedChecked,
+    verifyBiometric,
+    isAutoRetry,
+    transitionToNextModal,
+  ]);
 
-    try {
-      console.log(
-        "[BiometricVerificationModal] Starting biometric verification"
-      );
-
-      // Step 1: Check WebAuthn support
-      const supported = await WebAuthnService.isWebAuthnSupported();
-      if (!supported) {
-        console.log(
-          "[BiometricVerificationModal] WebAuthn not supported - falling back to PIN"
-        );
-        setError(
-          "Biometric not available. Falling back to PIN verification..."
-        );
+  const handleBiometricVerification = () => {
+    resetMutation();
+    setIsAutoRetry(false);
+    setErrorMessage("");
+    verifyBiometric(undefined, {
+      onSuccess: (verificationToken: string | undefined) => {
+        if (verificationToken) {
+          onSuccess(verificationToken);
+          onClose();
+        }
+      },
+      onError: (error: any) => {
+        // Check if it's a counter validation error (don't auto-fallback)
+        if (
+          error.message &&
+          error.message.toLowerCase().includes("security check")
+        ) {
+          // User can retry biometric
+          return;
+        }
+        // Other errors - show error briefly then transition to PIN
+        setErrorMessage(error?.message || "Verification failed");
         setTimeout(() => {
-          onBiometricUnavailable();
-        }, 1500);
-        return;
-      }
-
-      // Step 2: Get authentication options from backend
-      console.log(
-        "[BiometricVerificationModal] Getting authentication options"
-      );
-      const options = await WebAuthnService.getAuthenticationOptions();
-
-      // Step 3: Perform biometric challenge
-      console.log(
-        "[BiometricVerificationModal] Performing biometric authentication"
-      );
-      const assertion = await WebAuthnService.signAssertion(options);
-
-      // Step 4: Verify with backend (intent: 'transaction')
-      console.log("[BiometricVerificationModal] Verifying with backend");
-      const response = await verificationService.verifyBiometricForTransaction({
-        id: assertion.id,
-        rawId: assertion.rawId,
-        response: assertion.response,
-        type: "public-key",
-        intent: "transaction",
-      });
-
-      if (response.success && response.verificationToken) {
-        console.log(
-          "[BiometricVerificationModal] Biometric verification successful"
-        );
-        toast.success("Biometric verified successfully");
-        onSuccess(response.verificationToken);
-        onClose();
-      } else {
-        // Biometric verification failed - try PIN
-        console.log(
-          "[BiometricVerificationModal] Biometric verification failed",
-          {
-            message: response.message,
-          }
-        );
-        setError("Biometric verification failed. Falling back to PIN...");
-        setTimeout(() => {
-          onBiometricUnavailable();
-        }, 1500);
-      }
-    } catch (err: any) {
-      console.error("[BiometricVerificationModal] Error", err);
-
-      if (err.name === "NotAllowedError") {
-        // User cancelled biometric - don't show error, just close
-        console.log("[BiometricVerificationModal] User cancelled biometric");
-        onClose();
-      } else if (err.name === "NotSupportedError") {
-        // Device doesn't support WebAuthn
-        console.log(
-          "[BiometricVerificationModal] Device doesn't support WebAuthn"
-        );
-        setError(
-          "Biometric not available on this device. Falling back to PIN..."
-        );
-        setTimeout(() => {
-          onBiometricUnavailable();
-        }, 1500);
-      } else {
-        // Other error - fall back to PIN
-        console.log(
-          "[BiometricVerificationModal] Unexpected error",
-          err.message
-        );
-        setError(
-          `${err.message || "Biometric verification failed"}. Falling back to PIN...`
-        );
-        setTimeout(() => {
-          onBiometricUnavailable();
-        }, 1500);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Auto-trigger biometric when modal opens
-  if (open && !supportedChecked && !loading) {
-    checkBiometricSupport().then(() => {
-      // Auto-start biometric if supported
-      if (isBiometricSupported) {
-        setTimeout(() => {
-          handleBiometricVerification();
-        }, 300);
-      }
+          setIsTransitioning(true);
+          transitionToNextModal();
+        }, 2000);
+      },
     });
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Verify with Biometric</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 py-4">
-          {/* Transaction Details (if provided) */}
-          {transactionAmount && (
-            <div className="bg-primary/10 rounded-lg p-3">
-              <p className="text-sm text-slate-600">Amount</p>
-              <p className="text-xl font-semibold text-slate-900">
-                ₦{parseFloat(transactionAmount).toLocaleString("en-NG")}
-              </p>
-            </div>
-          )}
-
-          {/* Biometric Icon & Status */}
-          <div className="flex flex-col items-center gap-4 py-6">
-            <div className="bg-primary/15 flex h-16 w-16 items-center justify-center rounded-full">
-              <Fingerprint className="text-primary h-8 w-8" />
-            </div>
-            <div className="text-center">
-              <p className="font-semibold text-slate-900">
-                {loading
-                  ? "Please complete biometric verification"
-                  : "Ready for biometric"}
-              </p>
-              <p className="text-sm text-slate-600">
-                {loading
-                  ? "Look at your device camera or place your finger on the scanner"
-                  : "This is more secure than entering your PIN"}
-              </p>
-            </div>
+      <DialogContent className="sm:max-w-[425px]">
+        {/* Hide content during initialization or transition to prevent flashing */}
+        {(!supportedChecked || isTransitioning) && !errorMessage ? (
+          <div className="flex h-40 items-center justify-center">
+            <DialogTitle className="sr-only">
+              Verifying Biometric Support
+            </DialogTitle>
+            <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
           </div>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Verify with Fingerprint</DialogTitle>
+            </DialogHeader>
 
-          {/* Error Message */}
-          {error && (
-            <div className="flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="flex flex-col gap-4 py-4">
+              {/* Error Display - Shows for 2 seconds before transition */}
+              {errorMessage && (
+                <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
+                  <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-medium text-red-900">
+                      Biometric Unavailable
+                    </p>
+                    <p className="text-sm text-red-700">{errorMessage}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Main content - Hidden while showing error and transitioning */}
+              {!errorMessage && (
+                <>
+                  {/* Biometric Icon */}
+                  <div className="flex justify-center">
+                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-linear-to-br from-blue-50 to-indigo-50">
+                      <Fingerprint className="h-12 w-12 text-indigo-600" />
+                    </div>
+                  </div>
+
+                  {/* Status Message */}
+                  <div className="text-center">
+                    {!isBiometricSupported ? (
+                      <>
+                        <p className="font-medium text-gray-900">
+                          Biometric Not Available
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Your device doesn't support biometric verification.
+                          Please use PIN instead.
+                        </p>
+                      </>
+                    ) : loading ? (
+                      <>
+                        <p className="font-medium text-gray-900">
+                          Waiting for Fingerprint
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {isAutoRetry
+                            ? "Preparing biometric verification..."
+                            : "Touch your fingerprint sensor"}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium text-gray-900">
+                          Verify Transaction
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Use your fingerprint to verify this{" "}
+                          {transactionAmount
+                            ? `₦ ${transactionAmount} transaction`
+                            : "transaction"}
+                        </p>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Amount Display */}
+                  {transactionAmount && (
+                    <div className="rounded-lg bg-gray-50 p-3 text-center">
+                      <p className="text-xs text-gray-600">
+                        Transaction Amount
+                      </p>
+                      <p className="text-lg font-semibold text-gray-900">
+                        ₦ {transactionAmount}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col gap-2 pt-2">
+                    <Button
+                      onClick={handleBiometricVerification}
+                      disabled={loading || !isBiometricSupported}
+                      className="w-full"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        "Use Fingerprint"
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={transitionToNextModal}
+                      className="w-full"
+                    >
+                      Use PIN Instead
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
-          )}
-
-          {/* Verify Button */}
-          <Button
-            onClick={handleBiometricVerification}
-            disabled={loading || !isBiometricSupported}
-            className="bg-primary hover:bg-primary/90 w-full"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Verifying...
-              </>
-            ) : (
-              <>
-                <Fingerprint className="mr-2 h-4 w-4" />
-                Verify with Biometric
-              </>
-            )}
-          </Button>
-
-          {/* Fallback to PIN */}
-          <Button
-            onClick={onBiometricUnavailable}
-            variant="outline"
-            disabled={loading}
-            className="w-full"
-          >
-            Use PIN Instead
-          </Button>
-        </div>
-
-        {/* Footer */}
-        <div className="border-t pt-3 text-center text-xs text-slate-500">
-          <p>Your biometric data is secure and never shared</p>
-        </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

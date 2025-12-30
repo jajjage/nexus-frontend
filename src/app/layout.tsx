@@ -67,13 +67,15 @@ export default function RootLayout({
           <QueryProvider>
             <AuthProvider>
               <SecurityGuard>
-                <AuthRedirectLoader />
-                <MarkupSyncer />
-                <ServiceWorkerNavigationListener />
-                <PWAInstallPrompt />
-                {/* <FcmSyncer /> */}
-                <Toaster richColors position="top-right" />
-                {children}
+                <div data-app-root>
+                  <AuthRedirectLoader />
+                  <MarkupSyncer />
+                  <ServiceWorkerNavigationListener />
+                  <PWAInstallPrompt />
+                  {/* <FcmSyncer /> */}
+                  <Toaster richColors position="top-right" />
+                  {children}
+                </div>
               </SecurityGuard>
             </AuthProvider>
           </QueryProvider>

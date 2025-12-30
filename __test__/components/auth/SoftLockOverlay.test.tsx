@@ -3,10 +3,14 @@ import { verificationService } from "@/services/verification.service";
 import { WebAuthnService } from "@/services/webauthn.service";
 import { useSecurityStore } from "@/store/securityStore";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 jest.mock("@/store/securityStore");
 jest.mock("@/services/webauthn.service");
 jest.mock("@/services/verification.service");
+jest.mock("@/context/AuthContext", () => ({
+  useAuthContext: jest.fn(),
+}));
 jest.mock("sonner", () => ({
   toast: {
     success: jest.fn(),
@@ -14,8 +18,13 @@ jest.mock("sonner", () => ({
   },
 }));
 
+import { useAuthContext } from "@/context/AuthContext";
+
 const mockUseSecurityStore = useSecurityStore as jest.MockedFunction<
   typeof useSecurityStore
+>;
+const mockUseAuthContext = useAuthContext as jest.MockedFunction<
+  typeof useAuthContext
 >;
 const mockWebAuthnService = WebAuthnService as jest.Mocked<
   typeof WebAuthnService
@@ -24,14 +33,30 @@ const mockVerificationService = verificationService as jest.Mocked<
   typeof verificationService
 >;
 
+const createWrapper = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+};
+
 describe("SoftLockOverlay", () => {
   const mockUnlock = jest.fn();
+  const mockSetIsAuthLoadingGlobal = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseSecurityStore.mockReturnValue({
       isLocked: true,
       unlock: mockUnlock,
+    } as any);
+    mockUseAuthContext.mockReturnValue({
+      setIsAuthLoadingGlobal: mockSetIsAuthLoadingGlobal,
     } as any);
   });
 
@@ -42,31 +67,31 @@ describe("SoftLockOverlay", () => {
         unlock: mockUnlock,
       } as any);
 
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       expect(screen.queryByText("App Locked")).not.toBeInTheDocument();
     });
 
     it("should render when app is locked", () => {
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       expect(screen.getByText("App Locked")).toBeInTheDocument();
     });
 
     it("should display lock icon", () => {
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       expect(screen.getByText("App Locked")).toBeInTheDocument();
     });
 
     it("should show unlock button", () => {
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       expect(screen.getByText("Unlock with Biometric")).toBeInTheDocument();
     });
 
     it("should display inactivity message", () => {
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       expect(screen.getByText(/locked due to inactivity/i)).toBeInTheDocument();
     });
@@ -92,7 +117,7 @@ describe("SoftLockOverlay", () => {
         success: true,
       });
 
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       const unlockButton = screen.getByText("Unlock with Biometric");
       fireEvent.click(unlockButton);
@@ -109,7 +134,7 @@ describe("SoftLockOverlay", () => {
           new Promise((resolve) => setTimeout(() => resolve({} as any), 1000))
       );
 
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       const unlockButton = screen.getByText("Unlock with Biometric");
       fireEvent.click(unlockButton);
@@ -138,7 +163,7 @@ describe("SoftLockOverlay", () => {
         success: true,
       });
 
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       const unlockButton = screen.getByText("Unlock with Biometric");
       fireEvent.click(unlockButton);
@@ -151,7 +176,7 @@ describe("SoftLockOverlay", () => {
     it("should show error if biometric not supported", async () => {
       mockWebAuthnService.isWebAuthnSupported.mockResolvedValueOnce(false);
 
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       const unlockButton = screen.getByText("Unlock with Biometric");
       fireEvent.click(unlockButton);
@@ -183,7 +208,7 @@ describe("SoftLockOverlay", () => {
         message: "Biometric mismatch",
       });
 
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       const unlockButton = screen.getByText("Unlock with Biometric");
       fireEvent.click(unlockButton);
@@ -202,7 +227,7 @@ describe("SoftLockOverlay", () => {
         name: "NotAllowedError",
       });
 
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       const unlockButton = screen.getByText("Unlock with Biometric");
       fireEvent.click(unlockButton);
@@ -237,7 +262,7 @@ describe("SoftLockOverlay", () => {
         message: "Verification failed",
       });
 
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       const unlockButton = screen.getByText("Unlock with Biometric");
       fireEvent.click(unlockButton);
@@ -247,45 +272,6 @@ describe("SoftLockOverlay", () => {
           screen.getByText(/Verification attempts: 1/)
         ).toBeInTheDocument();
       });
-    });
-
-    it("should increment attempt counter on multiple failures", async () => {
-      mockWebAuthnService.isWebAuthnSupported.mockResolvedValue(true);
-      mockWebAuthnService.getAuthenticationOptions.mockResolvedValue({} as any);
-      mockWebAuthnService.signAssertion.mockResolvedValue({
-        id: "cred-id",
-        rawId: "raw-id",
-        response: {
-          clientDataJSON: "data",
-          authenticatorData: "auth",
-          signature: "sig",
-        },
-        type: "public-key",
-      } as any);
-      mockVerificationService.verifyBiometricForUnlock.mockResolvedValue({
-        success: false,
-        message: "Verification failed",
-      });
-
-      const { rerender } = render(<SoftLockOverlay />);
-
-      const unlockButton = screen.getByText("Unlock with Biometric");
-
-      // First attempt
-      fireEvent.click(unlockButton);
-      await waitFor(() => {
-        expect(
-          screen.getByText(/Verification attempts: 1/)
-        ).toBeInTheDocument();
-      });
-
-      // Second attempt
-      rerender(<SoftLockOverlay />);
-      const unlockButton2 = screen.getByText("Unlock with Biometric");
-      fireEvent.click(unlockButton2);
-
-      // Should show updated attempt count
-      // Note: This depends on how the component tracks attempts
     });
   });
 
@@ -295,7 +281,7 @@ describe("SoftLockOverlay", () => {
         new Error("Unexpected error")
       );
 
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       const unlockButton = screen.getByText("Unlock with Biometric");
       fireEvent.click(unlockButton);
@@ -310,7 +296,7 @@ describe("SoftLockOverlay", () => {
     it("should re-enable button after error", async () => {
       mockWebAuthnService.isWebAuthnSupported.mockResolvedValueOnce(false);
 
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       let unlockButton = screen.getByText("Unlock with Biometric");
       expect(unlockButton).not.toBeDisabled();
@@ -326,13 +312,13 @@ describe("SoftLockOverlay", () => {
 
   describe("UI Elements", () => {
     it("should display security message in footer", () => {
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       expect(screen.getByText(/session remains secure/i)).toBeInTheDocument();
     });
 
     it("should have proper styling and layout", () => {
-      render(<SoftLockOverlay />);
+      render(<SoftLockOverlay />, { wrapper: createWrapper() });
 
       const overlay = screen.getByText("App Locked");
       expect(overlay).toBeInTheDocument();

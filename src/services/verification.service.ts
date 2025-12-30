@@ -125,8 +125,9 @@ export const verificationService = {
       return result;
     } catch (err: any) {
       const message =
-        err.response?.data?.message || "Biometric verification failed";
+        err.response?.data?.data?.message || "Biometric verification failed";
       console.error("[Verification] Biometric transaction error", { message });
+      console.error("[ERROR FROM SERVER]: ", err);
 
       return {
         success: false,
@@ -156,13 +157,19 @@ export const verificationService = {
         usePin: !!request.pin,
         useBiometric: !!request.verificationToken,
       });
-      console.log("request ddata: ", request);
 
       const response = await topupService.initiateTopup(request);
 
-      const result = response.data.data || {
-        success: false,
-        message: "Topup failed",
+      const result: TopupResponse = {
+        success: response.success,
+        message: response.message,
+        transaction: response.data
+          ? {
+              id: response.data.transactionId,
+              amount: response.data.amount,
+              status: response.data.status,
+            }
+          : undefined,
       };
 
       console.log("[Verification] Topup response", {

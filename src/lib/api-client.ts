@@ -493,15 +493,29 @@ apiClient.interceptors.response.use(
           "invalid credentials",
         ];
 
-        const looksLikeAuthFailure = authFailureKeywords.some((k) =>
+        // WebAuthn-specific business logic errors that should NOT expire session
+        const webauthnBusinessErrors = [
+          "counter validation failed",
+          "replay attack",
+          "challenge not found",
+          "challenge expired",
+          "invalid assertion",
+        ];
+
+        const isWebAuthnBusinessError = webauthnBusinessErrors.some((k) =>
           normalized.includes(k)
         );
 
-        console.error("[AUTH] Verification endpoint auth failure", {
+        const looksLikeAuthFailure =
+          !isWebAuthnBusinessError &&
+          authFailureKeywords.some((k) => normalized.includes(k));
+
+        console.error("[AUTH] Verification endpoint error", {
           status: error.response.status,
           url: originalRequest.url,
           message,
           looksLikeAuthFailure,
+          isWebAuthnBusinessError,
         });
 
         if (looksLikeAuthFailure) {

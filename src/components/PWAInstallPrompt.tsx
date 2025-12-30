@@ -15,6 +15,7 @@ export function PWAInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isDismissing, setIsDismissing] = useState(false); // NEW: Track dismissal animation
 
   // Dismissal tracking
   const DISMISS_KEY = "pwa_install_dismiss_time";
@@ -116,8 +117,10 @@ export function PWAInstallPrompt() {
 
     if (outcome === "accepted") {
       console.log("User accepted PWA installation");
+      clearDismissal(); // Clear dismissal on successful install
     } else {
       console.log("User dismissed PWA installation");
+      recordDismissal(); // Record dismissal time
     }
 
     setDeferredPrompt(null);
@@ -125,7 +128,16 @@ export function PWAInstallPrompt() {
   };
 
   const handleDismiss = () => {
-    setShowPrompt(false);
+    console.log("[PWA] User dismissed PWA prompt");
+    recordDismissal(); // Record dismissal time
+    setIsDismissing(true); // Start dismissal animation
+
+    // Hide after animation (300ms)
+    setTimeout(() => {
+      setShowPrompt(false);
+      setDeferredPrompt(null);
+      setIsDismissing(false);
+    }, 300);
   };
 
   // Don't show if already installed or no prompt available
@@ -136,7 +148,13 @@ export function PWAInstallPrompt() {
   // iOS-specific UI
   if (isIOS) {
     return (
-      <div className="animate-in slide-in-from-bottom fixed right-4 bottom-4 z-50 max-w-sm rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-lg dark:border-blue-800 dark:bg-blue-900/20">
+      <div
+        className={`fixed right-4 bottom-4 z-50 max-w-sm rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-lg transition-all duration-300 dark:border-blue-800 dark:bg-blue-900/20 ${
+          isDismissing
+            ? "translate-y-4 opacity-0"
+            : "animate-in slide-in-from-bottom opacity-100"
+        }`}
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
             <h3 className="mb-2 text-sm font-semibold text-blue-900 dark:text-blue-100">
@@ -180,7 +198,13 @@ export function PWAInstallPrompt() {
 
   // Android/Other platforms UI
   return (
-    <div className="animate-in slide-in-from-bottom fixed right-4 bottom-4 z-50 max-w-sm rounded-lg border border-slate-200 bg-white p-4 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+    <div
+      className={`fixed right-4 bottom-4 z-50 max-w-sm rounded-lg border border-slate-200 bg-white p-4 shadow-lg transition-all duration-300 dark:border-slate-700 dark:bg-slate-900 ${
+        isDismissing
+          ? "translate-y-4 opacity-0"
+          : "animate-in slide-in-from-bottom opacity-100"
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <h3 className="mb-1 text-sm font-semibold">Install App</h3>

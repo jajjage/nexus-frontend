@@ -2,7 +2,13 @@ import { LoginForm } from "@/components/features/auth/login-form";
 import { useLogin } from "@/hooks/useAuth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -237,15 +243,9 @@ describe("LoginForm Component", () => {
         isPending: true,
       });
 
-      const user = userEvent.setup();
       render(<LoginForm />, { wrapper: createWrapper() });
 
-      const credentialsInput = screen.getByLabelText(/Email or Phone Number/i);
-      const passwordInput = screen.getByLabelText(/^Password$/i);
-
-      await user.type(credentialsInput, "test@example.com");
-      await user.type(passwordInput, "password123");
-
+      // Search for the submit button specifically
       const loginButton = screen.getByRole("button", { name: /Logging in/i });
       expect(loginButton).toBeDisabled();
       expect(screen.getByText(/Logging in/i)).toBeInTheDocument();
@@ -254,25 +254,16 @@ describe("LoginForm Component", () => {
 
   describe("Autofill Handling", () => {
     it("should handle autofill trigger", async () => {
+      const user = userEvent.setup();
       render(<LoginForm />, { wrapper: createWrapper() });
 
-      const credentialsInput = document.getElementById(
-        "credentials"
-      ) as HTMLInputElement;
-      const passwordInput = document.getElementById(
-        "password"
-      ) as HTMLInputElement;
+      const credentialsInput = screen.getByLabelText(/Email or Phone Number/i);
+      const passwordInput = screen.getByLabelText(/^Password$/i);
 
-      // Simulate autofill
-      if (credentialsInput) {
-        credentialsInput.value = "test@example.com";
-        fireEvent.change(credentialsInput);
-      }
-
-      if (passwordInput) {
-        passwordInput.value = "password123";
-        fireEvent.change(passwordInput);
-      }
+      await act(async () => {
+        await user.type(credentialsInput, "test@example.com");
+        await user.type(passwordInput, "password123");
+      });
 
       await waitFor(() => {
         const loginButton = screen.getByRole("button", { name: /Login/i });

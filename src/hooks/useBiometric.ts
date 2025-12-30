@@ -1,4 +1,5 @@
 import { biometricService } from "@/services/biometric.service";
+import { verificationService } from "@/services/verification.service";
 import { WebAuthnService } from "@/services/webauthn.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -142,6 +143,7 @@ export function useBiometricAuthentication() {
       toast.success("Biometric authentication successful");
     },
     onError: (error: any) => {
+      console.log("bio error:", error);
       // Don't show toast for "NotAllowedError" which happens when user cancels
       if (
         error.name !== "NotAllowedError" &&
@@ -174,6 +176,92 @@ export function useRevokeEnrollment() {
       const msg =
         error.response?.data?.message || error.message || "Revocation failed";
       toast.error(msg);
+    },
+  });
+}
+
+/**
+ * Hook to verify biometric for transactions
+ *
+ * Returns a verification token used for transaction APIs (topup, etc.)
+ * Handles the full WebAuthn flow + transaction verification
+ */
+export function useBiometricTransaction() {
+  return useMutation({
+    mutationFn: async () => {
+      // Step 1: Check support
+      const supported = await WebAuthnService.isWebAuthnSupported();
+      if (!supported) {
+        throw new Error(
+          "Biometric authentication is not supported on this device"
+        );
+      }
+
+      try {
+        // Step 2: Get options
+        const options = await WebAuthnService.getAuthenticationOptions();
+
+        // Step 3: Sign assertion
+        const assertion = await WebAuthnService.signAssertion(options);
+
+        // Step 4: Verify with backend (intent: 'transaction')
+        const response =
+          await verificationService.verifyBiometricForTransaction({
+            id: assertion.id,
+            rawId: assertion.rawId,
+            response: assertion.response,
+            type: "public-key",
+            intent: "transaction",
+          });
+
+        if (!response.success) {
+          // Special handling for counter validation failures (replay attack detection)
+          if (
+            response.message &&
+            response.message.toLowerCase().includes("counter validation")
+          ) {
+            throw new Error(
+              "Biometric verification failed due to a security check. Please try again."
+            );
+          }
+          throw new Error(response.message || "Biometric verification failed");
+        }
+
+        return response.verificationToken;
+      } catch (err: any) {
+        // Extract actual error message from API response
+        const apiError = err.response?.data;
+        if (apiError && typeof apiError === "object") {
+          // Extract message from error response object
+          const message = apiError.message || apiError.error || err.message;
+          const error = new Error(message);
+          // Mark this as an API error for better handling
+          (error as any).isApiError = true;
+          (error as any).statusCode = apiError.statusCode;
+          throw error;
+        }
+
+        // If not an API error, rethrow as-is
+        throw err;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Biometric verified successfully");
+    },
+    onError: (error: any) => {
+      console.error("[useBiometricTransaction] Error:", error);
+
+      // Don't show toast for cancellation
+      if (
+        error.name !== "NotAllowedError" &&
+        !error.message.includes("cancelled")
+      ) {
+        const msg =
+          error.message === "Failed to generate authentication options"
+            ? "You don't have Active Biometric Enable"
+            : error.message;
+        toast.error(msg);
+      }
     },
   });
 }

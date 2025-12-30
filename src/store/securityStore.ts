@@ -24,12 +24,20 @@ interface SecurityState {
 
   // Inactivity tracking
   timeUntilLock: number;
+  inactivityTimeRemaining: number; // NEW: Used by InactivityWarning for countdown display
   showInactivityWarning: boolean;
 
   // PIN attempt tracking (for transactions)
   pinAttempts: number;
   isBlocked: boolean;
   blockExpireTime: number | null;
+
+  // NEW: Grace period management (for visibility change)
+  lockGracePeriodActive: boolean;
+  lockGracePeriodEnd: number | null;
+
+  // NEW: Browser close detection
+  wasRecentlyClosed: boolean;
 
   // Actions
   initialize: () => void;
@@ -38,6 +46,9 @@ interface SecurityState {
   unlock: () => void;
   recordPinAttempt: (success: boolean) => void;
   cleanup: () => void;
+  startLockGracePeriod: () => void;
+  cancelLockGracePeriod: () => void;
+  checkBrowserCloseStatus: () => void;
 }
 
 export const useSecurityStore = create<SecurityState>()(
@@ -47,11 +58,15 @@ export const useSecurityStore = create<SecurityState>()(
       isLocked: false as boolean,
       appState: "LOADING" as any as "LOADING" | "LOCKED" | "ACTIVE",
       lastActiveTime: Date.now(),
-      timeUntilLock: 15 * 60 * 1000,
+      timeUntilLock: 30 * 60 * 1000, // 30 minutes
+      inactivityTimeRemaining: 30 * 60 * 1000, // NEW: Updated during interval check
       showInactivityWarning: false as boolean,
       pinAttempts: 0,
       isBlocked: false as boolean,
       blockExpireTime: null as number | null,
+      lockGracePeriodActive: false as boolean,
+      lockGracePeriodEnd: null as number | null,
+      wasRecentlyClosed: false as boolean,
 
       /**
        * Initialize security store
@@ -59,21 +74,29 @@ export const useSecurityStore = create<SecurityState>()(
        * - Set up inactivity check interval
        */
       initialize: () => {
+        // Check if browser was recently closed
+        get().checkBrowserCloseStatus();
+
         const lastActive = parseInt(
           localStorage.getItem("security_last_active") || "0"
         );
         const timeSinceActive = Date.now() - lastActive;
-        const shouldStartLocked = timeSinceActive > 15 * 60 * 1000;
+        const shouldStartLocked = timeSinceActive > 30 * 60 * 1000; // 30 minutes
+
+        // If browser was recently closed, always start locked (safety check)
+        const wasRecentlyClosed = get().wasRecentlyClosed;
 
         console.log("[Security] Initializing store", {
           lastActive,
           timeSinceActive: Math.round(timeSinceActive / 1000),
-          shouldStartLocked,
+          shouldStartLocked: shouldStartLocked || wasRecentlyClosed,
+          wasRecentlyClosed,
         });
 
         set({
-          appState: shouldStartLocked ? "LOCKED" : "ACTIVE",
-          isLocked: shouldStartLocked,
+          appState:
+            shouldStartLocked || wasRecentlyClosed ? "LOCKED" : "ACTIVE",
+          isLocked: shouldStartLocked || wasRecentlyClosed,
           lastActiveTime: shouldStartLocked ? lastActive : Date.now(),
         });
 
@@ -82,7 +105,26 @@ export const useSecurityStore = create<SecurityState>()(
           const state = get();
           const now = Date.now();
           const timeSinceActivity = now - state.lastActiveTime;
-          const timeRemaining = Math.max(0, 15 * 60 * 1000 - timeSinceActivity);
+          const timeRemaining = Math.max(0, 30 * 60 * 1000 - timeSinceActivity); // 30 minutes
+
+          // Skip inactivity checks while grace period is active
+          if (state.lockGracePeriodActive) {
+            const timeUntilGraceExpires = Math.max(
+              0,
+              state.lockGracePeriodEnd! - now
+            );
+            if (timeUntilGraceExpires <= 0) {
+              // Grace period expired - lock now
+              console.log("[Security] Lock grace period expired - locking");
+              set({
+                lockGracePeriodActive: false,
+                lockGracePeriodEnd: null,
+                isLocked: true,
+                appState: "LOCKED",
+              });
+            }
+            return; // Don't check inactivity while grace period is active
+          }
 
           // Check if PIN block expired
           if (
@@ -98,14 +140,18 @@ export const useSecurityStore = create<SecurityState>()(
             });
           }
 
-          // Update warning threshold (show warning at 2 minutes remaining)
+          // Update warning threshold (show warning at 5 minutes remaining)
           const shouldShowWarning =
-            timeRemaining < 2 * 60 * 1000 && timeRemaining > 0;
+            timeRemaining < 5 * 60 * 1000 && timeRemaining > 0; // Show warning at 5 min left
 
           if (shouldShowWarning !== state.showInactivityWarning) {
             set({ showInactivityWarning: shouldShowWarning });
           }
 
+          // Update remaining time for InactivityWarning countdown display
+          if (shouldShowWarning) {
+            set({ inactivityTimeRemaining: timeRemaining });
+          }
           // Update time until lock
           if (timeRemaining !== state.timeUntilLock) {
             set({ timeUntilLock: timeRemaining });
@@ -113,7 +159,7 @@ export const useSecurityStore = create<SecurityState>()(
 
           // Check if should lock
           if (
-            timeSinceActivity >= 15 * 60 * 1000 &&
+            timeSinceActivity >= 30 * 60 * 1000 &&
             !state.isLocked &&
             state.appState !== "LOADING"
           ) {
@@ -147,7 +193,7 @@ export const useSecurityStore = create<SecurityState>()(
           lastActiveTime: now,
           isLocked: false,
           appState: "ACTIVE",
-          timeUntilLock: 15 * 60 * 1000,
+          timeUntilLock: 30 * 60 * 1000, // 30 minutes
           showInactivityWarning: false,
         });
       },
@@ -196,8 +242,8 @@ export const useSecurityStore = create<SecurityState>()(
             maxAttempts: 3,
           });
 
-          if (newAttempts >= 3) {
-            // Block for 5 minutes after 3 failed attempts
+          if (newAttempts >= 5) {
+            // Block for 5 minutes after 5 failed attempts
             const blockUntil = Date.now() + 5 * 60 * 1000;
             console.log("[Security] PIN blocked for 5 minutes");
             set({
@@ -209,6 +255,64 @@ export const useSecurityStore = create<SecurityState>()(
             set({ pinAttempts: newAttempts });
           }
         }
+      },
+
+      /**
+       * Start lock grace period (delay before locking on visibility change)
+       * - Gives user 2 seconds to switch back before app locks
+       * - Called when tab becomes hidden
+       */
+      startLockGracePeriod: () => {
+        const graceMillis = 2000; // 2 seconds
+        const graceEnd = Date.now() + graceMillis;
+        console.log("[Security] Starting lock grace period (2 sec)");
+        set({
+          lockGracePeriodActive: true,
+          lockGracePeriodEnd: graceEnd,
+        });
+      },
+
+      /**
+       * Cancel lock grace period (user switched back to tab)
+       * - Called when tab becomes visible again
+       */
+      cancelLockGracePeriod: () => {
+        console.log("[Security] Canceling lock grace period");
+        set({
+          lockGracePeriodActive: false,
+          lockGracePeriodEnd: null,
+        });
+      },
+
+      /**
+       * Check if browser was recently closed and reopened
+       * - Looks for app_closed_at timestamp in localStorage
+       * - Sets wasRecentlyClosed flag if closed < 5 minutes ago
+       * - Called during initialize() to detect app restart scenarios
+       */
+      checkBrowserCloseStatus: () => {
+        const closedAt = localStorage.getItem("app_closed_at");
+        if (!closedAt) {
+          set({ wasRecentlyClosed: false });
+          return;
+        }
+
+        const closedTime = parseInt(closedAt, 10);
+        const timeSinceClosed = Date.now() - closedTime;
+        const fiveMinutes = 5 * 60 * 1000;
+        const wasRecentlyClosed = timeSinceClosed < fiveMinutes;
+
+        // Clear the flag if it's been too long
+        if (!wasRecentlyClosed) {
+          localStorage.removeItem("app_closed_at");
+        }
+
+        console.log("[Security] Browser close check", {
+          wasRecentlyClosed,
+          timeSinceClosed: Math.round(timeSinceClosed / 1000) + "s",
+        });
+
+        set({ wasRecentlyClosed });
       },
 
       /**

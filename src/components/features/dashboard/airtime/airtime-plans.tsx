@@ -1,7 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useSecurityStore } from "@/store/securityStore";
 import { BiometricVerificationModal } from "@/components/auth/BiometricVerificationModal";
 import { PinVerificationModal } from "@/components/auth/PinVerificationModal";
+import { PinSetupModal } from "@/components/features/security/pin-setup-modal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,7 +15,7 @@ import { detectNetworkProvider } from "@/lib/network-utils";
 import { Product } from "@/types/product.types";
 import { useQueryClient } from "@tanstack/react-query";
 import { Grid, LayoutList } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CheckoutModal } from "../shared/checkout-modal";
 import { NetworkDetector } from "../shared/network-detector";
@@ -20,7 +23,9 @@ import { NetworkSelector } from "../shared/network-selector";
 import { ProductCard } from "../shared/product-card";
 
 export function AirtimePlans() {
+  const router = useRouter();
   const { user, refetch: refetchUser } = useAuth();
+  const { recordPinAttempt, isBlocked } = useSecurityStore();
   const topupMutation = useTopup();
   const queryClient = useQueryClient();
 
@@ -38,9 +43,12 @@ export function AirtimePlans() {
   const [selectedMarkupPercent, setSelectedMarkupPercent] = useState(0);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  const [errorMessage, setErrorMessage] = useState("");
+
   // Verification Modal State - Biometric First, then PIN Fallback
   const [showBiometricModal, setShowBiometricModal] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [showPinSetupModal, setShowPinSetupModal] = useState(false);
   const [pendingPaymentData, setPendingPaymentData] = useState<{
     useCashback: boolean;
     amount?: number;
@@ -198,24 +206,56 @@ export function AirtimePlans() {
   };
 
   // Handle Biometric Unavailable - Fall back to PIN
-  const handleBiometricUnavailable = () => {
+  const handleBiometricUnavailable = useCallback(() => {
     console.log("[DataPlans] Biometric unavailable, falling back to PIN");
     setShowBiometricModal(false);
+    // Immediately show PIN modal - no delay to prevent background flash
+    setShowPinModal(true);
+  }, []);
 
-    // Show PIN modal instead
-    setTimeout(() => {
-      setShowPinModal(true);
-    }, 300);
-  };
+  // Handle no PIN setup - Show PIN setup modal
+  const handleNoPinSetup = useCallback(() => {
+    console.log("[DataPlans] No PIN set up, showing PIN setup modal");
+    setShowBiometricModal(false);
+    // Immediately show PIN setup modal - no delay to prevent background flash
+    setShowPinSetupModal(true);
+  }, []);
+
+  // Handle PIN setup success - Show PIN verification modal
+  const handlePinSetupSuccess = useCallback(() => {
+    console.log(
+      "[DataPlans] PIN setup completed, now showing PIN verification modal"
+    );
+    setShowPinSetupModal(false);
+    // Immediately show PIN modal - no delay to prevent background flash
+    setShowPinModal(true);
+
+    // Refetch user to get updated hasPin status
+    refetchUser();
+  }, [refetchUser]);
 
   // Handle PIN Entry Success
   const handlePinEntrySuccess = (pin: string) => {
-    console.log("[Airtime] PIN verification successful");
-    setShowPinModal(false);
+    console.log(
+      "[Airtime] PIN verification successful, received PIN:",
+      pin ? "****" : "null"
+    );
+    setErrorMessage(""); // Clear previous errors
+    // NOTE: We don't close the modal here anymore.
+    // The modal stays open in a loading state until the mutation completes.
+    // setShowPinModal(false);
 
     // Proceed with payment with PIN
     if (pendingPaymentData) {
+      console.log(
+        "[Airtime] Found pendingPaymentData, proceeding with payment"
+      );
       proceedWithPayment(pendingPaymentData.useCashback, undefined, pin);
+    } else {
+      console.error(
+        "[Airtime] ERROR: No pendingPaymentData found in handlePinEntrySuccess"
+      );
+      setShowPinModal(false); // Close if no data
     }
   };
 
@@ -255,6 +295,10 @@ export function AirtimePlans() {
 
     // Show PIN entry modal for transaction
     setPendingPaymentData({ useCashback, amount: payableAmount });
+
+    // Hide checkout modal while verification is in progress
+    setIsCheckoutOpen(false);
+
     // BIOMETRIC-FIRST FLOW
     // Try biometric verification first, fall back to PIN if needed
     console.log(
@@ -269,7 +313,12 @@ export function AirtimePlans() {
     verificationToken?: string,
     pin?: string
   ) => {
-    if (!selectedProduct) return;
+    if (!selectedProduct) {
+      console.error(
+        "[Airtime] ERROR: proceedWithPayment called but selectedProduct is null"
+      );
+      return;
+    }
     console.log("useCashback: ", useCashback);
 
     const amount = parseFloat(selectedProduct.denomAmount || "0");
@@ -279,6 +328,8 @@ export function AirtimePlans() {
       method: verificationToken ? "biometric" : "pin",
       hasToken: !!verificationToken,
       hasPin: !!pin,
+      amount,
+      productCode: selectedProduct.productCode,
     });
 
     topupMutation.mutate(
@@ -295,13 +346,57 @@ export function AirtimePlans() {
       {
         onSuccess: () => {
           setIsSuccess(true);
+          // Successful transaction = Reset PIN attempts if PIN was used
+          if (pin) recordPinAttempt(true);
+
+          // Close PIN modal and re-open checkout modal to show success state
+          setShowPinModal(false);
+          setIsCheckoutOpen(true);
           queryClient.invalidateQueries({ queryKey: ["transactions"] });
           queryClient.invalidateQueries({ queryKey: ["wallet"] });
           queryClient.invalidateQueries({ queryKey: ["auth", "current-user"] });
         },
+        onError: (error: any) => {
+          console.error("[Airtime] Transaction Failed", error);
+          const msg =
+            error?.response?.data?.message ||
+            error?.message ||
+            "Transaction failed";
+
+          // Check if it's a PIN error
+          if (
+            pin &&
+            (msg.toLowerCase().includes("pin") ||
+              msg.toLowerCase().includes("invalid"))
+          ) {
+            recordPinAttempt(false);
+            setErrorMessage(msg);
+            // Keep modal open to show error
+          } else {
+            // Other error - close modal and let hook show toast
+            setShowPinModal(false);
+          }
+        },
       }
     );
   };
+
+  // ... (inside return) ...
+
+  <PinVerificationModal
+    open={showPinModal}
+    onClose={() => {
+      setShowPinModal(false);
+      setPendingPaymentData(null);
+    }}
+    onSuccess={handlePinEntrySuccess}
+    useCashback={pendingPaymentData?.useCashback || false}
+    reason="transaction"
+    transactionAmount={pendingPaymentData?.amount?.toString()}
+    productCode={selectedProduct?.productCode}
+    phoneNumber={phoneNumber}
+    isVerifying={topupMutation.isPending}
+  />;
 
   // Get logo for current selected network
   const currentLogo = operators.find(
@@ -401,22 +496,26 @@ export function AirtimePlans() {
       )}
 
       {/* Checkout Modal - Show initially or after mutation completes, hide during processing */}
-      {selectedProduct && !showPinModal && !topupMutation.isPending && (
-        <CheckoutModal
-          isOpen={isCheckoutOpen}
-          onClose={() => setIsCheckoutOpen(false)}
-          product={selectedProduct}
-          phoneNumber={phoneNumber}
-          networkLogo={currentLogo}
-          networkName={selectedNetwork}
-          userBalance={parseFloat(user?.balance || "0")}
-          userCashbackBalance={user?.cashback?.availableBalance || 0}
-          onConfirm={handlePayment}
-          isProcessing={topupMutation.isPending}
-          isSuccess={isSuccess}
-          markupPercent={selectedMarkupPercent}
-        />
-      )}
+      {selectedProduct &&
+        !showPinModal &&
+        !showBiometricModal &&
+        !showPinSetupModal &&
+        !topupMutation.isPending && (
+          <CheckoutModal
+            isOpen={isCheckoutOpen}
+            onClose={() => setIsCheckoutOpen(false)}
+            product={selectedProduct}
+            phoneNumber={phoneNumber}
+            networkLogo={currentLogo}
+            networkName={selectedNetwork}
+            userBalance={parseFloat(user?.balance || "0")}
+            userCashbackBalance={user?.cashback?.availableBalance || 0}
+            onConfirm={handlePayment}
+            isProcessing={topupMutation.isPending}
+            isSuccess={isSuccess}
+            markupPercent={selectedMarkupPercent}
+          />
+        )}
 
       {/* Biometric Verification Modal - Biometric First */}
       <BiometricVerificationModal
@@ -427,6 +526,7 @@ export function AirtimePlans() {
         }}
         onSuccess={handleBiometricSuccess}
         onBiometricUnavailable={handleBiometricUnavailable}
+        onNoPinSetup={handleNoPinSetup}
         transactionAmount={pendingPaymentData?.amount?.toString()}
         productCode={selectedProduct?.productCode}
         phoneNumber={phoneNumber}
@@ -438,6 +538,7 @@ export function AirtimePlans() {
         onClose={() => {
           setShowPinModal(false);
           setPendingPaymentData(null);
+          setErrorMessage("");
         }}
         onSuccess={handlePinEntrySuccess}
         useCashback={pendingPaymentData?.useCashback || false}
@@ -445,6 +546,19 @@ export function AirtimePlans() {
         transactionAmount={pendingPaymentData?.amount?.toString()}
         productCode={selectedProduct?.productCode}
         phoneNumber={phoneNumber}
+        isVerifying={topupMutation.isPending}
+        errorMessage={errorMessage}
+        onForgotPin={() => router.push("/reset-password")}
+      />
+
+      {/* PIN Setup Modal - If user hasn't set up PIN yet */}
+      <PinSetupModal
+        isOpen={showPinSetupModal}
+        onClose={() => {
+          setShowPinSetupModal(false);
+          setPendingPaymentData(null);
+        }}
+        onSuccess={handlePinSetupSuccess}
       />
     </div>
   );

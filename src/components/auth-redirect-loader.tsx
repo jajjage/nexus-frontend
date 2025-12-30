@@ -2,14 +2,19 @@
 
 import { useAuthContext } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
+// import { SoftLockOverlay } from "./auth/SoftLockOverlay";
 
 /**
  * AuthRedirectLoader
  *
  * This component displays context-aware loading states during:
- * 1. Session revalidation after sleep/network error
- * 2. Session expiration before redirect to login
- * 3. Session recovery attempts
+ * 1. Session revalidation after sleep/network error (shows SoftLockOverlay for re-verification)
+ * 2. Session expiration before redirect to login (shows skeleton loader)
+ * 3. Session recovery attempts (shows skeleton loader)
+ *
+ * During session revalidation, instead of showing just a loading skeleton,
+ * we ask the user to unlock via biometric or PIN to re-verify their identity.
+ * This provides security and clear user feedback.
  *
  * This prevents blank pages and provides clear feedback to users.
  */
@@ -41,6 +46,18 @@ export function AuthRedirectLoader() {
     return null;
   }
 
+  // // During session revalidation, show SoftLockOverlay to ask user to re-verify
+  // // This is more secure than just showing a skeleton loader
+  // if (authLoadingReason === "revalidating" && isAuthLoadingGlobal) {
+  //   return (
+  //     <SoftLockOverlay
+  //       revalidationMode={true}
+  //       message="Verify your identity to continue"
+  //       description="Your session needs to be revalidated. Please unlock with biometric or passcode."
+  //     />
+  //   );
+  // }
+
   // Determine the message based on the reason
   let message = "Verifying session...";
   let description = "";
@@ -67,7 +84,7 @@ export function AuthRedirectLoader() {
   }
 
   return (
-    <div className="bg-background/95 fixed inset-0 z-[100] flex flex-col items-center justify-center backdrop-blur-md transition-all duration-300">
+    <div className="bg-background/95 fixed inset-0 z-100 flex flex-col items-center justify-center backdrop-blur-md transition-all duration-300">
       <div className="flex flex-col items-center space-y-8 p-6">
         {/* Animated loading skeleton */}
         <div className="flex flex-col items-center space-y-6">

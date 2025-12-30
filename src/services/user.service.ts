@@ -60,6 +60,28 @@ export const userService = {
     return response.data;
   },
 
+  /**
+   * Set or update soft-lock passcode (6 digits)
+   * Used for session revalidation and app lock
+   */
+  setPasscode: async (data: {
+    passcode: string;
+    currentPasscode?: string; // Required if updating existing passcode
+  }): Promise<ApiResponse> => {
+    // Map currentPasscode to currentPassword for backend
+    const payload: any = {
+      passcode: data.passcode,
+    };
+    if (data.currentPasscode) {
+      payload.currentPassword = data.currentPasscode;
+    }
+    const response = await apiClient.post<ApiResponse>(
+      "/user/profile/passcode",
+      payload
+    );
+    return response.data;
+  },
+
   // ============= Purchase Methods =============
 
   /**

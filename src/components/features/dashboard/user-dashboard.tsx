@@ -23,7 +23,6 @@ import { AdsCarousel } from "./ads-carousel";
 import { BalanceCard } from "./balance-card";
 import { BottomNav } from "./bottom-nav";
 import { PromoBanner } from "./promo-banner";
-import { ReferralsCard } from "./referrals-card";
 import { TransactionHistory } from "./transaction-history";
 import { UserInfo } from "./user-info";
 
@@ -116,7 +115,7 @@ export function UserDashboard() {
     await queryClient.invalidateQueries({ queryKey: userKeys.all });
   };
 
-  const handlePinSetupSuccess = (pin: string) => {
+  const handlePinSetupSuccess = (pin?: string) => {
     updateProfile(
       { pin },
       {
@@ -209,8 +208,8 @@ export function UserDashboard() {
                 <TransactionHistory isVisible={isBalanceVisible} />
               </div>
 
-              {/* Referrals Balance */}
-              <ReferralsCard />
+              {/* Referrals Balance
+              <ReferralsCard /> */}
 
               {/* Make Payment Actions */}
               <ActionButtons />
@@ -233,7 +232,6 @@ export function UserDashboard() {
         isOpen={showPinModal}
         onClose={() => setShowPinModal(false)}
         onSuccess={handlePinSetupSuccess}
-        isLoading={isUpdatingPin}
       />
     </>
   );

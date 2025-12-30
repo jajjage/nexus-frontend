@@ -1,7 +1,6 @@
 "use client";
 
-import { SoftLockOverlay } from "@/components/auth/SoftLockOverlay";
-import { SoftLockService } from "@/services/soft-lock.service";
+import { useAuthContext } from "@/context/AuthContext";
 import { useSecurityStore } from "@/store/securityStore";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
@@ -10,10 +9,15 @@ import { useEffect } from "react";
  * SecurityGuard Component
  *
  * Responsibilities:
- * - Initialize soft-lock on mount
- * - Monitor app state (LOADING → ACTIVE/LOCKED)
- * - Render lock overlay when needed (ONLY on protected routes)
+ * - Monitor app state (LOADING → ACTIVE)
  * - Hide sensitive content while LOADING
+ *
+ * NOTE: Soft-lock feature is disabled and marked as upcoming feature
+ * All soft-lock implementation files are preserved in:
+ * - src/services/soft-lock.service.ts
+ * - src/store/securityStore.ts (soft-lock methods)
+ * - src/components/auth/SoftLockOverlay.tsx
+ * - src/components/auth/InactivityWarning.tsx
  *
  * Protected Routes: /dashboard/*, /profile, etc.
  * Public Routes: /, /login, /register (no soft-lock needed)
@@ -21,10 +25,11 @@ import { useEffect } from "react";
  * Placement: Inside AuthProvider, wrapping main app
  */
 export function SecurityGuard({ children }: { children: React.ReactNode }) {
-  const { appState, initialize, cleanup, recordActivity } = useSecurityStore();
+  const { appState, initialize, cleanup } = useSecurityStore();
   const pathname = usePathname();
+  const { user } = useAuthContext();
 
-  // List of public routes that don't need soft-lock protection
+  // List of public routes that don't need protection
   const publicRoutes = ["/", "/login", "/register", "/forgot-password"];
 
   // Check if current route is protected
@@ -33,26 +38,19 @@ export function SecurityGuard({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    console.log("[SecurityGuard] Mounting - initializing security", {
+    console.log("[SecurityGuard] Mounting - initializing app state", {
       pathname,
       isProtectedRoute,
     });
 
-    // Initialize security store (checks inactivity timer, starts checks)
+    // Initialize app state
     initialize();
 
-    // Setup activity tracking
-    SoftLockService.initialize(() => {
-      console.log("[SecurityGuard] Activity detected");
-      recordActivity();
-    });
-
     return () => {
-      console.log("[SecurityGuard] Unmounting - cleaning up security");
+      console.log("[SecurityGuard] Unmounting - cleaning up");
       cleanup();
-      SoftLockService.cleanup();
     };
-  }, [initialize, cleanup, recordActivity, isProtectedRoute]);
+  }, [initialize, cleanup, isProtectedRoute]);
 
   // Prevent flash of content while checking lock state (ONLY on protected routes)
   if (isProtectedRoute && appState === "LOADING") {
@@ -69,8 +67,10 @@ export function SecurityGuard({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      {/* Only show soft-lock overlay on protected routes */}
-      {isProtectedRoute && appState === "LOCKED" && <SoftLockOverlay />}
+      {/* Soft-lock feature disabled - marked as upcoming feature */}
+      {/* Remove the following components when soft-lock is re-enabled: */}
+      {/* <SoftLockOverlay /> */}
+      {/* <InactivityWarning /> */}
     </>
   );
 }

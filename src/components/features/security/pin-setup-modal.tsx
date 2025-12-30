@@ -9,22 +9,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useSetPin } from "@/hooks/useUser";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
 
 interface PinSetupModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (pin: string) => void;
-  isLoading?: boolean;
+  onSuccess: (pin?: string) => void;
 }
 
 export function PinSetupModal({
   isOpen,
   onClose,
   onSuccess,
-  isLoading = false,
 }: PinSetupModalProps) {
+  const queryClient = useQueryClient();
+  const { mutate: setPinMutation, isPending: isLoading } = useSetPin();
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError] = useState<string>("");
@@ -57,9 +59,30 @@ export function PinSetupModal({
       return;
     }
 
-    onSuccess(pin);
-    setPin("");
-    setConfirmPin("");
+    // Call the mutation to set PIN in backend
+    setPinMutation(
+      { pin },
+      {
+        onSuccess: () => {
+          // Invalidate auth/user queries to refresh hasPin status
+          queryClient.invalidateQueries({ queryKey: ["auth", "current-user"] });
+          queryClient.invalidateQueries({ queryKey: ["user"] });
+
+          // Clear form and call parent's onSuccess callback
+          setPin("");
+          setConfirmPin("");
+          onSuccess();
+        },
+        onError: (error: any) => {
+          // Show backend error
+          setError(
+            error?.response?.data?.message ||
+              error?.message ||
+              "Failed to set PIN. Please try again."
+          );
+        },
+      }
+    );
   };
 
   const handleClose = () => {

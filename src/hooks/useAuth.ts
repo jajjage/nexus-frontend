@@ -341,7 +341,7 @@ export function useAuth(): {
   const isAuthenticated =
     !!user && !isSessionExpired && user.isSuspended === false;
 
-  const isAdmin = user?.role === "admin" ?? false;
+  const isAdmin = user?.role === "admin" || false;
 
   return {
     // User data

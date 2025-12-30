@@ -20,6 +20,7 @@ const config = {
     "**/?(*.)+(spec|test).[jt]s?(x)",
     "**/__test__/**/*.[jt]s?(x)",
   ],
+  testPathIgnorePatterns: ["<rootDir>/e2e/"],
 };
 
 export default createJestConfig(config)

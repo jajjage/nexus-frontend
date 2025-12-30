@@ -49,10 +49,17 @@ export async function registerServiceWorker() {
   }
 
   try {
-    const registration = await navigator.serviceWorker.register(
-      "/firebase-messaging-sw.js",
-      { scope: "/" }
-    );
+    // For localhost development, use HTTP protocol if available
+    const swUrl =
+      window.location.protocol === "https:" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1")
+        ? "/firebase-messaging-sw.js"
+        : "/firebase-messaging-sw.js";
+
+    const registration = await navigator.serviceWorker.register(swUrl, {
+      scope: "/",
+    });
     console.log("Service Worker registered:", registration);
 
     // Handle waiting service worker - skip waiting and activate new one
@@ -78,8 +85,26 @@ export async function registerServiceWorker() {
         });
       }
     });
-  } catch (err) {
+  } catch (err: any) {
     console.warn("Service Worker registration failed:", err);
+
+    // Provide helpful debug info for localhost HTTPS issues
+    if (
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1"
+    ) {
+      if (window.location.protocol === "https:") {
+        console.warn(
+          "⚠️ Local development with HTTPS detected. Service Worker registration failed due to SSL certificate."
+        );
+        console.warn(
+          "Solution: Either run on HTTP (recommended for dev) or use mkcert to create trusted local certs."
+        );
+        console.warn(
+          "For now, FCM notifications will not work in the background."
+        );
+      }
+    }
   }
 }
 

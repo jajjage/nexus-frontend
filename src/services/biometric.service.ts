@@ -155,4 +155,38 @@ export const biometricService = {
     }
     return response.data.data;
   },
+
+  // ===================================================================
+  // PASSCODE VERIFICATION (for soft-lock/session revalidation)
+  // ===================================================================
+
+  /**
+   * Verify 6-digit passcode
+   * POST /biometric/verify-passcode
+   *
+   * Used for:
+   * - Soft-lock unlock
+   * - Session revalidation
+   * - Transaction verification fallback
+   */
+  verifyPasscode: async (data: {
+    passcode: string;
+    intent?: "unlock" | "revalidate" | "transaction";
+  }): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await apiClient.post<ApiResponse<{ success: boolean }>>(
+        "/biometric/verify-passcode",
+        data
+      );
+      return {
+        success: response.data.data?.success || false,
+        message: response.data.message,
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        message: err.response?.data?.message || "Passcode verification failed",
+      };
+    }
+  },
 };

@@ -108,7 +108,7 @@ describe("UserDashboard", () => {
     render(<UserDashboard />);
 
     expect(screen.getByTestId("balance-card")).toBeInTheDocument();
-    expect(screen.getByText("Test User")).toBeInTheDocument();
+    expect(screen.getAllByText("Test User")[0]).toBeInTheDocument();
     expect(screen.getByText("5")).toBeInTheDocument(); // Notification count
   });
 });
