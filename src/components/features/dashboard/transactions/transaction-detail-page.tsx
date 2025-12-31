@@ -340,18 +340,17 @@ export function TransactionDetailPage({
           {/* Header Section - Centralized */}
           <div className="flex flex-col items-center p-8 pb-4">
             {/* Logo / Icon Container */}
-            <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-slate-50 shadow-sm ring-1 ring-slate-100">
+            <div className="mb-4 flex size-16 items-center justify-center overflow-hidden rounded-full bg-slate-50 shadow-sm ring-1 ring-slate-100">
               {logoUrl ? (
                 <img
                   src={logoUrl}
                   alt="operator"
-                  className="size-10 object-contain"
+                  className="size-full object-cover"
                 />
               ) : (
                 transactionIcon
               )}
             </div>
-
             <h2 className="mb-1 text-center text-lg font-semibold text-slate-900">
               {getTransactionTypeLabel(transaction)}
             </h2>

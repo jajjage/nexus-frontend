@@ -178,9 +178,10 @@ export const ExportReceipt = React.forwardRef<
               src={logoUrl}
               alt="operator"
               style={{
-                width: "40px",
-                height: "40px",
-                objectFit: "contain",
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                borderRadius: "50%",
               }}
             />
           ) : isCredit ? (
