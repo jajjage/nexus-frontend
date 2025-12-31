@@ -562,7 +562,7 @@ apiClient.interceptors.response.use(
 // SESSION CLEANUP
 // ============================================================================
 
-function clearSessionCookies() {
+function clearSessionCookies(isReset = false) {
   // Clear visible cookies
   const cookies = document.cookie.split(";");
   cookies.forEach((cookie) => {
@@ -577,8 +577,10 @@ function clearSessionCookies() {
   localStorage.removeItem("auth_user_cache");
   localStorage.removeItem("auth_user_cache_time");
 
-  // Show error message
-  toast.error("Your session has expired. Please login again.");
+  // Show error message only if not a programmatic reset
+  if (!isReset) {
+    toast.error("Your session has expired. Please login again.");
+  }
 }
 
 // ============================================================================
@@ -589,7 +591,7 @@ export function resetAuthClient() {
   refreshAttemptCount = 0;
   isRefreshing = false;
   failedQueue = [];
-  clearSessionCookies();
+  clearSessionCookies(true);
 }
 
 export default apiClient;

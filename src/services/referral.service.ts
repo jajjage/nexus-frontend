@@ -124,17 +124,11 @@ export const referralService = {
   // Helper: Get Referral Reward ID
   getReferralRewardId: async (): Promise<string | null> => {
     try {
-      // Fetch user's badges/rewards to find the referral one
+      // Fetch user's badge/reward summary (single entry)
       const response =
-        await apiClient.get<ApiResponse<any[]>>("/dashboard/rewards");
-      // Assuming the backend returns a list of rewards/badges and one is of type 'REFERRAL'
-      const referralReward = response.data.data?.find(
-        (r: any) =>
-          r.type === "REFERRAL" ||
-          r.name?.toLowerCase().includes("referral") ||
-          r.slug === "referral-bonus"
-      );
-      return referralReward ? referralReward.id : null;
+        await apiClient.get<ApiResponse<any>>("/dashboard/rewards");
+      // The rewardId is the ID of this summary object
+      return response.data.data?.id || null;
     } catch (e) {
       console.warn("Failed to fetch referral reward ID", e);
       return null;

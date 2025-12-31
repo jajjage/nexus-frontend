@@ -72,6 +72,7 @@ describe("API Client Logic", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (toast.error as jest.Mock).mockClear();
     resetAuthClient();
   });
 
@@ -180,6 +181,30 @@ describe("API Client Logic", () => {
 
       expect(sessionExpiredMock).toHaveBeenCalled();
       expect(toast.error).toHaveBeenCalledWith(
+        expect.stringContaining("session has expired")
+      );
+    });
+
+    it("should NOT logout user on 403 if it is a verification requirement", async () => {
+      const sessionExpiredMock = jest.fn();
+      setSessionExpiredCallback(sessionExpiredMock);
+
+      const error = {
+        response: {
+          status: 403,
+          data: { message: "Please verify your account before getting stats" },
+        },
+        config: { url: "/dashboard/referrals", headers: {} },
+      };
+
+      try {
+        await resErrorHandler(error);
+      } catch (e) {
+        // Expected to reach here
+      }
+
+      expect(sessionExpiredMock).not.toHaveBeenCalled();
+      expect(toast.error).not.toHaveBeenCalledWith(
         expect.stringContaining("session has expired")
       );
     });
