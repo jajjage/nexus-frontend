@@ -5,8 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
 
 // Mock the service
-jest.mock("@/services/user.service");
-const mockUserService = userService as jest.Mocked<typeof userService>;
+vi.mock("@/services/user.service");
+const mockUserService = userService as vi.Mocked<typeof userService>;
 
 // Create a wrapper for React Query
 const createWrapper = () => {
@@ -24,7 +24,7 @@ const createWrapper = () => {
 
 describe("useUser Hooks", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("useProfile", () => {
@@ -62,7 +62,7 @@ describe("useUser Hooks", () => {
 
       // Pre-seed cache
       queryClient.setQueryData(userKeys.profile(), { name: "Old Name" });
-      const spyInvalidate = jest.spyOn(queryClient, "invalidateQueries");
+      const spyInvalidate = vi.spyOn(queryClient, "invalidateQueries");
 
       const mockUpdatedProfile = { name: "New Name" };
       mockUserService.updateProfile.mockResolvedValue(

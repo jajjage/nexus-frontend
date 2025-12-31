@@ -2,15 +2,15 @@ import apiClient from "@/lib/api-client";
 import { verificationService } from "@/services/verification.service";
 import { topupService } from "@/services/topup.service";
 
-jest.mock("@/lib/api-client");
-jest.mock("@/services/topup.service");
+vi.mock("@/lib/api-client");
+vi.mock("@/services/topup.service");
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
-const mockTopupService = topupService as jest.Mocked<typeof topupService>;
+const mockApiClient = apiClient as vi.Mocked<typeof apiClient>;
+const mockTopupService = topupService as vi.Mocked<typeof topupService>;
 
 describe("verificationService", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("verifyBiometricForUnlock", () => {

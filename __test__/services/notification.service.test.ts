@@ -14,8 +14,8 @@ import {
 /**
  * Mock modules
  */
-jest.mock("@/lib/api-client");
-jest.mock("@/lib/firebase-client");
+vi.mock("@/lib/api-client");
+vi.mock("@/lib/firebase-client");
 
 describe("Notification Service", () => {
   const mockToken = "mock_fcm_token_12345";
@@ -23,14 +23,14 @@ describe("Notification Service", () => {
 
   beforeEach(() => {
     // Clear all mocks before each test
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     // Clear localStorage
     localStorage.clear();
     // Mock the Firebase calls
-    (requestAndGetFcmToken as jest.Mock).mockResolvedValue(mockToken);
-    (registerServiceWorker as jest.Mock).mockResolvedValue(undefined);
+    (requestAndGetFcmToken as vi.Mock).mockResolvedValue(mockToken);
+    (registerServiceWorker as vi.Mock).mockResolvedValue(undefined);
     // Mock the API client
-    (apiClient.post as jest.Mock).mockResolvedValue({ status: 200 });
+    (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
   });
 
   afterEach(() => {
@@ -58,9 +58,9 @@ describe("Notification Service", () => {
       expect(apiClient.post).toHaveBeenCalledTimes(1);
 
       // Reset mock to verify it's not called again
-      jest.clearAllMocks();
-      (requestAndGetFcmToken as jest.Mock).mockResolvedValue(mockToken);
-      (registerServiceWorker as jest.Mock).mockResolvedValue(undefined);
+      vi.clearAllMocks();
+      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(mockToken);
+      (registerServiceWorker as vi.Mock).mockResolvedValue(undefined);
 
       // Second sync with same token
       const result = await syncFcmToken(mockPlatform);
@@ -76,11 +76,11 @@ describe("Notification Service", () => {
       expect(apiClient.post).toHaveBeenCalledTimes(1);
 
       // Reset and setup new token
-      jest.clearAllMocks();
+      vi.clearAllMocks();
       const newToken = "mock_fcm_token_67890";
-      (requestAndGetFcmToken as jest.Mock).mockResolvedValue(newToken);
-      (registerServiceWorker as jest.Mock).mockResolvedValue(undefined);
-      (apiClient.post as jest.Mock).mockResolvedValue({ status: 200 });
+      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(newToken);
+      (registerServiceWorker as vi.Mock).mockResolvedValue(undefined);
+      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
 
       // Second sync with new token
       const result = await syncFcmToken(mockPlatform);
@@ -94,7 +94,7 @@ describe("Notification Service", () => {
     });
 
     it("should return false when no token is available", async () => {
-      (requestAndGetFcmToken as jest.Mock).mockResolvedValue(null);
+      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(null);
 
       const result = await syncFcmToken(mockPlatform);
 
@@ -103,7 +103,7 @@ describe("Notification Service", () => {
     });
 
     it("should return false when API call fails", async () => {
-      (apiClient.post as jest.Mock).mockRejectedValue(new Error("API Error"));
+      (apiClient.post as vi.Mock).mockRejectedValue(new Error("API Error"));
 
       const result = await syncFcmToken(mockPlatform);
 
@@ -113,7 +113,7 @@ describe("Notification Service", () => {
     });
 
     it("should return false on API error status", async () => {
-      (apiClient.post as jest.Mock).mockResolvedValue({ status: 500 });
+      (apiClient.post as vi.Mock).mockResolvedValue({ status: 500 });
 
       const result = await syncFcmToken(mockPlatform);
 
@@ -140,7 +140,7 @@ describe("Notification Service", () => {
       const savedToken = localStorage.getItem("last_fcm_token");
 
       // Then unlink
-      (apiClient.post as jest.Mock).mockResolvedValue({ status: 200 });
+      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
       const result = await unlinkFcmToken();
 
       expect(result).toBe(true);
@@ -169,7 +169,7 @@ describe("Notification Service", () => {
       expect(localStorage.getItem("last_fcm_token")).toBe(mockToken);
 
       // Mock API failure
-      (apiClient.post as jest.Mock).mockRejectedValue(new Error("API Error"));
+      (apiClient.post as vi.Mock).mockRejectedValue(new Error("API Error"));
 
       const result = await unlinkFcmToken();
 
@@ -185,8 +185,8 @@ describe("Notification Service", () => {
       expect(localStorage.getItem("last_fcm_token")).toBe(mockToken);
 
       // Reset and prepare for unlink test
-      jest.clearAllMocks();
-      (apiClient.post as jest.Mock).mockResolvedValue({ status: 500 });
+      vi.clearAllMocks();
+      (apiClient.post as vi.Mock).mockResolvedValue({ status: 500 });
 
       const result = await unlinkFcmToken();
 
@@ -204,7 +204,7 @@ describe("Notification Service", () => {
       );
 
       // User A logs out
-      (apiClient.post as jest.Mock).mockResolvedValue({ status: 200 });
+      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
       await unlinkFcmToken();
 
       // Verify unlink was called
@@ -219,11 +219,11 @@ describe("Notification Service", () => {
       expect(localStorage.getItem("last_fcm_token")).toBeNull();
 
       // Now User B uses same device and logs in
-      jest.clearAllMocks();
+      vi.clearAllMocks();
       const userBToken = "user_b_token_99999";
-      (requestAndGetFcmToken as jest.Mock).mockResolvedValue(userBToken);
-      (registerServiceWorker as jest.Mock).mockResolvedValue(undefined);
-      (apiClient.post as jest.Mock).mockResolvedValue({ status: 200 });
+      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userBToken);
+      (registerServiceWorker as vi.Mock).mockResolvedValue(undefined);
+      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
 
       await syncFcmToken(mockPlatform);
 
@@ -255,7 +255,7 @@ describe("Notification Service", () => {
       // @ts-ignore
       global.Notification = {
         permission: "default",
-        requestPermission: jest.fn().mockResolvedValue("granted"),
+        requestPermission: vi.fn().mockResolvedValue("granted"),
       };
 
       const result = await requestNotificationPermission();

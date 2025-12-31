@@ -15,10 +15,10 @@ import React from "react";
 /**
  * Mock dependencies
  */
-jest.mock("@/hooks/useAuth");
-jest.mock("next/navigation", () => ({
+vi.mock("@/hooks/useAuth");
+vi.mock("next/navigation", () => ({
   useRouter: () => ({
-    push: jest.fn(),
+    push: vi.fn(),
   }),
   useSearchParams: () => new URLSearchParams(),
 }));
@@ -39,7 +39,7 @@ const createWrapper = () => {
 
 describe("LoginForm Component", () => {
   const mockLoginMutation = {
-    mutate: jest.fn(),
+    mutate: vi.fn(),
     isSuccess: false,
     isError: false,
     isPending: false,
@@ -47,8 +47,8 @@ describe("LoginForm Component", () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useLogin as jest.Mock).mockReturnValue(mockLoginMutation);
+    vi.clearAllMocks();
+    (useLogin as vi.Mock).mockReturnValue(mockLoginMutation);
   });
 
   describe("Rendering and UI", () => {
@@ -218,7 +218,7 @@ describe("LoginForm Component", () => {
   describe("Error Handling", () => {
     it("should display error alert when login fails", async () => {
       const errorMessage = "Invalid credentials";
-      (useLogin as jest.Mock).mockReturnValue({
+      (useLogin as vi.Mock).mockReturnValue({
         ...mockLoginMutation,
         isError: true,
         error: {
@@ -238,7 +238,7 @@ describe("LoginForm Component", () => {
     });
 
     it("should show spinner when login is pending", async () => {
-      (useLogin as jest.Mock).mockReturnValue({
+      (useLogin as vi.Mock).mockReturnValue({
         ...mockLoginMutation,
         isPending: true,
       });

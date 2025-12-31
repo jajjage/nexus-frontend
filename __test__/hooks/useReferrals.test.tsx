@@ -9,9 +9,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
 import { toast } from "sonner";
 
-jest.mock("@/services/referral.service");
-jest.mock("sonner", () => ({
-  toast: { success: jest.fn(), error: jest.fn() },
+vi.mock("@/services/referral.service");
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
 }));
 
 const createWrapper = () => {
@@ -25,13 +25,13 @@ const createWrapper = () => {
 
 describe("useReferrals Hooks", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("useReferralStats", () => {
     it("should fetch and return stats", async () => {
       const mockStats = { totalReferrals: 10 };
-      (referralService.getReferralStats as jest.Mock).mockResolvedValue({
+      (referralService.getReferralStats as vi.Mock).mockResolvedValue({
         success: true,
         data: mockStats,
       });
@@ -47,7 +47,7 @@ describe("useReferrals Hooks", () => {
 
   describe("useRequestWithdrawal", () => {
     it("should call requestWithdrawal and show toast on success", async () => {
-      (referralService.requestWithdrawal as jest.Mock).mockResolvedValue({
+      (referralService.requestWithdrawal as vi.Mock).mockResolvedValue({
         success: true,
       });
 

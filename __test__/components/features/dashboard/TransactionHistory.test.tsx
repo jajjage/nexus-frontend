@@ -3,12 +3,12 @@ import { TransactionHistory } from "@/components/features/dashboard/transaction-
 import { useRecentTransactions } from "@/hooks/useWallet";
 
 // Mock the hook
-jest.mock("@/hooks/useWallet", () => ({
-  useRecentTransactions: jest.fn(),
+vi.mock("@/hooks/useWallet", () => ({
+  useRecentTransactions: vi.fn(),
 }));
 
 // Mock TransactionItem to simplify
-jest.mock("@/components/features/dashboard/transaction-item", () => ({
+vi.mock("@/components/features/dashboard/transaction-item", () => ({
   TransactionItem: ({ transaction }: any) => (
     <div data-testid="transaction-item">{transaction.title}</div>
   ),
@@ -16,7 +16,7 @@ jest.mock("@/components/features/dashboard/transaction-item", () => ({
 
 describe("TransactionHistory", () => {
   it("shows loading spinner when loading", () => {
-    (useRecentTransactions as jest.Mock).mockReturnValue({
+    (useRecentTransactions as vi.Mock).mockReturnValue({
       isLoading: true,
       data: undefined,
     });
@@ -30,7 +30,7 @@ describe("TransactionHistory", () => {
   });
 
   it("shows error message on error", () => {
-    (useRecentTransactions as jest.Mock).mockReturnValue({
+    (useRecentTransactions as vi.Mock).mockReturnValue({
       isLoading: false,
       isError: true,
     });
@@ -42,7 +42,7 @@ describe("TransactionHistory", () => {
   });
 
   it("shows empty state when no transactions", () => {
-    (useRecentTransactions as jest.Mock).mockReturnValue({
+    (useRecentTransactions as vi.Mock).mockReturnValue({
       isLoading: false,
       data: [],
     });
@@ -56,7 +56,7 @@ describe("TransactionHistory", () => {
       { id: "1", title: "Data Purchase" },
       { id: "2", title: "Airtime Topup" },
     ];
-    (useRecentTransactions as jest.Mock).mockReturnValue({
+    (useRecentTransactions as vi.Mock).mockReturnValue({
       isLoading: false,
       data: mockData,
     });
@@ -67,7 +67,7 @@ describe("TransactionHistory", () => {
   });
 
   it("blurs content when isVisible is false", () => {
-    (useRecentTransactions as jest.Mock).mockReturnValue({
+    (useRecentTransactions as vi.Mock).mockReturnValue({
       isLoading: false,
       data: [{ id: "1", title: "Secret" }],
     });

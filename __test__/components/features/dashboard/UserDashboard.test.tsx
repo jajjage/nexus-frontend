@@ -12,54 +12,54 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 // Mock Hooks
-jest.mock("@/hooks/useAuth");
-jest.mock("@/hooks/useNotifications");
-jest.mock("@/hooks/useUser", () => ({
+vi.mock("@/hooks/useAuth");
+vi.mock("@/hooks/useNotifications");
+vi.mock("@/hooks/useUser", () => ({
   userKeys: {
     all: ["user"],
     profile: () => ["user", "profile"],
   },
-  useUpdateProfile: jest.fn(),
-  useSetPin: jest.fn(),
+  useUpdateProfile: vi.fn(),
+  useSetPin: vi.fn(),
 }));
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(),
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(),
 }));
-jest.mock("@tanstack/react-query", () => ({
-  useQueryClient: jest.fn(),
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: vi.fn(),
 }));
 
 // Mock Child Components to reduce noise
-jest.mock("@/components/features/dashboard/balance-card", () => ({
+vi.mock("@/components/features/dashboard/balance-card", () => ({
   BalanceCard: () => <div data-testid="balance-card">Balance</div>,
 }));
-jest.mock("@/components/features/dashboard/transaction-history", () => ({
+vi.mock("@/components/features/dashboard/transaction-history", () => ({
   TransactionHistory: () => (
     <div data-testid="transaction-history">Tx History</div>
   ),
 }));
-jest.mock("@/components/features/dashboard/action-buttons", () => ({
+vi.mock("@/components/features/dashboard/action-buttons", () => ({
   ActionButtons: () => <div>Actions</div>,
 }));
-jest.mock("@/components/features/dashboard/bottom-nav", () => ({
+vi.mock("@/components/features/dashboard/bottom-nav", () => ({
   BottomNav: () => <div>Nav</div>,
 }));
-jest.mock("@/components/features/dashboard/ads-carousel", () => ({
+vi.mock("@/components/features/dashboard/ads-carousel", () => ({
   AdsCarousel: () => <div data-testid="ads-carousel">Ads Carousel</div>,
 }));
 // ... mock others if needed, but these are main ones
 
 describe("UserDashboard", () => {
-  const mockRouter = { push: jest.fn() };
-  const mockQueryClient = { invalidateQueries: jest.fn() };
+  const mockRouter = { push: vi.fn() };
+  const mockQueryClient = { invalidateQueries: vi.fn() };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useRouter as jest.Mock).mockReturnValue(mockRouter);
-    (useQueryClient as jest.Mock).mockReturnValue(mockQueryClient);
+    vi.clearAllMocks();
+    (useRouter as vi.Mock).mockReturnValue(mockRouter);
+    (useQueryClient as vi.Mock).mockReturnValue(mockQueryClient);
 
     // Default happy path mocks
-    (useAuth as jest.Mock).mockReturnValue({
+    (useAuth as vi.Mock).mockReturnValue({
       user: {
         userId: "1",
         fullName: "Test User",
@@ -69,25 +69,25 @@ describe("UserDashboard", () => {
         accountNumber: "123",
       },
       isLoading: false,
-      refetch: jest.fn(),
+      refetch: vi.fn(),
     });
 
-    (useUnreadNotificationCount as jest.Mock).mockReturnValue({
+    (useUnreadNotificationCount as vi.Mock).mockReturnValue({
       data: { data: { unreadCount: 5 } },
     });
 
-    (useUpdateProfile as jest.Mock).mockReturnValue({
-      mutate: jest.fn(),
+    (useUpdateProfile as vi.Mock).mockReturnValue({
+      mutate: vi.fn(),
       isPending: false,
     });
-    (useSetPin as jest.Mock).mockReturnValue({
-      mutate: jest.fn(),
+    (useSetPin as vi.Mock).mockReturnValue({
+      mutate: vi.fn(),
       isPending: false,
     });
   });
 
   it("redirects to admin dashboard if user is admin", async () => {
-    (useAuth as jest.Mock).mockReturnValue({
+    (useAuth as vi.Mock).mockReturnValue({
       user: { role: "admin" },
       isLoading: false,
     });
@@ -101,7 +101,7 @@ describe("UserDashboard", () => {
   });
 
   it("shows PIN setup modal if user has no PIN", () => {
-    (useAuth as jest.Mock).mockReturnValue({
+    (useAuth as vi.Mock).mockReturnValue({
       user: {
         userId: "1",
         fullName: "User",

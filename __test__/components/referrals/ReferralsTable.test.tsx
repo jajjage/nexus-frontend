@@ -6,13 +6,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
 
 // Mock dependencies
-jest.mock("@/hooks/useReferrals", () => ({
-  useReferralsList: jest.fn(),
-  useClaimReferralBonus: jest.fn(),
+vi.mock("@/hooks/useReferrals", () => ({
+  useReferralsList: vi.fn(),
+  useClaimReferralBonus: vi.fn(),
 }));
 
-jest.mock("@/hooks/useAuth", () => ({
-  useAuth: jest.fn(),
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: vi.fn(),
 }));
 
 const createWrapper = () => {
@@ -41,13 +41,13 @@ describe("ReferralsTable", () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useAuth as jest.Mock).mockReturnValue({ user: { userId: "me" } });
-    (useClaimReferralBonus as jest.Mock).mockReturnValue({ mutate: jest.fn() });
+    vi.clearAllMocks();
+    (useAuth as vi.Mock).mockReturnValue({ user: { userId: "me" } });
+    (useClaimReferralBonus as vi.Mock).mockReturnValue({ mutate: vi.fn() });
   });
 
   it("should display a list of referrals", () => {
-    (useReferralsList as jest.Mock).mockReturnValue({
+    (useReferralsList as vi.Mock).mockReturnValue({
       data: {
         data: {
           referrals: mockReferrals,
@@ -66,7 +66,7 @@ describe("ReferralsTable", () => {
   });
 
   it("should show empty message when no referrals exist", () => {
-    (useReferralsList as jest.Mock).mockReturnValue({
+    (useReferralsList as vi.Mock).mockReturnValue({
       data: { data: { referrals: [], pagination: {} } },
       isLoading: false,
     });

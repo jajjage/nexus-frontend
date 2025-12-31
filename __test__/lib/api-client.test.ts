@@ -7,32 +7,34 @@ import apiClient, {
 import { server } from "@/mocks/server"; // Import MSW server
 
 // 1. Mock axios fully inside the factory
-// We need to return a function that is also an object (to simulate the axios instance)
-jest.mock("axios", () => {
-  const requestSpy = jest.fn();
-  const responseSpy = jest.fn();
+// We need to return an object with a "default" key for Vitest
+vi.mock("axios", () => {
+  const requestSpy = vi.fn();
+  const responseSpy = vi.fn();
 
-  const mockInstance: any = jest.fn(() => Promise.resolve({ data: {} }));
+  const mockInstance: any = vi.fn(() => Promise.resolve({ data: {} }));
 
   // Attach instance methods
   mockInstance.interceptors = {
     request: { use: requestSpy },
     response: { use: responseSpy },
   };
-  mockInstance.post = jest.fn(() => Promise.resolve({ data: {} }));
-  mockInstance.get = jest.fn(() => Promise.resolve({ data: {} }));
-  mockInstance.put = jest.fn(() => Promise.resolve({ data: {} }));
+  mockInstance.post = vi.fn(() => Promise.resolve({ data: {} }));
+  mockInstance.get = vi.fn(() => Promise.resolve({ data: {} }));
+  mockInstance.put = vi.fn(() => Promise.resolve({ data: {} }));
   mockInstance.defaults = { headers: { common: {} } };
 
   // Mock create to return our mockInstance
-  mockInstance.create = jest.fn(() => mockInstance);
+  mockInstance.create = vi.fn(() => mockInstance);
 
-  return mockInstance;
+  return {
+    default: mockInstance,
+  };
 });
 
-jest.mock("sonner", () => ({
+vi.mock("sonner", () => ({
   toast: {
-    error: jest.fn(),
+    error: vi.fn(),
   },
 }));
 
@@ -42,13 +44,13 @@ describe("API Client Logic", () => {
 
   // Type assertion for the mocked axios module
   // Since we mocked 'axios' to return the instance directly as the default export
-  const mockAxios = axios as unknown as jest.Mock & {
+  const mockAxios = axios as unknown as vi.Mock & {
     interceptors: {
-      request: { use: jest.Mock };
-      response: { use: jest.Mock };
+      request: { use: vi.Mock };
+      response: { use: vi.Mock };
     };
-    post: jest.Mock;
-    create: jest.Mock;
+    post: vi.Mock;
+    create: vi.Mock;
   };
 
   // MSW Setup for tests that need it
@@ -71,8 +73,8 @@ describe("API Client Logic", () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (toast.error as jest.Mock).mockClear();
+    vi.clearAllMocks();
+    (toast.error as vi.Mock).mockClear();
     resetAuthClient();
   });
 
@@ -161,7 +163,7 @@ describe("API Client Logic", () => {
     });
 
     it("should logout user if refresh fails", async () => {
-      const sessionExpiredMock = jest.fn();
+      const sessionExpiredMock = vi.fn();
       setSessionExpiredCallback(sessionExpiredMock);
 
       mockAxios.post.mockRejectedValue({
@@ -186,7 +188,7 @@ describe("API Client Logic", () => {
     });
 
     it("should NOT logout user on 403 if it is a verification requirement", async () => {
-      const sessionExpiredMock = jest.fn();
+      const sessionExpiredMock = vi.fn();
       setSessionExpiredCallback(sessionExpiredMock);
 
       const error = {

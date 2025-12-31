@@ -1,12 +1,12 @@
 import apiClient from "@/lib/api-client";
 import { referralService } from "@/services/referral.service";
 
-jest.mock("@/lib/api-client");
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+vi.mock("@/lib/api-client");
+const mockApiClient = apiClient as vi.Mocked<typeof apiClient>;
 
 describe("referralService", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("validateReferralCode", () => {

@@ -10,20 +10,20 @@ import React, { ReactNode } from "react";
 /**
  * Mock dependencies
  */
-jest.mock("@/services/auth.service");
-jest.mock("@/services/notification.service");
-jest.mock("next/navigation");
-jest.mock("sonner", () => ({
+vi.mock("@/services/auth.service");
+vi.mock("@/services/notification.service");
+vi.mock("next/navigation");
+vi.mock("sonner", () => ({
   toast: {
-    success: jest.fn(),
-    error: jest.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
 describe("Auth Hooks - FCM Integration", () => {
   const mockRouter = {
-    push: jest.fn(),
-    prefetch: jest.fn(),
+    push: vi.fn(),
+    prefetch: vi.fn(),
   };
 
   const mockUser = {
@@ -71,15 +71,15 @@ describe("Auth Hooks - FCM Integration", () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useRouter as jest.Mock).mockReturnValue(mockRouter);
+    vi.clearAllMocks();
+    (useRouter as vi.Mock).mockReturnValue(mockRouter);
 
     // Mock localStorage
     Object.defineProperty(window, "localStorage", {
       value: {
-        getItem: jest.fn(),
-        setItem: jest.fn(),
-        removeItem: jest.fn(),
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
       },
       writable: true,
     });
@@ -87,9 +87,9 @@ describe("Auth Hooks - FCM Integration", () => {
 
   describe("useLogin", () => {
     it("should sync FCM token after successful login", async () => {
-      (authService.login as jest.Mock).mockResolvedValue(mockLoginResponse);
-      (authService.getProfile as jest.Mock).mockResolvedValue(mockUser);
-      (syncFcmToken as jest.Mock).mockResolvedValue(true);
+      (authService.login as vi.Mock).mockResolvedValue(mockLoginResponse);
+      (authService.getProfile as vi.Mock).mockResolvedValue(mockUser);
+      (syncFcmToken as vi.Mock).mockResolvedValue(true);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -109,9 +109,9 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should cache user data after login", async () => {
-      (authService.login as jest.Mock).mockResolvedValue(mockLoginResponse);
-      (authService.getProfile as jest.Mock).mockResolvedValue(mockUser);
-      (syncFcmToken as jest.Mock).mockResolvedValue(true);
+      (authService.login as vi.Mock).mockResolvedValue(mockLoginResponse);
+      (authService.getProfile as vi.Mock).mockResolvedValue(mockUser);
+      (syncFcmToken as vi.Mock).mockResolvedValue(true);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -131,9 +131,9 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should redirect to user dashboard after login", async () => {
-      (authService.login as jest.Mock).mockResolvedValue(mockLoginResponse);
-      (authService.getProfile as jest.Mock).mockResolvedValue(mockUser);
-      (syncFcmToken as jest.Mock).mockResolvedValue(true);
+      (authService.login as vi.Mock).mockResolvedValue(mockLoginResponse);
+      (authService.getProfile as vi.Mock).mockResolvedValue(mockUser);
+      (syncFcmToken as vi.Mock).mockResolvedValue(true);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -161,12 +161,12 @@ describe("Auth Hooks - FCM Integration", () => {
         },
       };
 
-      (authService.login as jest.Mock).mockResolvedValue(adminResponse);
-      (authService.getProfile as jest.Mock).mockResolvedValue({
+      (authService.login as vi.Mock).mockResolvedValue(adminResponse);
+      (authService.getProfile as vi.Mock).mockResolvedValue({
         ...mockUser,
         role: "admin",
       });
-      (syncFcmToken as jest.Mock).mockResolvedValue(true);
+      (syncFcmToken as vi.Mock).mockResolvedValue(true);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -185,11 +185,9 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should not block login if FCM token sync fails", async () => {
-      (authService.login as jest.Mock).mockResolvedValue(mockLoginResponse);
-      (authService.getProfile as jest.Mock).mockResolvedValue(mockUser);
-      (syncFcmToken as jest.Mock).mockRejectedValue(
-        new Error("FCM sync failed")
-      );
+      (authService.login as vi.Mock).mockResolvedValue(mockLoginResponse);
+      (authService.getProfile as vi.Mock).mockResolvedValue(mockUser);
+      (syncFcmToken as vi.Mock).mockRejectedValue(new Error("FCM sync failed"));
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -209,9 +207,9 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should handle login with phone number", async () => {
-      (authService.login as jest.Mock).mockResolvedValue(mockLoginResponse);
-      (authService.getProfile as jest.Mock).mockResolvedValue(mockUser);
-      (syncFcmToken as jest.Mock).mockResolvedValue(true);
+      (authService.login as vi.Mock).mockResolvedValue(mockLoginResponse);
+      (authService.getProfile as vi.Mock).mockResolvedValue(mockUser);
+      (syncFcmToken as vi.Mock).mockResolvedValue(true);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -232,7 +230,7 @@ describe("Auth Hooks - FCM Integration", () => {
 
     it("should handle login error", async () => {
       const loginError = new Error("Invalid credentials");
-      (authService.login as jest.Mock).mockRejectedValue(loginError);
+      (authService.login as vi.Mock).mockRejectedValue(loginError);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -264,9 +262,7 @@ describe("Auth Hooks - FCM Integration", () => {
     };
 
     it("should redirect to login after successful registration", async () => {
-      (authService.register as jest.Mock).mockResolvedValue(
-        mockRegisterResponse
-      );
+      (authService.register as vi.Mock).mockResolvedValue(mockRegisterResponse);
 
       const { result } = renderHook(() => useRegister(), {
         wrapper: createWrapper(),
@@ -292,9 +288,7 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should show success message after registration", async () => {
-      (authService.register as jest.Mock).mockResolvedValue(
-        mockRegisterResponse
-      );
+      (authService.register as vi.Mock).mockResolvedValue(mockRegisterResponse);
 
       const { result } = renderHook(() => useRegister(), {
         wrapper: createWrapper(),
@@ -317,10 +311,8 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should NOT sync FCM token during registration (no tokens returned)", async () => {
-      (authService.register as jest.Mock).mockResolvedValue(
-        mockRegisterResponse
-      );
-      (syncFcmToken as jest.Mock).mockResolvedValue(true);
+      (authService.register as vi.Mock).mockResolvedValue(mockRegisterResponse);
+      (syncFcmToken as vi.Mock).mockResolvedValue(true);
 
       const { result } = renderHook(() => useRegister(), {
         wrapper: createWrapper(),
@@ -345,7 +337,7 @@ describe("Auth Hooks - FCM Integration", () => {
 
   describe("useLogout", () => {
     it("should successfully logout", async () => {
-      (authService.logout as jest.Mock).mockResolvedValue({
+      (authService.logout as vi.Mock).mockResolvedValue({
         success: true,
         message: "Logout successful",
       });
@@ -365,7 +357,7 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should handle logout error", async () => {
-      (authService.logout as jest.Mock).mockRejectedValue(
+      (authService.logout as vi.Mock).mockRejectedValue(
         new Error("Logout API error")
       );
 

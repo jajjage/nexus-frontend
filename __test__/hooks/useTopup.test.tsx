@@ -5,9 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
 import { toast } from "sonner";
 
-jest.mock("@/services/topup.service");
-jest.mock("sonner", () => ({
-  toast: { success: jest.fn(), error: jest.fn() },
+vi.mock("@/services/topup.service");
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
 }));
 
 const createWrapper = () => {
@@ -21,11 +21,11 @@ const createWrapper = () => {
 
 describe("useTopup Hook", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("should call initiateTopup and show success toast on success", async () => {
-    (topupService.initiateTopup as jest.Mock).mockResolvedValue({
+    (topupService.initiateTopup as vi.Mock).mockResolvedValue({
       success: true,
       message: "Topup in progress",
     });
@@ -48,7 +48,7 @@ describe("useTopup Hook", () => {
   });
 
   it("should show error toast on failure", async () => {
-    (topupService.initiateTopup as jest.Mock).mockRejectedValue({
+    (topupService.initiateTopup as vi.Mock).mockRejectedValue({
       response: { data: { message: "Invalid PIN" } },
     });
 

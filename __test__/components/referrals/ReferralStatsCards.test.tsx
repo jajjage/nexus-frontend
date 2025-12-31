@@ -5,8 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
 
 // Mock the hook
-jest.mock("@/hooks/useReferrals", () => ({
-  useReferralStats: jest.fn(),
+vi.mock("@/hooks/useReferrals", () => ({
+  useReferralStats: vi.fn(),
 }));
 
 const createWrapper = () => {
@@ -24,7 +24,7 @@ const createWrapper = () => {
 
 describe("ReferralStatsCards", () => {
   it("should show skeletons while loading", () => {
-    (useReferralStats as jest.Mock).mockReturnValue({
+    (useReferralStats as vi.Mock).mockReturnValue({
       isLoading: true,
     });
 
@@ -43,7 +43,7 @@ describe("ReferralStatsCards", () => {
       pendingRewardAmount: 1200,
     };
 
-    (useReferralStats as jest.Mock).mockReturnValue({
+    (useReferralStats as vi.Mock).mockReturnValue({
       data: { data: mockStats },
       isLoading: false,
     });

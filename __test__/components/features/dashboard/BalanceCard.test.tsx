@@ -28,11 +28,7 @@ describe("BalanceCard", () => {
 
   it("masks balance when hidden", () => {
     render(
-      <BalanceCard
-        {...defaultProps}
-        isVisible={false}
-        setIsVisible={jest.fn()}
-      />
+      <BalanceCard {...defaultProps} isVisible={false} setIsVisible={vi.fn()} />
     );
 
     expect(screen.getByText("••••••••")).toBeInTheDocument();
@@ -52,7 +48,7 @@ describe("BalanceCard", () => {
   });
 
   it("toggles visibility on eye click", () => {
-    const setIsVisibleMock = jest.fn();
+    const setIsVisibleMock = vi.fn();
     render(
       <BalanceCard
         {...defaultProps}

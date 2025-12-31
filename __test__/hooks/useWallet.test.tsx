@@ -4,7 +4,7 @@ import { walletService } from "@/services/wallet.service";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
 
-jest.mock("@/services/wallet.service");
+vi.mock("@/services/wallet.service");
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -17,13 +17,13 @@ const createWrapper = () => {
 
 describe("useWallet Hooks", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("useWallet", () => {
     it("should fetch and return wallet data", async () => {
       const mockWallet = { balance: "1000", id: "w1" };
-      (walletService.getWallet as jest.Mock).mockResolvedValue({
+      (walletService.getWallet as vi.Mock).mockResolvedValue({
         success: true,
         data: mockWallet,
       });
@@ -40,7 +40,7 @@ describe("useWallet Hooks", () => {
   describe("useWalletBalance", () => {
     it("should fetch and return balance data", async () => {
       const mockBalance = { balance: "500" };
-      (walletService.getBalance as jest.Mock).mockResolvedValue({
+      (walletService.getBalance as vi.Mock).mockResolvedValue({
         success: true,
         data: mockBalance,
       });

@@ -26,7 +26,7 @@ Object.defineProperty(window, "localStorage", {
 
 describe("useSecurityStore", () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     localStorage.clear();
     // Reset store state
     useSecurityStore.setState({
@@ -44,7 +44,7 @@ describe("useSecurityStore", () => {
     act(() => {
       useSecurityStore.getState().cleanup();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe("Initialization", () => {
@@ -73,7 +73,7 @@ describe("useSecurityStore", () => {
       const { result } = renderHook(() => useSecurityStore());
       const oldTime = result.current.lastActiveTime;
 
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
 
       act(() => {
         result.current.recordActivity();
@@ -105,7 +105,7 @@ describe("useSecurityStore", () => {
 
       // Advance time by 30 minutes + 1 second
       act(() => {
-        jest.advanceTimersByTime(30 * 60 * 1000 + 1000);
+        vi.advanceTimersByTime(30 * 60 * 1000 + 1000);
       });
 
       expect(result.current.isLocked).toBe(true);
@@ -184,7 +184,7 @@ describe("useSecurityStore", () => {
 
       // Advance time by 5 minutes + 1 second
       act(() => {
-        jest.advanceTimersByTime(5 * 60 * 1000 + 1000);
+        vi.advanceTimersByTime(5 * 60 * 1000 + 1000);
       });
 
       expect(result.current.isBlocked).toBe(false);

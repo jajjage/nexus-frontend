@@ -4,16 +4,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
 
 // Mock useAuth
-jest.mock("@/hooks/useAuth", () => ({
-  useAuth: jest.fn(() => ({
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: vi.fn(() => ({
     user: { userId: "123" },
     isAuthenticated: true,
   })),
 }));
 
 // Mock useNotifications
-jest.mock("@/hooks/useNotifications", () => ({
-  useNotifications: jest.fn(() => ({
+vi.mock("@/hooks/useNotifications", () => ({
+  useNotifications: vi.fn(() => ({
     data: {
       success: true,
       data: {
@@ -35,7 +35,7 @@ jest.mock("@/hooks/useNotifications", () => ({
 }));
 
 // Mock the child component to isolate the test
-jest.mock("@/components/notification/notification-banner", () => ({
+vi.mock("@/components/notification/notification-banner", () => ({
   NotificationBanner: ({ notifications }: { notifications: any[] }) => (
     <div data-testid="notification-banner">
       {notifications.map((n) => (

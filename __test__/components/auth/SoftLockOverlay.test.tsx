@@ -5,31 +5,31 @@ import { useSecurityStore } from "@/store/securityStore";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-jest.mock("@/store/securityStore");
-jest.mock("@/services/webauthn.service");
-jest.mock("@/services/verification.service");
-jest.mock("@/context/AuthContext", () => ({
-  useAuthContext: jest.fn(),
+vi.mock("@/store/securityStore");
+vi.mock("@/services/webauthn.service");
+vi.mock("@/services/verification.service");
+vi.mock("@/context/AuthContext", () => ({
+  useAuthContext: vi.fn(),
 }));
-jest.mock("sonner", () => ({
+vi.mock("sonner", () => ({
   toast: {
-    success: jest.fn(),
-    error: jest.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
 import { useAuthContext } from "@/context/AuthContext";
 
-const mockUseSecurityStore = useSecurityStore as jest.MockedFunction<
+const mockUseSecurityStore = useSecurityStore as vi.MockedFunction<
   typeof useSecurityStore
 >;
-const mockUseAuthContext = useAuthContext as jest.MockedFunction<
+const mockUseAuthContext = useAuthContext as vi.MockedFunction<
   typeof useAuthContext
 >;
-const mockWebAuthnService = WebAuthnService as jest.Mocked<
+const mockWebAuthnService = WebAuthnService as vi.Mocked<
   typeof WebAuthnService
 >;
-const mockVerificationService = verificationService as jest.Mocked<
+const mockVerificationService = verificationService as vi.Mocked<
   typeof verificationService
 >;
 
@@ -46,11 +46,11 @@ const createWrapper = () => {
 };
 
 describe("SoftLockOverlay", () => {
-  const mockUnlock = jest.fn();
-  const mockSetIsAuthLoadingGlobal = jest.fn();
+  const mockUnlock = vi.fn();
+  const mockSetIsAuthLoadingGlobal = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockUseSecurityStore.mockReturnValue({
       isLocked: true,
       unlock: mockUnlock,

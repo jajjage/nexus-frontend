@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useClipboard } from "@/hooks/useClipboard";
 import { cn } from "@/lib/utils";
 import type { Transaction } from "@/types/wallet.types";
 import {
@@ -10,10 +11,8 @@ import {
   Clock,
   Copy,
   CreditCard,
-  Share2,
   XCircle,
 } from "lucide-react";
-import { useClipboard } from "@/hooks/useClipboard";
 import React from "react";
 
 interface TransactionReceiptProps {

@@ -15,10 +15,10 @@ import React from "react";
 /**
  * Mock dependencies
  */
-jest.mock("@/hooks/useAuth");
-jest.mock("next/navigation", () => ({
+vi.mock("@/hooks/useAuth");
+vi.mock("next/navigation", () => ({
   useRouter: () => ({
-    push: jest.fn(),
+    push: vi.fn(),
   }),
   useSearchParams: () => new URLSearchParams(),
 }));
@@ -39,7 +39,7 @@ const createWrapper = () => {
 
 describe("RegisterForm Component", () => {
   const mockRegisterMutation = {
-    mutate: jest.fn(),
+    mutate: vi.fn(),
     isSuccess: false,
     isError: false,
     isPending: false,
@@ -47,8 +47,8 @@ describe("RegisterForm Component", () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useRegister as jest.Mock).mockReturnValue(mockRegisterMutation);
+    vi.clearAllMocks();
+    (useRegister as vi.Mock).mockReturnValue(mockRegisterMutation);
   });
 
   describe("Rendering and UI", () => {
@@ -160,7 +160,7 @@ describe("RegisterForm Component", () => {
 
   describe("Error Handling", () => {
     it("should show loading state when form is submitting", async () => {
-      (useRegister as jest.Mock).mockReturnValue({
+      (useRegister as vi.Mock).mockReturnValue({
         ...mockRegisterMutation,
         isPending: true,
       });

@@ -9,10 +9,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
 import { toast } from "sonner";
 
-jest.mock("@/services/biometric.service");
-jest.mock("@/services/webauthn.service");
-jest.mock("sonner", () => ({
-  toast: { success: jest.fn(), error: jest.fn() },
+vi.mock("@/services/biometric.service");
+vi.mock("@/services/webauthn.service");
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
 }));
 
 const createWrapper = () => {
@@ -24,13 +24,13 @@ const createWrapper = () => {
 
 describe("useBiometric Hooks", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("useBiometricEnrollments", () => {
     it("should fetch and return enrollments", async () => {
       const mockEnrollments = [{ id: "1", deviceName: "Phone" }];
-      (biometricService.listEnrollments as jest.Mock).mockResolvedValue(
+      (biometricService.listEnrollments as vi.Mock).mockResolvedValue(
         mockEnrollments
       );
 
@@ -45,14 +45,12 @@ describe("useBiometric Hooks", () => {
 
   describe("useBiometricAuthentication", () => {
     it("should complete authentication flow on success", async () => {
-      (WebAuthnService.isWebAuthnSupported as jest.Mock).mockResolvedValue(
-        true
-      );
-      (WebAuthnService.getAuthenticationOptions as jest.Mock).mockResolvedValue(
+      (WebAuthnService.isWebAuthnSupported as vi.Mock).mockResolvedValue(true);
+      (WebAuthnService.getAuthenticationOptions as vi.Mock).mockResolvedValue(
         {}
       );
-      (WebAuthnService.signAssertion as jest.Mock).mockResolvedValue({});
-      (WebAuthnService.verifyAssertion as jest.Mock).mockResolvedValue({
+      (WebAuthnService.signAssertion as vi.Mock).mockResolvedValue({});
+      (WebAuthnService.verifyAssertion as vi.Mock).mockResolvedValue({
         success: true,
       });
 
@@ -69,9 +67,7 @@ describe("useBiometric Hooks", () => {
     });
 
     it("should show error when not supported", async () => {
-      (WebAuthnService.isWebAuthnSupported as jest.Mock).mockResolvedValue(
-        false
-      );
+      (WebAuthnService.isWebAuthnSupported as vi.Mock).mockResolvedValue(false);
 
       const { result } = renderHook(() => useBiometricAuthentication(), {
         wrapper: createWrapper(),

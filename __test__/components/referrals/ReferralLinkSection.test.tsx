@@ -10,22 +10,22 @@ import { ReactNode } from "react";
 import { toast } from "sonner";
 
 // Mock dependencies
-jest.mock("@/hooks/useReferrals", () => ({
-  useReferralLink: jest.fn(),
-  useRegenerateReferralCode: jest.fn(),
-  useDeactivateReferralLink: jest.fn(),
+vi.mock("@/hooks/useReferrals", () => ({
+  useReferralLink: vi.fn(),
+  useRegenerateReferralCode: vi.fn(),
+  useDeactivateReferralLink: vi.fn(),
 }));
 
-jest.mock("sonner", () => ({
+vi.mock("sonner", () => ({
   toast: {
-    success: jest.fn(),
+    success: vi.fn(),
   },
 }));
 
 // Mock clipboard
 Object.defineProperty(navigator, "clipboard", {
   value: {
-    writeText: jest.fn().mockResolvedValue(undefined),
+    writeText: vi.fn().mockResolvedValue(undefined),
   },
 });
 
@@ -45,17 +45,17 @@ describe("ReferralLinkSection", () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useRegenerateReferralCode as jest.Mock).mockReturnValue({
-      mutate: jest.fn(),
+    vi.clearAllMocks();
+    (useRegenerateReferralCode as vi.Mock).mockReturnValue({
+      mutate: vi.fn(),
     });
-    (useDeactivateReferralLink as jest.Mock).mockReturnValue({
-      mutate: jest.fn(),
+    (useDeactivateReferralLink as vi.Mock).mockReturnValue({
+      mutate: vi.fn(),
     });
   });
 
   it("should display the referral link and code", () => {
-    (useReferralLink as jest.Mock).mockReturnValue({
+    (useReferralLink as vi.Mock).mockReturnValue({
       data: { data: mockLinkData },
       isLoading: false,
     });
@@ -71,7 +71,7 @@ describe("ReferralLinkSection", () => {
   });
 
   it("should copy link to clipboard when copy button is clicked", async () => {
-    (useReferralLink as jest.Mock).mockReturnValue({
+    (useReferralLink as vi.Mock).mockReturnValue({
       data: { data: mockLinkData },
       isLoading: false,
     });

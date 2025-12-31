@@ -8,24 +8,24 @@ import { toast } from "sonner";
 import { authService } from "@/services/auth.service";
 
 // Mock dependencies
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(),
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(),
 }));
 
-jest.mock("sonner", () => ({
+vi.mock("sonner", () => ({
   toast: {
-    success: jest.fn(),
-    error: jest.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
 // Mock authService
-jest.mock("@/services/auth.service", () => ({
+vi.mock("@/services/auth.service", () => ({
   authService: {
-    login: jest.fn(),
-    logout: jest.fn(),
-    getProfile: jest.fn(),
-    register: jest.fn(),
+    login: vi.fn(),
+    logout: vi.fn(),
+    getProfile: vi.fn(),
+    register: vi.fn(),
   },
 }));
 
@@ -48,21 +48,21 @@ const createWrapper = () => {
 
 describe("useAuth Hooks", () => {
   const mockRouter = {
-    push: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useRouter as jest.Mock).mockReturnValue(mockRouter);
+    vi.clearAllMocks();
+    (useRouter as vi.Mock).mockReturnValue(mockRouter);
 
     // Mock localStorage
     Object.defineProperty(window, "localStorage", {
       value: {
-        getItem: jest.fn(),
-        setItem: jest.fn(),
-        removeItem: jest.fn(),
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
       },
       writable: true,
     });
@@ -72,11 +72,11 @@ describe("useAuth Hooks", () => {
     it("should login successfully and redirect", async () => {
       // Setup mock return
       const mockUser = { userId: "123", role: "user" };
-      (authService.login as jest.Mock).mockResolvedValue({
+      (authService.login as vi.Mock).mockResolvedValue({
         data: { user: mockUser },
       });
       // getProfile needs to succeed because login invalidates it
-      (authService.getProfile as jest.Mock).mockResolvedValue(mockUser);
+      (authService.getProfile as vi.Mock).mockResolvedValue(mockUser);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -105,10 +105,10 @@ describe("useAuth Hooks", () => {
     });
 
     it("should fetch user if localStorage has cache", async () => {
-      (window.localStorage.getItem as jest.Mock).mockReturnValue(
+      (window.localStorage.getItem as vi.Mock).mockReturnValue(
         JSON.stringify({ userId: "123" })
       );
-      (authService.getProfile as jest.Mock).mockResolvedValue({
+      (authService.getProfile as vi.Mock).mockResolvedValue({
         userId: "123",
         role: "user",
       });

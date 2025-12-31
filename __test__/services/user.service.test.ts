@@ -1,12 +1,12 @@
 import apiClient from "@/lib/api-client";
 import { userService } from "@/services/user.service";
 
-jest.mock("@/lib/api-client");
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+vi.mock("@/lib/api-client");
+const mockApiClient = apiClient as vi.Mocked<typeof apiClient>;
 
 describe("userService", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("getProfile", () => {

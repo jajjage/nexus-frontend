@@ -1,10 +1,10 @@
 import { SoftLockService } from "@/services/soft-lock.service";
 
 describe("softLockService", () => {
-  let mockCallback: jest.Mock;
+  let mockCallback: vi.Mock;
 
   beforeEach(() => {
-    mockCallback = jest.fn();
+    mockCallback = vi.fn();
     SoftLockService.cleanup(); // Clean up any previous listeners
   });
 

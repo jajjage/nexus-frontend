@@ -2,25 +2,25 @@ import { PinVerificationModal } from "@/components/auth/PinVerificationModal";
 import { useSecurityStore } from "@/store/securityStore";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
-jest.mock("@/store/securityStore");
-jest.mock("sonner", () => ({
+vi.mock("@/store/securityStore");
+vi.mock("sonner", () => ({
   toast: {
-    success: jest.fn(),
-    error: jest.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
-const mockUseSecurityStore = useSecurityStore as jest.MockedFunction<
+const mockUseSecurityStore = useSecurityStore as vi.MockedFunction<
   typeof useSecurityStore
 >;
 
 describe("PinVerificationModal", () => {
-  const mockOnClose = jest.fn();
-  const mockOnSuccess = jest.fn();
-  const mockRecordPinAttempt = jest.fn();
+  const mockOnClose = vi.fn();
+  const mockOnSuccess = vi.fn();
+  const mockRecordPinAttempt = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockUseSecurityStore.mockReturnValue({
       isBlocked: false,
       recordPinAttempt: mockRecordPinAttempt,
