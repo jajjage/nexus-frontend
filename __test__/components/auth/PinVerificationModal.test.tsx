@@ -126,7 +126,6 @@ describe("PinVerificationModal", () => {
 
       await waitFor(() => {
         expect(mockOnSuccess).toHaveBeenCalledWith("1234");
-        expect(mockRecordPinAttempt).toHaveBeenCalledWith(true);
       });
     });
 

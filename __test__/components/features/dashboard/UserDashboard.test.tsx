@@ -2,14 +2,26 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { UserDashboard } from "@/components/features/dashboard/user-dashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadNotificationCount } from "@/hooks/useNotifications";
-import { useUpdateProfile } from "@/hooks/useUser";
+import {
+  useProfile,
+  useUpdateProfile,
+  useSetPin,
+  userKeys,
+} from "@/hooks/useUser";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 // Mock Hooks
 jest.mock("@/hooks/useAuth");
 jest.mock("@/hooks/useNotifications");
-jest.mock("@/hooks/useUser");
+jest.mock("@/hooks/useUser", () => ({
+  userKeys: {
+    all: ["user"],
+    profile: () => ["user", "profile"],
+  },
+  useUpdateProfile: jest.fn(),
+  useSetPin: jest.fn(),
+}));
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
 }));
@@ -65,6 +77,10 @@ describe("UserDashboard", () => {
     });
 
     (useUpdateProfile as jest.Mock).mockReturnValue({
+      mutate: jest.fn(),
+      isPending: false,
+    });
+    (useSetPin as jest.Mock).mockReturnValue({
       mutate: jest.fn(),
       isPending: false,
     });

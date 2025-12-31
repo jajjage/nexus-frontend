@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -235,6 +236,9 @@ export function PinVerificationModal({
               ? "Verify Transaction"
               : "Verify Identity"}
           </DialogTitle>
+          <DialogDescription>
+            Please enter your 4-digit PIN to continue.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">

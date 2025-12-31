@@ -41,6 +41,9 @@ describe("useSecurityStore", () => {
   });
 
   afterEach(() => {
+    act(() => {
+      useSecurityStore.getState().cleanup();
+    });
     jest.useRealTimers();
   });
 
@@ -149,16 +152,18 @@ describe("useSecurityStore", () => {
       expect(result.current.isBlocked).toBe(false);
     });
 
-    it("should block after 3 failed attempts", () => {
+    it("should block after 5 failed attempts", () => {
       const { result } = renderHook(() => useSecurityStore());
 
       act(() => {
         result.current.recordPinAttempt(false);
         result.current.recordPinAttempt(false);
         result.current.recordPinAttempt(false);
+        result.current.recordPinAttempt(false);
+        result.current.recordPinAttempt(false);
       });
 
-      expect(result.current.pinAttempts).toBe(3);
+      expect(result.current.pinAttempts).toBe(5);
       expect(result.current.isBlocked).toBe(true);
       expect(result.current.blockExpireTime).not.toBeNull();
     });
@@ -168,6 +173,8 @@ describe("useSecurityStore", () => {
 
       act(() => {
         result.current.initialize();
+        result.current.recordPinAttempt(false);
+        result.current.recordPinAttempt(false);
         result.current.recordPinAttempt(false);
         result.current.recordPinAttempt(false);
         result.current.recordPinAttempt(false);
