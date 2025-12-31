@@ -12,11 +12,8 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: process.env.CI
-      ? "http://127.0.0.1:3001"
-      : "https://127.0.0.1:3001",
+    baseURL: "http://127.0.0.1:3001",
     trace: "on-first-retry",
-    ignoreHTTPSErrors: true,
   },
   projects: [
     {
@@ -25,9 +22,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: process.env.CI ? "pnpm dev:next" : "pnpm dev",
-    url: process.env.CI ? "http://127.0.0.1:3001" : "https://127.0.0.1:3001",
-    reuseExistingServer: !process.env.CI,
+    command: "pnpm dev:next",
+    url: "http://127.0.0.1:3001",
+    reuseExistingServer: true,
     timeout: 240 * 1000,
   },
 });
