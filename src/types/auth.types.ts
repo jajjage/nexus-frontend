@@ -4,6 +4,7 @@ export interface RegisterRequest {
   password: string;
   phoneNumber: string;
   fullName?: string;
+  referralCode?: string;
 }
 
 export type LoginRequest = {

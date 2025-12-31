@@ -12,16 +12,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useRegister } from "@/hooks/useAuth";
+import { useValidateReferralCode } from "@/hooks/useReferrals";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const registerSchema = z
-
   .object({
     fullName: z.string().min(1, "Name is required"),
     email: z.string().email("Invalid email address"),
@@ -30,9 +31,9 @@ const registerSchema = z
       .min(1, "Phone number is required")
       .transform((val) => val.replace(/\D/g, ""))
       .refine((val) => val.length >= 11 && val.length <= 14, {
-        // Changed this line
         message: "Phone number must be between 11 and 14 digits",
       }),
+    referralCode: z.string().optional(),
     password: z
       .string()
       .min(8, { message: "Password must be at least 8 characters long" })
@@ -58,7 +59,13 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const searchParams = useSearchParams();
+  const urlCode = searchParams.get("code") || searchParams.get("ref");
+
   const registerMutation = useRegister();
+  const { mutateAsync: validateCode, isPending: isValidating } =
+    useValidateReferralCode();
+
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     mode: "onChange",
@@ -66,6 +73,7 @@ export function RegisterForm() {
       fullName: "",
       email: "",
       phoneNumber: "",
+      referralCode: urlCode || "",
       password: "",
       confirmPassword: "",
     },
@@ -74,23 +82,42 @@ export function RegisterForm() {
   const {
     register,
     handleSubmit,
+    setValue,
+    setError,
     formState: { isValid, isSubmitting, errors },
   } = form;
-  const onSubmit = (data: RegisterFormValues) => {
+
+  // Update referralCode if URL changes
+  useEffect(() => {
+    if (urlCode) {
+      setValue("referralCode", urlCode);
+    }
+  }, [urlCode, setValue]);
+
+  const onSubmit = async (data: RegisterFormValues) => {
     const { confirmPassword, ...rest } = data;
+
+    // Validate referral code if provided
+    if (rest.referralCode) {
+      try {
+        await validateCode(rest.referralCode);
+      } catch (error: any) {
+        setError("referralCode", {
+          message: error.response?.data?.message || "Invalid referral code",
+        });
+        return;
+      }
+    }
+
     const dataToSend = {
       email: rest.email,
       password: rest.password,
       phoneNumber: rest.phoneNumber,
       fullName: rest.fullName,
+      referralCode: rest.referralCode,
     };
 
     // Store password in sessionStorage temporarily for auto-fill on login page
-    // This allows user to just click login without re-entering password
-    console.log("Storing credentials in sessionStorage:", {
-      email: rest.email,
-      passwordLength: rest.password.length,
-    });
     sessionStorage.setItem("registrationPassword", rest.password);
     sessionStorage.setItem("registrationEmail", rest.email);
 
@@ -137,6 +164,19 @@ export function RegisterForm() {
             {errors.phoneNumber && (
               <p className="text-sm text-red-500">
                 {errors.phoneNumber.message}
+              </p>
+            )}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="referralCode">Referral Code (Optional)</Label>
+            <Input
+              id="referralCode"
+              placeholder="e.g. JOHND123"
+              {...register("referralCode")}
+            />
+            {errors.referralCode && (
+              <p className="text-sm text-red-500">
+                {errors.referralCode.message}
               </p>
             )}
           </div>
@@ -189,12 +229,17 @@ export function RegisterForm() {
           <Button
             type="submit"
             className="w-full"
-            disabled={!isValid || registerMutation.isPending}
+            disabled={!isValid || registerMutation.isPending || isValidating}
           >
             {registerMutation.isPending ? (
               <div className="flex items-center gap-x-2">
                 <Spinner />
                 <span>Creating account...</span>
+              </div>
+            ) : isValidating ? (
+              <div className="flex items-center gap-x-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Validating code...</span>
               </div>
             ) : (
               "Create an account"

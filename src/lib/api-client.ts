@@ -402,6 +402,28 @@ apiClient.interceptors.response.use(
     // ========================================================================
 
     if (error.response?.status === 403 && !isAuthEndpoint) {
+      const message =
+        (error.response?.data && (error.response.data as any).message) || "";
+      const normalized = String(message).toLowerCase();
+
+      // Check if it's a business logic 403 (e.g., account verification required)
+      const isBusinessLogicForbidden =
+        normalized.includes("verify your account") ||
+        normalized.includes("verification required") ||
+        normalized.includes("account is not verified");
+
+      if (isBusinessLogicForbidden) {
+        console.warn(
+          "[AUTH] 403 Business Logic Forbidden - Verification needed",
+          {
+            url: originalRequest.url,
+            message,
+          }
+        );
+        // Simply reject - the component will handle showing the verification prompt
+        return Promise.reject(error);
+      }
+
       console.warn("[AUTH] 403 Forbidden - Access denied", {
         url: originalRequest.url,
       });
