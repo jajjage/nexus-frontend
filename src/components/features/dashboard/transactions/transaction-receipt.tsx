@@ -13,8 +13,8 @@ import {
   Share2,
   XCircle,
 } from "lucide-react";
+import { useClipboard } from "@/hooks/useClipboard";
 import React from "react";
-import { toast } from "sonner";
 
 interface TransactionReceiptProps {
   transaction: Transaction;
@@ -172,10 +172,9 @@ export const TransactionReceipt = React.forwardRef<
   const operatorName =
     transaction.productCode || transaction.productCode || "N/A";
 
-  const handleCopyId = () => {
-    navigator.clipboard.writeText(transaction.id);
-    toast.success("Transaction ID copied");
-  };
+  const { copy: copyId } = useClipboard({
+    successMessage: "Transaction ID copied",
+  });
 
   return (
     <Card
@@ -298,7 +297,7 @@ export const TransactionReceipt = React.forwardRef<
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 text-slate-400 hover:text-slate-900"
-                onClick={handleCopyId}
+                onClick={() => copyId(transaction.id)}
               >
                 <Copy className="size-3" />
               </Button>

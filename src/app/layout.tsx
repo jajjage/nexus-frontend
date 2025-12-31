@@ -2,6 +2,7 @@ import { SecurityGuard } from "@/components/guards/SecurityGuard";
 import { MarkupSyncer } from "@/components/MarkupSyncer";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { ServiceWorkerNavigationListener } from "@/components/ServiceWorkerNavigationListener";
+import { NetworkStatusBanner } from "@/components/layout/network-status-banner";
 import { AuthProvider } from "@/context/AuthContext";
 import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
@@ -67,6 +68,8 @@ export default function RootLayout({
             <AuthProvider>
               <SecurityGuard>
                 <div data-app-root>
+                  <NetworkStatusBanner />
+                  <AuthRedirectLoader />
                   <MarkupSyncer />
                   <ServiceWorkerNavigationListener />
                   <PWAInstallPrompt />

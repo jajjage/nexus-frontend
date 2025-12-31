@@ -25,6 +25,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ShareTransactionDialog } from "./share-transaction-dialog";
+import { TransactionTimeline } from "./transaction-timeline";
 
 interface TransactionDetailPageProps {
   transactionId: string;
@@ -389,113 +390,127 @@ export function TransactionDetailPage({
             <div className="h-px w-full border-t-2 border-dashed border-slate-200" />
           </div>
 
-          {/* Details Section */}
-          <CardContent className="space-y-6 px-6 py-8">
-            <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-              Transaction Details
-            </p>
-
+          <CardContent className="space-y-10 px-6 py-8">
+            {/* Status Timeline */}
             <div className="space-y-4">
-              {/* Recipient Phone */}
-              {transaction.related?.recipient_phone && (
-                <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
-                  <span className="text-slate-500">Recipient Phone</span>
-                  <span className="font-medium text-slate-900">
-                    {transaction.related.recipient_phone}
-                  </span>
-                </div>
-              )}
+              <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                Transaction Status
+              </p>
+              <TransactionTimeline
+                status={transaction.related?.status || "pending"}
+                createdAt={transaction.createdAt}
+                completedAt={transaction.updatedAt}
+              />
+            </div>
 
-              {/* Amount Paid */}
-              {transaction.amount && (
-                <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
-                  <span className="text-slate-500">Amount Paid</span>
-                  <span className="font-medium text-slate-900">
-                    {formattedAmountPaid}
-                  </span>
-                </div>
-              )}
+            {/* Details Section */}
+            <div className="space-y-6">
+              <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                Transaction Details
+              </p>
 
-              {/* Cashback Used */}
-              {transaction.relatedType === "topup_request" && (
-                <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
-                  <span className="text-slate-500">Cashback Used</span>
-                  <span className="font-medium text-red-500">
-                    -{getCashbackUsed(transaction)}
-                  </span>
-                </div>
-              )}
-
-              {/* Service Type */}
-              <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
-                <span className="text-slate-500">Service</span>
-                <div className="text-right">
-                  <span className="block font-medium text-slate-900">
-                    {transaction.relatedType === "incoming_payment"
-                      ? "Incoming Transfer"
-                      : transaction.related?.type === "data"
-                        ? "Data Bundle"
-                        : "Airtime"}
-                  </span>
-                  {transaction.productCode && (
-                    <span className="text-xs text-slate-400">
-                      {transaction.productCode}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Method (for Transfers) */}
-              {transaction.relatedType === "incoming_payment" &&
-                transaction.method && (
+              <div className="space-y-4">
+                {/* Recipient Phone */}
+                {transaction.related?.recipient_phone && (
                   <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
-                    <span className="text-slate-500">Method</span>
-                    <span className="font-medium text-slate-900 capitalize">
-                      {transaction.method}
+                    <span className="text-slate-500">Recipient Phone</span>
+                    <span className="font-medium text-slate-900">
+                      {transaction.related.recipient_phone}
                     </span>
                   </div>
                 )}
 
-              {/* Reference */}
-              {transaction.reference && (
-                <div className="space-y-1 border-b border-slate-50 pb-3 text-sm">
+                {/* Amount Paid */}
+                {transaction.amount && (
+                  <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
+                    <span className="text-slate-500">Amount Paid</span>
+                    <span className="font-medium text-slate-900">
+                      {formattedAmountPaid}
+                    </span>
+                  </div>
+                )}
+
+                {/* Cashback Used */}
+                {transaction.relatedType === "topup_request" && (
+                  <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
+                    <span className="text-slate-500">Cashback Used</span>
+                    <span className="font-medium text-red-500">
+                      -{getCashbackUsed(transaction)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Service Type */}
+                <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
+                  <span className="text-slate-500">Service</span>
+                  <div className="text-right">
+                    <span className="block font-medium text-slate-900">
+                      {transaction.relatedType === "incoming_payment"
+                        ? "Incoming Transfer"
+                        : transaction.related?.type === "data"
+                          ? "Data Bundle"
+                          : "Airtime"}
+                    </span>
+                    {transaction.productCode && (
+                      <span className="text-xs text-slate-400">
+                        {transaction.productCode}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Method (for Transfers) */}
+                {transaction.relatedType === "incoming_payment" &&
+                  transaction.method && (
+                    <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
+                      <span className="text-slate-500">Method</span>
+                      <span className="font-medium text-slate-900 capitalize">
+                        {transaction.method}
+                      </span>
+                    </div>
+                  )}
+
+                {/* Reference */}
+                {transaction.reference && (
+                  <div className="space-y-1 border-b border-slate-50 pb-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Reference</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-slate-400 hover:text-slate-900"
+                        onClick={() =>
+                          copyToClipboard(transaction.reference!, "Reference")
+                        }
+                      >
+                        <Copy className="size-3" />
+                      </Button>
+                    </div>
+                    <code className="block font-mono text-xs break-all text-slate-600">
+                      {transaction.reference}
+                    </code>
+                  </div>
+                )}
+
+                {/* Transaction ID */}
+                <div className="space-y-1 pt-1 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Reference</span>
+                    <span className="text-slate-500">Transaction ID</span>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6 text-slate-400 hover:text-slate-900"
                       onClick={() =>
-                        copyToClipboard(transaction.reference!, "Reference")
+                        copyToClipboard(transaction.id, "Transaction ID")
                       }
                     >
                       <Copy className="size-3" />
                     </Button>
                   </div>
                   <code className="block font-mono text-xs break-all text-slate-600">
-                    {transaction.reference}
+                    {transaction.id}
                   </code>
                 </div>
-              )}
-
-              {/* Transaction ID */}
-              <div className="space-y-1 pt-1 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Transaction ID</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-slate-400 hover:text-slate-900"
-                    onClick={() =>
-                      copyToClipboard(transaction.id, "Transaction ID")
-                    }
-                  >
-                    <Copy className="size-3" />
-                  </Button>
-                </div>
-                <code className="block font-mono text-xs break-all text-slate-600">
-                  {transaction.id}
-                </code>
               </div>
             </div>
 
