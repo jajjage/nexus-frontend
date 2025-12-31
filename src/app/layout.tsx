@@ -69,7 +69,6 @@ export default function RootLayout({
               <SecurityGuard>
                 <div data-app-root>
                   <NetworkStatusBanner />
-                  <AuthRedirectLoader />
                   <MarkupSyncer />
                   <ServiceWorkerNavigationListener />
                   <PWAInstallPrompt />

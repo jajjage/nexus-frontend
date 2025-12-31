@@ -98,4 +98,23 @@ export const authService = {
     );
     return response.data;
   },
+
+  // Resend verification email
+  resendVerification: async (email: string): Promise<ApiResponse> => {
+    const response = await apiClient.post<ApiResponse>(
+      "/auth/resend-verification",
+      {
+        email,
+      }
+    );
+    return response.data;
+  },
+
+  // Verify email with token
+  verifyEmail: async (token: string): Promise<ApiResponse> => {
+    const response = await apiClient.get<ApiResponse>(
+      `/auth/verify?token=${token}`
+    );
+    return response.data;
+  },
 };

@@ -1,0 +1,114 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+    - generic [ref=e2]:
+        - region "Notifications alt+T"
+        - generic [ref=e3]:
+            - banner [ref=e4]:
+                - generic [ref=e5]:
+                    - link "Nexus Data Sub Nexus Data Sub" [ref=e7] [cursor=pointer]:
+                        - /url: /
+                        - img "Nexus Data Sub" [ref=e8]
+                        - generic [ref=e9]: Nexus Data Sub
+                    - navigation "Main" [ref=e11]:
+                        - list [ref=e13]:
+                            - listitem [ref=e14]:
+                                - link "Services" [ref=e15] [cursor=pointer]:
+                                    - /url: "#services"
+                            - listitem [ref=e16]:
+                                - link "Pricing" [ref=e17] [cursor=pointer]:
+                                    - /url: "#pricing"
+                            - listitem [ref=e18]:
+                                - link "About Us" [ref=e19] [cursor=pointer]:
+                                    - /url: "#about"
+                            - listitem [ref=e20]:
+                                - link "FAQs" [ref=e21] [cursor=pointer]:
+                                    - /url: "#faq"
+                    - generic [ref=e22]:
+                        - link "Login" [ref=e23] [cursor=pointer]:
+                            - /url: /login
+                        - link "Create Account" [ref=e24] [cursor=pointer]:
+                            - /url: /register
+            - main [ref=e25]:
+                - generic [ref=e26]:
+                    - generic [ref=e27]:
+                        - generic [ref=e28]: Login
+                        - generic [ref=e29]: Enter your email or phone number below to login to your account
+                    - generic [ref=e30]:
+                        - generic [ref=e31]:
+                            - generic [ref=e32]:
+                                - generic [ref=e33]: Email or Phone Number
+                                - textbox "Email or Phone Number" [ref=e34]:
+                                    - /placeholder: m@example.com or 08012345678
+                                - paragraph [ref=e35]: Email or phone number is required
+                            - generic [ref=e36]:
+                                - generic [ref=e37]:
+                                    - generic [ref=e38]: Password
+                                    - link "Forgot your password?" [ref=e39] [cursor=pointer]:
+                                        - /url: /forgot-password
+                                - generic [ref=e40]:
+                                    - textbox "Password" [ref=e41]:
+                                        - /placeholder: ••••••••
+                                    - button "Show password" [ref=e42]:
+                                        - img [ref=e43]
+                                - paragraph [ref=e46]: Password is required
+                            - button "Login" [disabled]
+                            - generic [ref=e51]: Or continue with
+                        - generic [ref=e52]:
+                            - text: Don't have an account?
+                            - link "Sign up" [ref=e53] [cursor=pointer]:
+                                - /url: /register
+            - contentinfo [ref=e54]:
+                - generic [ref=e55]:
+                    - generic [ref=e56]:
+                        - generic [ref=e57]:
+                            - heading "Nexus Data Sub" [level=3] [ref=e58]
+                            - paragraph [ref=e59]: Your one-stop shop for data, airtime, and bill payments in Nigeria.
+                            - generic [ref=e60]:
+                                - link [ref=e61] [cursor=pointer]:
+                                    - /url: "#"
+                                    - img [ref=e62]
+                                - link [ref=e64] [cursor=pointer]:
+                                    - /url: "#"
+                                    - img [ref=e65]
+                                - link [ref=e67] [cursor=pointer]:
+                                    - /url: "#"
+                                    - img [ref=e68]
+                        - generic [ref=e71]:
+                            - heading "Services" [level=4] [ref=e72]
+                            - list [ref=e73]:
+                                - listitem [ref=e74]:
+                                    - link "Buy Data" [ref=e75] [cursor=pointer]:
+                                        - /url: "#services"
+                                - listitem [ref=e76]:
+                                    - link "Airtime Top-up" [ref=e77] [cursor=pointer]:
+                                        - /url: "#services"
+                                - listitem [ref=e78]:
+                                    - link "Pay KEDCO" [ref=e79] [cursor=pointer]:
+                                        - /url: "#services"
+                                - listitem [ref=e80]:
+                                    - link "DStv/GOtv" [ref=e81] [cursor=pointer]:
+                                        - /url: "#services"
+                        - generic [ref=e82]:
+                            - heading "Company" [level=4] [ref=e83]
+                            - list [ref=e84]:
+                                - listitem [ref=e85]:
+                                    - link "About Us" [ref=e86] [cursor=pointer]:
+                                        - /url: "#about"
+                                - listitem [ref=e87]:
+                                    - link "Contact Support" [ref=e88] [cursor=pointer]:
+                                        - /url: "#"
+                                - listitem [ref=e89]:
+                                    - link "Terms of Service" [ref=e90] [cursor=pointer]:
+                                        - /url: "#"
+                                - listitem [ref=e91]:
+                                    - link "Privacy Policy" [ref=e92] [cursor=pointer]:
+                                        - /url: "#"
+                    - paragraph [ref=e94]: © 2025 Nexus Data Sub. All Rights Reserved.
+    - generic [ref=e95]:
+        - img [ref=e97]
+        - button "Open Tanstack query devtools" [ref=e145] [cursor=pointer]:
+            - img [ref=e146]
+    - alert [ref=e194]
+```

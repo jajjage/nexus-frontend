@@ -522,3 +522,43 @@ export function useRegister() {
     },
   });
 }
+
+// ============================================================================
+// VERIFICATION HOOKS
+// ============================================================================
+
+export function useResendVerification() {
+  return useMutation({
+    mutationFn: (email: string) => authService.resendVerification(email),
+    onSuccess: (data) => {
+      toast.success(data.message || "Verification email sent successfully!");
+    },
+    onError: (error: AxiosError<any>) => {
+      const errorMsg =
+        error.response?.data?.message || "Failed to send verification email.";
+      toast.error(errorMsg);
+    },
+  });
+}
+
+export function useVerifyEmail() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (token: string) => authService.verifyEmail(token),
+    onSuccess: (data) => {
+      toast.success(data.message || "Email verified successfully!");
+      // Invalidate current user to refresh verified status
+      queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
+      // Redirect to referrals as requested
+      router.push("/dashboard/referrals");
+    },
+    onError: (error: AxiosError<any>) => {
+      const errorMsg =
+        error.response?.data?.message || "Email verification failed.";
+      toast.error(errorMsg);
+      router.push("/login");
+    },
+  });
+}
