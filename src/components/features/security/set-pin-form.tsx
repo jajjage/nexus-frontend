@@ -14,7 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSetPin } from "@/hooks/useUser";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -41,6 +41,8 @@ export function SetPinForm() {
   const { user } = useAuth();
   const { mutate: setPin, isPending } = useSetPin();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams.get("returnUrl");
   const [showPin, setShowPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
 
@@ -73,7 +75,12 @@ export function SetPinForm() {
             `Transaction PIN ${hasPin ? "updated" : "set"} successfully`
           );
           form.reset();
-          router.push("/dashboard/profile");
+
+          if (returnUrl) {
+            router.push(returnUrl);
+          } else {
+            router.push("/dashboard/profile");
+          }
         },
         onError: (error: any) => {
           toast.error(

@@ -552,7 +552,11 @@ export function AirtimePlans() {
         phoneNumber={phoneNumber}
         isVerifying={topupMutation.isPending}
         errorMessage={errorMessage}
-        onForgotPin={() => router.push("/reset-password")}
+        onForgotPin={() =>
+          router.push(
+            "/dashboard/profile/security/pin?returnUrl=/dashboard/airtime"
+          )
+        }
       />
 
       {/* PIN Setup Modal - If user hasn't set up PIN yet */}

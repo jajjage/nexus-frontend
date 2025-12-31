@@ -126,3 +126,10 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
+
+@layer utilities {
+  .text-security-disc {
+    -webkit-text-security: disc;
+    text-security: disc;
+  }
+}
