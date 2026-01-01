@@ -9,6 +9,8 @@ export interface RegisterRequest {
 
 export type LoginRequest = {
   password: string;
+  totpCode?: string; // 6-digit TOTP code from authenticator app
+  backupCode?: string; // Backup code for emergency access
 } & ({ email: string; phone?: never } | { email?: never; phone: string });
 
 export interface ForgotPasswordRequest {

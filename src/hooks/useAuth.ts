@@ -423,8 +423,13 @@ export function useLogin() {
     onError: (error: AxiosError<any>) => {
       const errorMsg =
         error.response?.data?.message || "Login failed. Please try again.";
-      console.error("[AUTH] Login failed", { message: errorMsg });
-      toast.error(errorMsg);
+      // console.error("[AUTH] Login failed", { message: errorMsg });
+      if (error.response?.data?.error === "2FA code is required") {
+        console.log("[AUTH] 2FA required - transitioning to 2FA step");
+        // setStep("2fa");
+      } else {
+        toast.error(errorMsg);
+      }
       setIsLoading(false);
     },
   });

@@ -13,13 +13,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useLogin } from "@/hooks/useAuth";
+import { LoginRequest } from "@/types/auth.types";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AxiosError } from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { TwoFactorForm } from "./TwoFactorForm";
 
 const loginSchema = z.object({
   credentials: z.string().min(1, "Email or phone number is required"),
@@ -32,8 +35,15 @@ interface LoginFormProps {
   role?: "user" | "admin";
 }
 
+type LoginStep = "credentials" | "2fa";
+
 export function LoginForm({ role = "user" }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [step, setStep] = useState<LoginStep>("credentials");
+  const [pendingCredentials, setPendingCredentials] =
+    useState<LoginRequest | null>(null);
+  const [twoFactorError, setTwoFactorError] = useState<string | undefined>();
+
   const searchParams = useSearchParams();
   const loginMutation = useLogin();
   const {
@@ -53,7 +63,6 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
 
   // Pre-fill email and password from URL params and sessionStorage (when redirected from register)
   useEffect(() => {
-    // Debug: Log what we're getting from searchParams
     console.log("Login form mounted, searchParams:", {
       email: searchParams.get("email"),
       fromRegister: searchParams.get("fromRegister"),
@@ -62,13 +71,11 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
     const email = searchParams.get("email");
     const fromRegister = searchParams.get("fromRegister");
 
-    // Fill email from URL param (has highest priority)
     if (email) {
       console.log("Setting email from URL param:", email);
       setValue("credentials", email);
     }
 
-    // If coming from register, also try to fill password from sessionStorage
     if (fromRegister === "true") {
       const storedPassword = sessionStorage.getItem("registrationPassword");
       const storedEmail = sessionStorage.getItem("registrationEmail");
@@ -88,8 +95,6 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
       }
     }
 
-    // Also check sessionStorage even without fromRegister flag
-    // (in case user manually navigates to /login)
     if (!email) {
       const fallbackEmail = sessionStorage.getItem("registrationEmail");
       if (fallbackEmail) {
@@ -106,8 +111,6 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
       }
     }
 
-    // Trigger validation after values are set
-    // Use setTimeout to ensure values are set before validation
     setTimeout(() => {
       trigger();
     }, 100);
@@ -117,12 +120,56 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
     const { credentials, password } = data;
     const isEmail = credentials.includes("@");
 
-    const payload = {
+    const payload: LoginRequest = {
       password,
       ...(isEmail ? { email: credentials } : { phone: credentials }),
     };
 
-    loginMutation.mutate(payload);
+    // Store credentials for potential 2FA retry
+    setPendingCredentials(payload);
+    setTwoFactorError(undefined);
+
+    loginMutation.mutate(payload, {
+      onError: (error: AxiosError<any>) => {
+        // Check if the error response indicates 2FA is required
+        //  console.log("reponse 2fa", responseData?.require2fa);
+        const responseData = error.response?.data;
+        console.log("reponse 2fa", responseData?.message, responseData?.error);
+        if (
+          responseData?.message === "2FA code is required" ||
+          responseData?.error === "2FA code is required"
+        ) {
+          console.log("[AUTH] 2FA required - transitioning to 2FA step");
+          setStep("2fa");
+        }
+        // Regular errors are handled by the mutation's default onError
+      },
+    });
+  };
+
+  const handleTwoFactorSubmit = (code: string, isBackupCode: boolean) => {
+    if (!pendingCredentials) return;
+
+    setTwoFactorError(undefined);
+    const payload: LoginRequest = {
+      ...pendingCredentials,
+      ...(isBackupCode ? { backupCode: code } : { totpCode: code }),
+    };
+
+    loginMutation.mutate(payload, {
+      onError: (error: AxiosError<any>) => {
+        const errorMsg =
+          error.response?.data?.message || "Invalid code. Please try again.";
+        setTwoFactorError(errorMsg);
+      },
+    });
+  };
+
+  const handleTwoFactorCancel = () => {
+    setStep("credentials");
+    setPendingCredentials(null);
+    setTwoFactorError(undefined);
+    loginMutation.reset();
   };
 
   // Separate the register calls to avoid ref conflicts
@@ -165,6 +212,24 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
       ? "Enter your credentials to access the admin dashboard"
       : "Enter your email or phone number below to login to your account";
 
+  // Render 2FA form if in 2FA step
+  if (step === "2fa") {
+    return (
+      <TwoFactorForm
+        onSubmit={handleTwoFactorSubmit}
+        onCancel={handleTwoFactorCancel}
+        isPending={loginMutation.isPending}
+        error={twoFactorError}
+      />
+    );
+  }
+
+  // Check if error is a 2FA requirement (don't show as error)
+  const is2faError =
+    loginMutation.error?.response?.data?.require2fa ||
+    loginMutation.error?.response?.data?.twoFactor;
+  const showError = loginMutation.isError && !is2faError;
+
   return (
     <Card className="mx-auto w-full max-w-sm sm:max-w-md md:max-w-lg">
       <CardHeader>
@@ -173,14 +238,13 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-          {loginMutation.isError &&
-            loginMutation.error?.response?.data?.message && (
-              <Alert variant="destructive">
-                <AlertDescription>
-                  {loginMutation.error.response.data.message}
-                </AlertDescription>
-              </Alert>
-            )}
+          {showError && loginMutation.error?.response?.data?.message && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                {loginMutation.error.response.data.message}
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="grid gap-2">
             <Label htmlFor="credentials">Email or Phone Number</Label>
             <Input

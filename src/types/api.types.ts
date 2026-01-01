@@ -54,8 +54,9 @@ export interface TokenPair {
 }
 
 export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
+  accessToken?: string;
+  refreshToken?: string;
+  twoFactor?: boolean;
   user: User;
 }
 
