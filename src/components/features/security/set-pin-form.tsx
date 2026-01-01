@@ -20,24 +20,17 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-const pinSchema = z
-  .object({
-    currentPassword: z.string().min(1, "Current password is required"),
-    pin: z
-      .string()
-      .min(4, "PIN must be 4 digits")
-      .max(4, "PIN must be 4 digits")
-      .regex(/^\d+$/, "PIN must contain only digits"),
-    confirmPin: z.string().min(1, "Confirm PIN is required"),
-  })
-  .refine((data) => data.pin === data.confirmPin, {
-    message: "PINs do not match",
-    path: ["confirmPin"],
-  });
+type PinFormValues = {
+  pin: string;
+  confirmPin: string;
+  currentPassword?: string;
+};
 
-type PinFormValues = z.infer<typeof pinSchema>;
+interface SetPinFormProps {
+  onSuccess?: () => void;
+}
 
-export function SetPinForm() {
+export function SetPinForm({ onSuccess }: SetPinFormProps) {
   const { user } = useAuth();
   const { mutate: setPin, isPending } = useSetPin();
   const router = useRouter();
@@ -45,6 +38,33 @@ export function SetPinForm() {
   const returnUrl = searchParams.get("returnUrl");
   const [showPin, setShowPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
+
+  const hasPin = user?.hasPin;
+
+  // Dynamic schema based on hasPin status
+  const pinSchema = z
+    .object({
+      pin: z
+        .string()
+        .min(4, "PIN must be 4 digits")
+        .max(4, "PIN must be 4 digits")
+        .regex(/^\d+$/, "PIN must contain only digits"),
+      confirmPin: z.string().min(1, "Confirm PIN is required"),
+      currentPassword: z.string().optional(),
+    })
+    .refine((data) => data.pin === data.confirmPin, {
+      message: "PINs do not match",
+      path: ["confirmPin"],
+    })
+    .superRefine((data, ctx) => {
+      if (hasPin && !data.currentPassword) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Current password is required",
+          path: ["currentPassword"],
+        });
+      }
+    });
 
   const form = useForm<PinFormValues>({
     resolver: zodResolver(pinSchema),
@@ -54,14 +74,6 @@ export function SetPinForm() {
       currentPassword: "",
     },
   });
-
-  const hasPin = user?.hasPin;
-
-  // Conditionally make currentPassword required
-  useEffect(() => {
-    form.clearErrors("currentPassword");
-    form.setValue("currentPassword", "");
-  }, [hasPin, form]);
 
   function onSubmit(data: PinFormValues) {
     setPin(
@@ -76,7 +88,9 @@ export function SetPinForm() {
           );
           form.reset();
 
-          if (returnUrl) {
+          if (onSuccess) {
+            onSuccess();
+          } else if (returnUrl) {
             router.push(returnUrl);
           } else {
             router.push("/dashboard/profile");
@@ -95,26 +109,30 @@ export function SetPinForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="currentPassword"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Current Password</FormLabel>
-              <FormControl>
-                <Input type="password" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {hasPin && (
+          <FormField
+            control={form.control}
+            name="currentPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Current Password</FormLabel>
+                <FormControl>
+                  <Input type="password" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}
           name="pin"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>New Transaction PIN</FormLabel>
+              <FormLabel>
+                {hasPin ? "New Transaction PIN" : "Set Transaction PIN"}
+              </FormLabel>
               <FormControl>
                 <div className="relative">
                   <Input
@@ -147,7 +165,7 @@ export function SetPinForm() {
           name="confirmPin"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirm New Transaction PIN</FormLabel>
+              <FormLabel>Confirm Transaction PIN</FormLabel>
               <FormControl>
                 <div className="relative">
                   <Input

@@ -1,18 +1,17 @@
 "use client";
 
+import { ReferralActionCard } from "@/components/features/referrals/referral-action-card";
 import { ReferralLinkSection } from "@/components/features/referrals/referral-link-section";
 import { ReferralStatsCards } from "@/components/features/referrals/referral-stats-cards";
 import { ReferralsTable } from "@/components/features/referrals/referrals-table";
 import { VerificationReminder } from "@/components/features/referrals/verification-reminder";
-import { WithdrawalModal } from "@/components/features/referrals/withdrawal-modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
-import { useReferralRewardId, useReferralStats } from "@/hooks/useReferrals";
+import { useReferralStatsV2 } from "@/hooks/useReferrals";
 
 export default function ReferralsPage() {
   const { isLoading: isAuthLoading } = useAuth();
-  const { data: rewardId } = useReferralRewardId();
-  const { error } = useReferralStats();
+  const { error } = useReferralStatsV2();
 
   // Check if error is 403 Forbidden (verification required)
   const isVerificationRequired = (error as any)?.response?.status === 403;
@@ -50,8 +49,9 @@ export default function ReferralsPage() {
             Earn rewards by referring friends
           </p>
         </div>
-        {rewardId && <WithdrawalModal rewardId={rewardId} />}
       </div>
+
+      <ReferralActionCard />
 
       <ReferralStatsCards />
 

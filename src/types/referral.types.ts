@@ -1,4 +1,27 @@
-// Referral Types
+// Referral Types (V2)
+
+export interface ReferrerStats {
+  totalReferralsInvited: number;
+  claimedReferrals: number; // Successful ones
+  pendingClaimReferrals: number; // Waiting for friend to claim
+  totalReferrerEarnings: number; // Lifetime earnings
+  pendingReferrerAmount: number; // Available to withdraw
+  withdrawnReferrerAmount: number;
+}
+
+export interface ReferredStats {
+  referrerName: string; // "John Doe"
+  referralStatus: "pending" | "claimed" | "cancelled";
+  totalReferredEarnings: number;
+  pendingReferredAmount: number; // Available to withdraw
+  withdrawnReferredAmount: number;
+  claimedAt: string | null; // ISO Date
+}
+
+export interface ReferralStatsV2 {
+  referrerStats: ReferrerStats;
+  referredStats: ReferredStats | null;
+}
 
 // User details attached to a referral
 export interface ReferredUserData {
@@ -10,34 +33,17 @@ export interface ReferredUserData {
   profilePictureUrl: string | null;
 }
 
-// The main Referral object
+// The main Referral object (History List)
 export interface Referral {
-  id: string;
+  referralId: string;
   referrerUserId: string;
   referredUserId: string;
-  status: "pending" | "active" | "completed" | "cancelled";
+  status: "pending" | "claimed" | "cancelled";
   rewardAmount: number;
   referralCode: string | null;
   referralCompletedAt: string | null; // ISO Date
   createdAt: string; // ISO Date
-  // When fetching list-with-details:
-  referredUserData?: ReferredUserData;
-}
-
-// Stats for the Dashboard
-export interface ReferralStats {
-  totalReferrals: number;
-  activeReferrals: number; // Completed/Successful referrals
-  completedReferrals: number; // Same as active in some contexts
-  totalRewardEarned: number; // Total value earned
-  pendingRewardAmount: number; // Potential value
-}
-
-// Stats specifically for the Link
-export interface LinkStats {
-  totalSignupsWithLink: number;
-  activeReferrals: number;
-  completedReferrals: number;
+  referredUser?: ReferredUserData; // Backend response field
 }
 
 // Referral Link Data
@@ -49,36 +55,23 @@ export interface ReferralLinkData {
   sharingMessage: string; // Pre-filled message for sharing
 }
 
-// Withdrawal Types
+// Withdrawal Types (V2)
 
-export interface Withdrawal {
-  id: string;
-  status: "pending" | "approved" | "rejected" | "completed" | "failed";
-  amount: number;
-  points: number;
-  created_at: string;
-  completed_at?: string;
-  admin_notes?: string;
+export interface AvailableBalanceV2 {
+  totalAvailable: number; // Points/Currency units
+  claimCount: number; // Number of contributors
+  claims?: any[]; // Details if needed
 }
 
-export interface WithdrawalBalance {
-  totalPoints: number;
-  totalAmount: number; // NGN value (points / 100 usually)
-  claims: any[]; // List of active referral claims eligible for withdrawal
-  withdrawnClaimsIndices: number[];
+export interface WithdrawalRequestV2 {
+  amount: number;
+  userType: "referrer" | "referred";
 }
 
 export interface ValidateReferralCodeResponse {
-  referrerId: string;
-  message: string;
-}
-
-export interface ClaimReferralBonusResponse {
-  rewardAmount: number;
-  rewardSplit: {
-    referrerAmount: number;
-    referredAmount: number;
-  };
+  valid: boolean;
+  referrerName: string;
+  message?: string;
 }
 
 export interface ReferralListResponse {
@@ -94,10 +87,5 @@ export interface ReferralListResponse {
 export interface GetReferralsParams {
   page?: number;
   limit?: number;
-  status?: "pending" | "active" | "completed" | "cancelled";
-}
-
-export interface WithdrawalRequest {
-  rewardId: string;
-  amount: number;
+  status?: "pending" | "claimed" | "cancelled";
 }

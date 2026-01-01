@@ -9,8 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Suspense } from "react";
 
 export default function TransactionPinPage() {
   const router = useRouter();
@@ -35,7 +37,15 @@ export default function TransactionPinPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SetPinForm />
+            <Suspense
+              fallback={
+                <div className="flex justify-center py-4">
+                  <Spinner className="text-primary size-6" />
+                </div>
+              }
+            >
+              <SetPinForm />
+            </Suspense>
           </CardContent>
         </Card>
       </div>

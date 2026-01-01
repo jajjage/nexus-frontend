@@ -149,7 +149,7 @@ describe("Auth Hooks - FCM Integration", () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       // Verify redirect
-      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard");
+      expect(mockRouter.push).toHaveBeenCalledWith("/setup");
     });
 
     it("should redirect to admin dashboard for admin role", async () => {

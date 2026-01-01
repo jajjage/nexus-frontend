@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { ReferralsTable } from "@/components/features/referrals/referrals-table";
-import { useReferralsList, useClaimReferralBonus } from "@/hooks/useReferrals";
+import { useReferralsList } from "@/hooks/useReferrals";
 import { useAuth } from "@/hooks/useAuth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
@@ -8,7 +8,7 @@ import { ReactNode } from "react";
 // Mock dependencies
 vi.mock("@/hooks/useReferrals", () => ({
   useReferralsList: vi.fn(),
-  useClaimReferralBonus: vi.fn(),
+  useClaimReferralBonusV2: vi.fn(),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -25,15 +25,15 @@ const createWrapper = () => {
 describe("ReferralsTable", () => {
   const mockReferrals = [
     {
-      id: "ref-1",
-      referredUserData: { fullName: "User One", email: "user1@test.com" },
+      referralId: "ref-1",
+      referredUser: { fullName: "User One", email: "user1@test.com" },
       rewardAmount: 500,
-      status: "active",
+      status: "claimed",
       createdAt: "2025-01-01T10:00:00Z",
     },
     {
-      id: "ref-2",
-      referredUserData: { fullName: "User Two", email: "user2@test.com" },
+      referralId: "ref-2",
+      referredUser: { fullName: "User Two", email: "user2@test.com" },
       rewardAmount: 500,
       status: "pending",
       createdAt: "2025-01-05T12:00:00Z",
@@ -43,16 +43,13 @@ describe("ReferralsTable", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (useAuth as vi.Mock).mockReturnValue({ user: { userId: "me" } });
-    (useClaimReferralBonus as vi.Mock).mockReturnValue({ mutate: vi.fn() });
   });
 
   it("should display a list of referrals", () => {
     (useReferralsList as vi.Mock).mockReturnValue({
       data: {
-        data: {
-          referrals: mockReferrals,
-          pagination: { totalPages: 1, page: 1 },
-        },
+        referrals: mockReferrals,
+        pagination: { totalPages: 1, page: 1 },
       },
       isLoading: false,
     });
@@ -61,13 +58,13 @@ describe("ReferralsTable", () => {
 
     expect(screen.getByText("User One")).toBeInTheDocument();
     expect(screen.getByText("User Two")).toBeInTheDocument();
-    expect(screen.getByText("active")).toBeInTheDocument();
+    expect(screen.getByText("Success")).toBeInTheDocument(); // 'claimed' status shows as 'Success'
     expect(screen.getByText("pending")).toBeInTheDocument();
   });
 
   it("should show empty message when no referrals exist", () => {
     (useReferralsList as vi.Mock).mockReturnValue({
-      data: { data: { referrals: [], pagination: {} } },
+      data: { referrals: [], pagination: {} },
       isLoading: false,
     });
 

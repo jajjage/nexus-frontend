@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/card";
 import { ResetPasswordForm } from "@/components/features/auth/ResetPasswordForm";
 import Link from "next/link";
+import { Suspense } from "react";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function ResetPasswordPage() {
   return (
@@ -19,7 +21,15 @@ export default function ResetPasswordPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ResetPasswordForm />
+          <Suspense
+            fallback={
+              <div className="flex justify-center py-4">
+                <Spinner className="text-primary size-8" />
+              </div>
+            }
+          >
+            <ResetPasswordForm />
+          </Suspense>
           <div className="mt-4 text-center text-sm">
             Remembered your password?{" "}
             <Link href="/login" className="font-medium underline">

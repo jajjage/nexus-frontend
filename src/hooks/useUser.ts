@@ -87,6 +87,8 @@ export const useSetPin = () => {
     onSuccess: (data) => {
       // Invalidate profile to update hasPin status
       queryClient.invalidateQueries({ queryKey: userKeys.profile() });
+      // Also invalidate auth user query to update global auth state (hasPin)
+      queryClient.invalidateQueries({ queryKey: ["auth", "current-user"] });
       toast.success("PIN set successfully");
     },
     onError: (error: AxiosError<any>) => {

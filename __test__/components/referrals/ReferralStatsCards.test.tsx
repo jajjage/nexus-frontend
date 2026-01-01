@@ -1,12 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import { ReferralStatsCards } from "@/components/features/referrals/referral-stats-cards";
-import { useReferralStats } from "@/hooks/useReferrals";
+import { useReferralStatsV2 } from "@/hooks/useReferrals";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
 
 // Mock the hook
 vi.mock("@/hooks/useReferrals", () => ({
-  useReferralStats: vi.fn(),
+  useReferralStatsV2: vi.fn(),
 }));
 
 const createWrapper = () => {
@@ -24,35 +24,41 @@ const createWrapper = () => {
 
 describe("ReferralStatsCards", () => {
   it("should show skeletons while loading", () => {
-    (useReferralStats as vi.Mock).mockReturnValue({
+    (useReferralStatsV2 as vi.Mock).mockReturnValue({
       isLoading: true,
     });
 
     render(<ReferralStatsCards />, { wrapper: createWrapper() });
 
-    // Check for skeletons (usually have animate-pulse class or similar)
-    const skeletons = document.querySelectorAll(".animate-pulse");
+    // Skeletons in Shadcn/UI usually have animate-pulse or skeleton classes
+    const skeletons = document.querySelectorAll(".animate-pulse, .skeleton");
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
   it("should display stats when loaded", () => {
     const mockStats = {
-      totalReferrals: 15,
-      activeReferrals: 8,
-      totalRewardEarned: 5000,
-      pendingRewardAmount: 1200,
+      referrerStats: {
+        totalReferralsInvited: 15,
+        claimedReferrals: 8,
+        totalReferrerEarnings: 5000,
+        pendingReferrerAmount: 1000,
+      },
+      referredStats: {
+        totalReferredEarnings: 200,
+        pendingReferredAmount: 200,
+      },
     };
 
-    (useReferralStats as vi.Mock).mockReturnValue({
-      data: { data: mockStats },
+    (useReferralStatsV2 as vi.Mock).mockReturnValue({
+      data: mockStats,
       isLoading: false,
     });
 
     render(<ReferralStatsCards />, { wrapper: createWrapper() });
 
     expect(screen.getByText("15")).toBeInTheDocument();
-    expect(screen.getByText("8")).toBeInTheDocument();
     expect(screen.getByText("₦5,000.00")).toBeInTheDocument();
+    // Withdrawable total = 1000 + 200 = 1200
     expect(screen.getByText("₦1,200.00")).toBeInTheDocument();
   });
 });

@@ -90,7 +90,7 @@ describe("useAuth Hooks", () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(toast.success).toHaveBeenCalled();
-      expect(mockRouter.push).toHaveBeenCalledWith("/dashboard");
+      expect(mockRouter.push).toHaveBeenCalledWith("/setup");
     });
   });
 

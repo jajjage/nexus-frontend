@@ -31,15 +31,13 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function ReferralLinkSection() {
-  const { data: linkResponse, isLoading, refetch } = useReferralLink();
+  const { data: linkData, isLoading, refetch } = useReferralLink();
   const { mutate: regenerateCode, isPending: isRegenerating } =
     useRegenerateReferralCode();
   const { mutate: deactivateLink, isPending: isDeactivating } =
     useDeactivateReferralLink();
 
   const [isCopied, setIsCopied] = useState(false);
-
-  const linkData = linkResponse?.data;
 
   const handleCopy = () => {
     if (!linkData?.referralLink) return;
@@ -161,7 +159,7 @@ export function ReferralLinkSection() {
           <div className="relative flex-1">
             <Input
               readOnly
-              value={linkData.referralLink}
+              value={linkData.referralLink || ""}
               className="pr-24 font-mono text-sm"
             />
             <div className="absolute top-1/2 right-1 -translate-y-1/2">

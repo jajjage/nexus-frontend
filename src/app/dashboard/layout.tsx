@@ -1,7 +1,6 @@
 "use client";
 
 import { FcmSyncer } from "@/components/FcmSyncer";
-import { BiometricPromptModal } from "@/components/features/biometric/biometric-prompt-modal";
 import { DesktopSidebar } from "@/components/features/dashboard/desktop-sidebar";
 import { HomeNotificationBanner } from "@/components/notification/home-notification-banner";
 
@@ -16,7 +15,6 @@ export default function DashboardLayout({
       <main className="w-full flex-1">
         <FcmSyncer />
         <HomeNotificationBanner />
-        <BiometricPromptModal />
         {children}
       </main>
     </div>

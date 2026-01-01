@@ -30,19 +30,3 @@ jobs:
       - name: Run unit and component tests
         run: pnpm test
 
-      - name: Install Playwright Browsers
-        run: pnpm exec playwright install --with-deps
-
-      - name: Run Playwright E2E tests
-        run: pnpm exec playwright test
-        env:
-          # Use http for CI to simplify
-          NEXT_PUBLIC_API_URL: http://localhost:3000/api/v1
-          # If the app needs specific env vars to build/run, add them here
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30

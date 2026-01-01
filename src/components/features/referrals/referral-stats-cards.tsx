@@ -2,12 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useReferralStats } from "@/hooks/useReferrals";
-import { Banknote, Users, UserCheck, Clock } from "lucide-react";
+import { useReferralStatsV2 } from "@/hooks/useReferrals";
+import { Banknote, Users, UserCheck, Clock, TrendingUp } from "lucide-react";
 
 export function ReferralStatsCards() {
-  const { data: statsResponse, isLoading } = useReferralStats();
-  const stats = statsResponse?.data;
+  const { data: stats, isLoading } = useReferralStatsV2();
 
   if (isLoading) {
     return (
@@ -35,57 +34,74 @@ export function ReferralStatsCards() {
     }).format(amount);
   };
 
+  const referrer = stats?.referrerStats;
+  const referred = stats?.referredStats;
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* 1. Total Invited */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Referrals</CardTitle>
+          <CardTitle className="text-sm font-medium">Invited Friends</CardTitle>
           <Users className="text-muted-foreground h-4 w-4" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats?.totalReferrals || 0}</div>
-          <p className="text-muted-foreground text-xs">All time signups</p>
+          <div className="text-2xl font-bold">
+            {referrer?.totalReferralsInvited || 0}
+          </div>
+          <p className="text-muted-foreground text-xs">
+            {referrer?.claimedReferrals || 0} claimed,{" "}
+            {referrer?.pendingClaimReferrals || 0} pending
+          </p>
         </CardContent>
       </Card>
 
+      {/* 2. Total Referral Earnings */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
-            Active Referrals
+            Inviter Earnings
           </CardTitle>
-          <UserCheck className="text-muted-foreground h-4 w-4" />
+          <TrendingUp className="text-muted-foreground h-4 w-4" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {stats?.activeReferrals || 0}
+            {formatCurrency(referrer?.totalReferrerEarnings || 0)}
           </div>
-          <p className="text-muted-foreground text-xs">Qualified for rewards</p>
+          <p className="text-muted-foreground text-xs">Lifetime earnings</p>
         </CardContent>
       </Card>
 
+      {/* 3. My Signup Bonus (if referred) */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Earned</CardTitle>
+          <CardTitle className="text-sm font-medium">Signup Bonus</CardTitle>
           <Banknote className="text-muted-foreground h-4 w-4" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {formatCurrency(stats?.totalRewardEarned || 0)}
+            {formatCurrency(referred?.totalReferredEarnings || 0)}
           </div>
-          <p className="text-muted-foreground text-xs">Paid to wallet</p>
+          <p className="text-muted-foreground text-xs">
+            {referred ? `Referred by ${referred.referrerName}` : "Not referred"}
+          </p>
         </CardContent>
       </Card>
 
+      {/* 4. Total Pending (Available to Withdraw) */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Pending Rewards</CardTitle>
+          <CardTitle className="text-sm font-medium">Withdrawable</CardTitle>
           <Clock className="text-muted-foreground h-4 w-4" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-amber-600">
-            {formatCurrency(stats?.pendingRewardAmount || 0)}
+            {formatCurrency(
+              (referrer?.pendingReferrerAmount || 0) +
+                (referred?.pendingReferredAmount || 0)
+            )}
           </div>
-          <p className="text-muted-foreground text-xs">Awaiting completion</p>
+          <p className="text-muted-foreground text-xs">Claimed rewards ready</p>
         </CardContent>
       </Card>
     </div>

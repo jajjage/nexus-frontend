@@ -1,5 +1,8 @@
 import { referralService } from "@/services/referral.service";
-import { GetReferralsParams, WithdrawalRequest } from "@/types/referral.types";
+import {
+  GetReferralsParams,
+  WithdrawalRequestV2,
+} from "@/types/referral.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
@@ -8,35 +11,48 @@ import { toast } from "sonner";
 export const referralKeys = {
   all: ["referrals"] as const,
   stats: () => [...referralKeys.all, "stats"] as const,
+  statsV2: () => [...referralKeys.all, "stats-v2"] as const,
   link: () => [...referralKeys.all, "link"] as const,
-  linkStats: () => [...referralKeys.link(), "stats"] as const,
   list: (params?: GetReferralsParams) =>
     [...referralKeys.all, "list", params] as const,
   withdrawals: {
     all: () => [...referralKeys.all, "withdrawals"] as const,
-    balance: (rewardId: string) =>
-      [...referralKeys.withdrawals.all(), "balance", rewardId] as const,
-    history: (status?: string) =>
-      [...referralKeys.withdrawals.all(), "history", status] as const,
+    balanceV2: (type: "referrer" | "referred") =>
+      [...referralKeys.withdrawals.all(), "balance-v2", type] as const,
   },
   rewardId: () => [...referralKeys.all, "rewardId"] as const,
 };
 
-// ============= Referral Queries =============
+// ============= Referral Queries (V2) =============
 
 /**
- * Get referral statistics
+ * Get comprehensive referral stats (V2)
  */
-export const useReferralStats = () => {
+export const useReferralStatsV2 = () => {
   return useQuery({
-    queryKey: referralKeys.stats(),
+    queryKey: referralKeys.statsV2(),
     queryFn: async () => {
-      const response = await referralService.getReferralStats();
+      const response = await referralService.getReferralStatsV2();
       return response.data;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
+
+/**
+ * Get available balance for withdrawal (V2)
+ */
+export const useAvailableBalanceV2 = (userType: "referrer" | "referred") => {
+  return useQuery({
+    queryKey: referralKeys.withdrawals.balanceV2(userType),
+    queryFn: async () => {
+      const response = await referralService.getAvailableBalanceV2(userType);
+      return response.data;
+    },
+  });
+};
+
+// ============= Existing Queries (Adapted) =============
 
 /**
  * Get user's referral link data
@@ -48,21 +64,7 @@ export const useReferralLink = () => {
       const response = await referralService.getReferralLink();
       return response.data;
     },
-    staleTime: Infinity, // Link rarely changes
-  });
-};
-
-/**
- * Get referral link statistics
- */
-export const useLinkStats = () => {
-  return useQuery({
-    queryKey: referralKeys.linkStats(),
-    queryFn: async () => {
-      const response = await referralService.getLinkStats();
-      return response.data;
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: Infinity,
   });
 };
 
@@ -76,12 +78,12 @@ export const useReferralsList = (params?: GetReferralsParams) => {
       const response = await referralService.getReferrals(params);
       return response.data;
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 2,
   });
 };
 
 /**
- * Get Referral Reward ID
+ * Get Referral Reward ID (Legacy/Helper)
  */
 export const useReferralRewardId = () => {
   return useQuery({
@@ -93,7 +95,55 @@ export const useReferralRewardId = () => {
   });
 };
 
-// ============= Referral Mutations =============
+// ============= Referral Mutations (V2) =============
+
+/**
+ * Claim referral bonus (V2)
+ */
+export const useClaimReferralBonusV2 = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => referralService.claimReferralBonusV2(),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: referralKeys.statsV2() });
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      toast.success(data.message || "Referral bonus claimed successfully!");
+    },
+    onError: (error: AxiosError<any>) => {
+      toast.error(
+        error.response?.data?.message || "Failed to claim referral bonus"
+      );
+    },
+  });
+};
+
+/**
+ * Request withdrawal (V2)
+ */
+export const useRequestWithdrawalV2 = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: WithdrawalRequestV2) =>
+      referralService.requestWithdrawalV2(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: referralKeys.withdrawals.all(),
+      });
+      queryClient.invalidateQueries({ queryKey: referralKeys.statsV2() });
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      toast.success("Withdrawal request submitted successfully");
+    },
+    onError: (error: AxiosError<any>) => {
+      toast.error(
+        error.response?.data?.message || "Failed to submit withdrawal request"
+      );
+    },
+  });
+};
+
+// ============= Referral Link Mutations =============
 
 /**
  * Regenerate referral code
@@ -136,85 +186,10 @@ export const useDeactivateReferralLink = () => {
 };
 
 /**
- * Claim referral bonus
- */
-export const useClaimReferralBonus = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () => referralService.claimReferralBonus(),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: referralKeys.stats() });
-      queryClient.invalidateQueries({ queryKey: ["wallet"] }); // Update wallet balance if applicable
-      toast.success(data.message || "Referral bonus claimed successfully!");
-    },
-    onError: (error: AxiosError<any>) => {
-      toast.error(
-        error.response?.data?.message || "Failed to claim referral bonus"
-      );
-    },
-  });
-};
-
-/**
  * Validate referral code (Public)
  */
 export const useValidateReferralCode = () => {
   return useMutation({
     mutationFn: (code: string) => referralService.validateReferralCode(code),
-  });
-};
-
-// ============= Withdrawal Queries & Mutations =============
-
-/**
- * Get withdrawal balance
- */
-export const useWithdrawalBalance = (rewardId: string) => {
-  return useQuery({
-    queryKey: referralKeys.withdrawals.balance(rewardId),
-    queryFn: async () => {
-      const response = await referralService.getWithdrawalBalance(rewardId);
-      return response.data;
-    },
-    enabled: !!rewardId,
-  });
-};
-
-/**
- * Get withdrawal history
- */
-export const useWithdrawalHistory = (status?: string) => {
-  return useQuery({
-    queryKey: referralKeys.withdrawals.history(status),
-    queryFn: async () => {
-      const response = await referralService.getWithdrawalHistory({ status });
-      return response.data;
-    },
-  });
-};
-
-/**
- * Request withdrawal
- */
-export const useRequestWithdrawal = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: WithdrawalRequest) =>
-      referralService.requestWithdrawal(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: referralKeys.withdrawals.all(),
-      });
-      // Invalidate stats as potential earnings changed
-      queryClient.invalidateQueries({ queryKey: referralKeys.stats() });
-      toast.success("Withdrawal request submitted successfully");
-    },
-    onError: (error: AxiosError<any>) => {
-      toast.error(
-        error.response?.data?.message || "Failed to submit withdrawal request"
-      );
-    },
   });
 };

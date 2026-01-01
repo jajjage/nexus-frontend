@@ -406,10 +406,18 @@ export function useLogin() {
         queryKey: authKeys.currentUser(),
       });
 
-      // Redirect based on role
-      const redirectPath =
-        user?.role === "admin" ? "/admin/dashboard" : "/dashboard";
-      router.push(redirectPath);
+      // Redirect logic:
+      // 1. Admin -> /admin/dashboard
+      // 2. User missing PIN -> /setup (Onboarding)
+      // 3. User with PIN -> /dashboard
+      if (user?.role === "admin") {
+        router.push("/admin/dashboard");
+      } else if (!user?.hasPin) {
+        console.log("[AUTH] User missing PIN - redirecting to setup");
+        router.push("/setup");
+      } else {
+        router.push("/dashboard");
+      }
     },
 
     onError: (error: AxiosError<any>) => {

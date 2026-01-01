@@ -1,4 +1,3 @@
-import { SecurityGuard } from "@/components/guards/SecurityGuard";
 import { MarkupSyncer } from "@/components/MarkupSyncer";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { ServiceWorkerNavigationListener } from "@/components/ServiceWorkerNavigationListener";
@@ -66,17 +65,15 @@ export default function RootLayout({
         >
           <QueryProvider>
             <AuthProvider>
-              <SecurityGuard>
-                <div data-app-root>
-                  <NetworkStatusBanner />
-                  <MarkupSyncer />
-                  <ServiceWorkerNavigationListener />
-                  <PWAInstallPrompt />
-                  {/* <FcmSyncer /> */}
-                  <Toaster richColors position="top-right" />
-                  {children}
-                </div>
-              </SecurityGuard>
+              <div data-app-root>
+                <NetworkStatusBanner />
+                <MarkupSyncer />
+                <ServiceWorkerNavigationListener />
+                <PWAInstallPrompt />
+                {/* <FcmSyncer /> */}
+                <Toaster richColors position="top-right" />
+                {children}
+              </div>
             </AuthProvider>
           </QueryProvider>
         </ThemeProvider>

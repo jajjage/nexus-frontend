@@ -48,9 +48,9 @@ export function TransactionHistory({ isVisible }: TransactionHistoryProps) {
           !isVisible && "pointer-events-none blur-md"
         )}
       >
-        {recentTransactions.map((transaction) => (
+        {recentTransactions.map((transaction, index) => (
           <TransactionItem
-            key={transaction.id}
+            key={transaction.id || (transaction as any)._id || index}
             transaction={transaction}
             source="home"
           />

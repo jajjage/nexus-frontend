@@ -133,6 +133,11 @@ const getTransactionTypeLabel = (transaction: Transaction): string => {
     return "Incoming Payment";
   }
 
+  // Handle referral withdrawals (usually credits to wallet from referral system)
+  if (!isDebit && transaction.relatedType === "referral_withdrawal") {
+    return "Referral Bonus";
+  }
+
   return isDebit ? "Withdrawal" : "Deposit";
 };
 
@@ -182,6 +187,11 @@ const getTransactionDescription = (transaction: Transaction): string => {
 const getTransactionDetailTypeLabel = (transaction: Transaction): string => {
   if (transaction.relatedType === "incoming_payment") {
     return "Incoming Transfer";
+  }
+
+  // Handle referral transactions which might be categorized under 'system' or similar
+  if (transaction.relatedType === "referral_withdrawal") {
+    return "Referral";
   }
 
   const type = transaction.related?.type?.toLowerCase() || "airtime";
@@ -395,7 +405,11 @@ export function TransactionDetailPage({
               </p>
               <TransactionTimeline
                 status={transaction.related?.status || "pending"}
-                createdAt={transaction.createdAt.toISOString()}
+                createdAt={
+                  transaction.createdAt instanceof Date
+                    ? transaction.createdAt.toISOString()
+                    : new Date(transaction.createdAt).toISOString()
+                }
               />
             </div>
 
@@ -443,9 +457,11 @@ export function TransactionDetailPage({
                     <span className="block font-medium text-slate-900">
                       {transaction.relatedType === "incoming_payment"
                         ? "Incoming Transfer"
-                        : transaction.related?.type === "data"
-                          ? "Data Bundle"
-                          : "Airtime"}
+                        : transaction.relatedType === "referral_withdrawal"
+                          ? "Referral Withdrawal"
+                          : transaction.related?.type === "data"
+                            ? "Data Bundle"
+                            : "Airtime"}
                     </span>
                     {transaction.productCode && (
                       <span className="text-xs text-slate-400">

@@ -56,7 +56,7 @@ describe("ReferralLinkSection", () => {
 
   it("should display the referral link and code", () => {
     (useReferralLink as vi.Mock).mockReturnValue({
-      data: { data: mockLinkData },
+      data: mockLinkData,
       isLoading: false,
     });
 
@@ -72,7 +72,7 @@ describe("ReferralLinkSection", () => {
 
   it("should copy link to clipboard when copy button is clicked", async () => {
     (useReferralLink as vi.Mock).mockReturnValue({
-      data: { data: mockLinkData },
+      data: mockLinkData,
       isLoading: false,
     });
 

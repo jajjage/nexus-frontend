@@ -8,7 +8,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -21,17 +20,19 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-  useRequestWithdrawal,
-  useWithdrawalBalance,
+  useAvailableBalanceV2,
+  useRequestWithdrawalV2,
 } from "@/hooks/useReferrals";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Wallet } from "lucide-react";
-import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 interface WithdrawalModalProps {
-  rewardId: string; // The ID of the referral reward program
+  userType: "referrer" | "referred";
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 const formSchema = z.object({
@@ -41,21 +42,30 @@ const formSchema = z.object({
     .max(1000000, "Maximum withdrawal is ₦1,000,000"),
 });
 
-export function WithdrawalModal({ rewardId }: WithdrawalModalProps) {
-  const [open, setOpen] = useState(false);
-  const { data: balanceResponse, isLoading: isLoadingBalance } =
-    useWithdrawalBalance(rewardId);
-  const { mutate: requestWithdrawal, isPending } = useRequestWithdrawal();
+export function WithdrawalModal({
+  userType,
+  open,
+  onOpenChange,
+}: WithdrawalModalProps) {
+  const { data: balance, isLoading: isLoadingBalance } =
+    useAvailableBalanceV2(userType);
+  const { mutate: requestWithdrawal, isPending } = useRequestWithdrawalV2();
 
-  const balance = balanceResponse?.data;
-  const availableAmount = balance?.totalAmount || 0;
+  const availableAmount = balance?.totalAvailable || 0;
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: 0,
     },
   });
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open) {
+      form.reset({ amount: availableAmount });
+    }
+  }, [open, availableAmount, form]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     if (values.amount > availableAmount) {
@@ -68,40 +78,36 @@ export function WithdrawalModal({ rewardId }: WithdrawalModalProps) {
 
     requestWithdrawal(
       {
-        rewardId,
+        userType,
         amount: values.amount,
       },
       {
         onSuccess: () => {
-          setOpen(false);
+          onOpenChange(false);
           form.reset();
         },
       }
     );
   };
 
+  const title =
+    userType === "referrer"
+      ? "Withdraw Referral Earnings"
+      : "Withdraw Signup Bonus";
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          className="w-full sm:w-auto"
-          disabled={!rewardId || availableAmount < 100}
-        >
-          <Wallet className="mr-2 h-4 w-4" />
-          Withdraw Rewards
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Withdraw Referral Rewards</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Transfer your earnings to your main wallet.
+            Transfer your earnings to your main wallet balance.
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4">
           <div className="bg-muted mb-6 flex items-center justify-between rounded-lg p-4">
-            <span className="text-sm font-medium">Available Balance:</span>
+            <span className="text-sm font-medium">Available to Withdraw:</span>
             {isLoadingBalance ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -124,7 +130,8 @@ export function WithdrawalModal({ rewardId }: WithdrawalModalProps) {
                         type="number"
                         placeholder="0.00"
                         {...field}
-                        onChange={(e) => field.onChange(e.target.valueAsNumber)} // Handle number conversion
+                        value={field.value as number}
+                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
                       />
                     </FormControl>
                     <FormDescription>
@@ -138,6 +145,7 @@ export function WithdrawalModal({ rewardId }: WithdrawalModalProps) {
                 <Button
                   type="submit"
                   disabled={isPending || availableAmount < 100}
+                  className="w-full"
                 >
                   {isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -6,8 +6,28 @@ import { ReactNode } from "react";
 // Mock useAuth
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: vi.fn(() => ({
-    user: { userId: "123" },
+    user: {
+      userId: "test-user-id",
+      fullName: "Test User",
+      email: "test@example.com",
+      phoneNumber: "+1234567890",
+      role: "user",
+      isSuspended: false,
+      isVerified: true,
+      twoFactorEnabled: false,
+      accountNumber: "1234567890",
+      providerName: "test-provider",
+      balance: "100.00",
+      hasPin: true,
+      createdAt: "2023-01-01T00:00:00Z",
+      updatedAt: "2023-01-01T00:00:00Z",
+    },
     isAuthenticated: true,
+    isLoading: false,
+  })),
+  useResendVerification: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
   })),
 }));
 
@@ -34,19 +54,6 @@ vi.mock("@/hooks/useNotifications", () => ({
   })),
 }));
 
-// Mock the child component to isolate the test
-vi.mock("@/components/notification/notification-banner", () => ({
-  NotificationBanner: ({ notifications }: { notifications: any[] }) => (
-    <div data-testid="notification-banner">
-      {notifications.map((n) => (
-        <div key={n.id} data-testid="notification-item">
-          {n.notification.title}
-        </div>
-      ))}
-    </div>
-  ),
-}));
-
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -64,10 +71,13 @@ describe("HomeNotificationBanner", () => {
   it("renders notifications with 'updates' category", async () => {
     render(<HomeNotificationBanner />, { wrapper: createWrapper() });
 
-    // Wait for the banner to appear
-    await waitFor(() => {
-      expect(screen.getByTestId("notification-banner")).toBeInTheDocument();
-    });
+    // Wait for the component to render and fetch data
+    await waitFor(
+      () => {
+        expect(screen.getByText("System Update")).toBeInTheDocument();
+      },
+      { timeout: 5000 }
+    );
 
     // Check that only the "System Update" notification is shown
     // "Welcome" (general) should be filtered out based on the component logic

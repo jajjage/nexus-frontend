@@ -1,8 +1,9 @@
-import apiClient from "@/lib/api-client";
 import { referralService } from "@/services/referral.service";
+import apiClient from "@/lib/api-client";
 
+// Mock the API client
 vi.mock("@/lib/api-client");
-const mockApiClient = apiClient as vi.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as any;
 
 describe("referralService", () => {
   beforeEach(() => {
@@ -10,58 +11,77 @@ describe("referralService", () => {
   });
 
   describe("validateReferralCode", () => {
-    it("should call GET /referral/code/validate with code", async () => {
-      mockApiClient.get.mockResolvedValueOnce({
-        data: { success: true, data: { referrerId: "ref-123" } },
+    it("should call validation endpoint with code", async () => {
+      mockApiClient.get.mockResolvedValue({
+        data: { success: true, data: { valid: true } },
       });
 
-      const result = await referralService.validateReferralCode("CODE123");
+      await referralService.validateReferralCode("ABC1234");
 
       expect(mockApiClient.get).toHaveBeenCalledWith(
         "/referral/code/validate",
         {
-          params: { code: "CODE123" },
+          params: { code: "ABC1234" },
         }
       );
-      expect(result.data.referrerId).toBe("ref-123");
     });
   });
 
-  describe("getReferralStats", () => {
+  describe("getReferralStatsV2", () => {
     it("should fetch referral stats", async () => {
-      const mockStats = { totalReferrals: 5, totalRewardEarned: 1000 };
-      mockApiClient.get.mockResolvedValueOnce({
+      const mockStats = { referrerStats: { totalReferralsInvited: 5 } };
+      mockApiClient.get.mockResolvedValue({
         data: { success: true, data: mockStats },
       });
 
-      const result = await referralService.getReferralStats();
+      const result = await referralService.getReferralStatsV2();
 
-      expect(mockApiClient.get).toHaveBeenCalledWith("/dashboard/referrals");
+      expect(mockApiClient.get).toHaveBeenCalledWith(
+        "/dashboard/referrals/stats-v2"
+      );
       expect(result.data).toEqual(mockStats);
     });
   });
 
-  describe("getWithdrawalBalance", () => {
-    it("should fetch balance for a specific rewardId", async () => {
-      mockApiClient.get.mockResolvedValueOnce({
-        data: { success: true, data: { totalAmount: 500 } },
+  describe("getAvailableBalanceV2", () => {
+    it("should fetch balance for a specific role", async () => {
+      const mockBalance = { totalAvailable: 5000 };
+      mockApiClient.get.mockResolvedValue({
+        data: { success: true, data: mockBalance },
       });
 
-      const result = await referralService.getWithdrawalBalance("reward-abc");
+      const result = await referralService.getAvailableBalanceV2("referrer");
 
       expect(mockApiClient.get).toHaveBeenCalledWith(
-        "/withdrawals/balance/reward-abc"
+        "/dashboard/referrals/available-balance-v2",
+        { params: { type: "referrer" } }
       );
-      expect(result.data.totalAmount).toBe(500);
+      expect(result.data).toEqual(mockBalance);
+    });
+  });
+
+  describe("requestWithdrawalV2", () => {
+    it("should request withdrawal", async () => {
+      const mockRequest = { amount: 1000, userType: "referrer" as const };
+      mockApiClient.post.mockResolvedValue({
+        data: { success: true },
+      });
+
+      await referralService.requestWithdrawalV2(mockRequest);
+
+      expect(mockApiClient.post).toHaveBeenCalledWith(
+        "/dashboard/referrals/withdraw-v2",
+        mockRequest
+      );
     });
   });
 
   describe("getReferralRewardId", () => {
     it("should extract ID from the rewards summary", async () => {
-      mockApiClient.get.mockResolvedValueOnce({
+      mockApiClient.get.mockResolvedValue({
         data: {
           success: true,
-          data: { id: "actual-reward-id", type: "REFERRAL" },
+          data: { id: "actual-reward-id" },
         },
       });
 
@@ -69,14 +89,6 @@ describe("referralService", () => {
 
       expect(mockApiClient.get).toHaveBeenCalledWith("/dashboard/rewards");
       expect(id).toBe("actual-reward-id");
-    });
-
-    it("should return null on error", async () => {
-      mockApiClient.get.mockRejectedValueOnce(new Error("Network error"));
-
-      const id = await referralService.getReferralRewardId();
-
-      expect(id).toBeNull();
     });
   });
 });

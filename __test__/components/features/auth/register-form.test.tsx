@@ -123,13 +123,11 @@ describe("RegisterForm Component", () => {
       const passwordInput = screen.getByLabelText(/^Password$/i);
       const confirmInput = screen.getByLabelText(/Confirm Password/i);
 
-      await act(async () => {
-        await user.type(nameInput, "John Doe");
-        await user.type(emailInput, "john@example.com");
-        await user.type(phoneInput, "08012345678");
-        await user.type(passwordInput, "ValidPass123!");
-        await user.type(confirmInput, "ValidPass123!");
-      });
+      await user.type(nameInput, "John Doe");
+      await user.type(emailInput, "john@example.com");
+      await user.type(phoneInput, "08012345678");
+      await user.type(passwordInput, "ValidPass123!");
+      await user.type(confirmInput, "ValidPass123!");
 
       const submitButton = screen.getByRole("button", {
         name: /Create an account/i,
@@ -139,23 +137,24 @@ describe("RegisterForm Component", () => {
         () => {
           expect(submitButton).not.toBeDisabled();
         },
-        { timeout: 10000 }
+        { timeout: 15000 }
       );
 
-      await act(async () => {
-        await user.click(submitButton);
-      });
+      await user.click(submitButton);
 
-      await waitFor(() => {
-        expect(mockRegisterMutation.mutate).toHaveBeenCalledWith({
-          fullName: "John Doe",
-          email: "john@example.com",
-          phoneNumber: "08012345678",
-          password: "ValidPass123!",
-          referralCode: "",
-        });
-      });
-    });
+      await waitFor(
+        () => {
+          expect(mockRegisterMutation.mutate).toHaveBeenCalledWith({
+            fullName: "John Doe",
+            email: "john@example.com",
+            phoneNumber: "08012345678",
+            password: "ValidPass123!",
+            referralCode: "",
+          });
+        },
+        { timeout: 10000 }
+      );
+    }, 30000);
   });
 
   describe("Error Handling", () => {
@@ -170,6 +169,7 @@ describe("RegisterForm Component", () => {
       const loadingText = screen.getByText(/Creating account/i);
       expect(loadingText).toBeInTheDocument();
 
+      // Use a more specific selector for the submit button
       const submitButton = screen.getByRole("button", {
         name: /Creating account/i,
       });

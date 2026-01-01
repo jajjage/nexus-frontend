@@ -38,10 +38,22 @@ export function NotificationBanner({
     );
     if (storedDismissed) {
       try {
-        const dismissedArray = JSON.parse(storedDismissed);
-        setDismissedIds(new Set(dismissedArray));
+        const parsed = JSON.parse(storedDismissed);
+        // Ensure it's an array (iterable) before creating Set
+        if (Array.isArray(parsed)) {
+          setDismissedIds(new Set(parsed));
+        } else {
+          // If stored data is invalid (e.g., boolean true from old code), reset it
+          console.warn(
+            "Invalid dismissed notifications format in localStorage, resetting."
+          );
+          setDismissedIds(new Set());
+          localStorage.removeItem("notification_banner_dismissed");
+        }
       } catch (e) {
         console.error("Failed to parse dismissed notifications:", e);
+        // Fallback to empty set
+        setDismissedIds(new Set());
       }
     }
   }, []);

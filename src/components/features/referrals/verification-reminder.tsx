@@ -1,17 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { AlertCircle, ArrowRight, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { ResendVerificationModal } from "@/components/auth/ResendVerificationModal";
 
 export function VerificationReminder() {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
       <div className="mb-6 rounded-full bg-amber-100 p-4 dark:bg-amber-900/20">
@@ -26,15 +23,20 @@ export function VerificationReminder() {
       </p>
 
       <div className="grid w-full max-w-sm gap-4">
-        <Button asChild className="w-full">
-          <Link href="/dashboard/profile/security">
-            Verify Now <ArrowRight className="ml-2 h-4 w-4" />
-          </Link>
+        <Button onClick={() => setIsOpen(true)} className="w-full">
+          Verify Now <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
         <Button asChild variant="outline" className="w-full">
           <Link href="/dashboard">Back to Dashboard</Link>
         </Button>
       </div>
+
+      <ResendVerificationModal
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        title="Unlock Your Rewards"
+        description="Verify your email address to instantly access your referral link, claim bonuses, and enable withdrawals."
+      />
 
       <div className="mt-12 max-w-sm rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-900/10">
         <div className="flex items-start gap-3 text-left">

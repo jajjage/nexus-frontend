@@ -3,6 +3,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { NotificationBanner } from "./notification-banner";
+import { VerificationBanner } from "./VerificationBanner";
 
 /**
  * HomeNotificationBanner Wrapper Component
@@ -28,22 +29,19 @@ export function HomeNotificationBanner() {
     return null;
   }
 
-  // If loading or error or no data, don't show anything
-  if (isLoading || error || !data?.data?.notifications) {
-    return null;
-  }
-
-  // Filter for update/all category notifications
-  const notifications = data.data.notifications.filter(
-    (notif) =>
-      notif.notification.category === "updates" ||
-      notif.notification.category === "all"
+  // Combine verification banner with notifications
+  return (
+    <>
+      <VerificationBanner />
+      {!isLoading && !error && data?.data?.notifications && (
+        <NotificationBanner
+          notifications={data.data.notifications.filter(
+            (notif) =>
+              notif.notification.category === "updates" ||
+              notif.notification.category === "all"
+          )}
+        />
+      )}
+    </>
   );
-
-  if (!notifications.length) {
-    return null;
-  }
-
-  // Note: Only removes from UI locally, no API calls
-  return <NotificationBanner notifications={notifications} />;
 }

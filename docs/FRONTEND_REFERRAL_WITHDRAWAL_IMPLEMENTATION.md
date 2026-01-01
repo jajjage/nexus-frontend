@@ -1,256 +1,149 @@
-# Frontend Implementation Guide: Referrals & Withdrawals
+# Frontend Implementation Guide: Referrals & Withdrawals (V2)
 
-This guide details the integration steps for the Referral System and Withdrawal functionality. It is divided into **User Flows**, **Public Flows**, and **Admin Flows**.
+This guide details the integration steps for the **Refactored Referral System (V2)**. This system introduces a streamlined "Claim & Withdraw" lifecycle where points are explicitly claimed by the user and then withdrawn to their wallet.
 
-## 📋 Data Types & Interfaces
+## 📋 Core Concepts
 
-Use these TypeScript interfaces as a reference for the API responses.
-
-### Referral Types
-
-```typescript
-// User details attached to a referral
-export interface ReferredUserData {
-  userId: string;
-  fullName: string | null;
-  email: string;
-  phoneNumber: string | null;
-  isVerified: boolean;
-  profilePictureUrl: string | null;
-}
-
-// The main Referral object
-export interface Referral {
-  id: string;
-  referrerUserId: string;
-  referredUserId: string;
-  status: "pending" | "active" | "completed" | "cancelled";
-  rewardAmount: number;
-  referralCode: string | null;
-  referralCompletedAt: string | null; // ISO Date
-  createdAt: string; // ISO Date
-  // When fetching list-with-details:
-  referredUserData?: ReferredUserData;
-}
-
-// Stats for the Dashboard
-export interface ReferralStats {
-  totalReferrals: number;
-  activeReferrals: number; // Completed/Successful referrals
-  completedReferrals: number; // Same as active in some contexts
-  totalRewardEarned: number; // Total value earned
-  pendingRewardAmount: number; // Potential value
-}
-
-// Stats specifically for the Link
-export interface LinkStats {
-  totalSignupsWithLink: number;
-  activeReferrals: number;
-  completedReferrals: number;
-}
-
-// Referral Link Data
-export interface ReferralLinkData {
-  referralCode: string; // e.g., "JOHND123"
-  shortCode: string; // Same as referralCode usually
-  referralLink: string; // Full URL: https://app.com/register?code=...
-  qrCodeUrl: string; // Image URL for QR code
-  sharingMessage: string; // Pre-filled message for sharing
-}
-```
-
-### Withdrawal Types
-
-```typescript
-export interface Withdrawal {
-  id: string;
-  status: "pending" | "approved" | "rejected" | "completed" | "failed";
-  amount: number;
-  points: number;
-  created_at: string;
-  completed_at?: string;
-  admin_notes?: string;
-}
-
-export interface WithdrawalBalance {
-  totalPoints: number;
-  totalAmount: number; // NGN value (points / 100 usually)
-  claims: any[]; // List of active referral claims eligible for withdrawal
-  withdrawnClaimsIndices: number[];
-}
-```
+1.  **Pending Referral**: Created when User B signs up with User A's code. No value yet.
+2.  **Claim**: User B (Referee) clicks "Claim Bonus". This locks the reward value and splits it between A and B.
+3.  **Available Balance**: The sum of all claimed (but not yet withdrawn) rewards.
+4.  **Withdrawal**: Moving value from "Available Balance" to the user's main wallet/payout method.
 
 ---
 
-## 🚀 Public Flow: Registration with Referral
+## 🚀 Public Flow: Registration
 
-When a user lands on the registration page with a referral code (e.g., `?code=ABC`), validate it before submitting the registration form.
+When a user lands on the registration page with a referral code (e.g., `?ref=ABC1234`), validate it before submitting.
 
 ### 1. Validate Referral Code
 
 - **Endpoint:** `GET /api/v1/referral/code/validate`
-- **Query Params:** `code` (string)
-- **Usage:** Call this when the component mounts or when the code field loses focus.
-
-**Response (200 OK):**
-
-```json
-{
-  "success": true,
-  "message": "Referral code is valid",
-  "data": {
-    "referrerId": "uuid-string",
-    "message": "Code is valid and can be used for signup"
-  }
-}
-```
-
-_UI Hint:_ Show a green checkmark or the referrer's name if valid.
+- **Query:** `code` (string)
+- **Response:** `{ valid: true, referrerName: "John Doe" }`
+- **Action:** Show "Referred by John Doe" badge. Submit `referralCode` field in the signup payload.
 
 ---
 
-## 👤 User Flow: Referral Dashboard
+## 👤 User Flow: Referral Dashboard (V2)
 
-These endpoints are protected (require Bearer Token). Base URL: `/api/v1/dashboard/referrals`.
+**Base URL:** `/api/v1/dashboard/referrals`
+**Auth:** Bearer Token required.
 
-### 1. Get Referral Statistics
+### 1. Get Comprehensive Stats (V2)
 
-- **Endpoint:** `GET /api/v1/dashboard/referrals`
-- **Usage:** Display these cards at the top of the Referral Dashboard.
+Fetch this on dashboard load. It returns data for the user as both a **Referrer** (invited others) and a **Referee** (was invited).
 
-**Response Data:**
-Returns `ReferralStats` object.
+- **Endpoint:** `GET /stats-v2`
+- **Response:**
 
-### 2. Get User's Referral Link
-
-- **Endpoint:** `GET /api/v1/dashboard/referrals/link`
-- **Usage:** Display the link, code, and QR code for the user to copy/share.
-
-**Response Data:**
-Returns `ReferralLinkData` object.
-
-### 3. Manage Referral Link
-
-- **Regenerate Code:** `POST /api/v1/dashboard/referrals/link/regenerate`
-  - _Effect:_ Invalidates old code, creates a new one.
-- **Deactivate Link:** `POST /api/v1/dashboard/referrals/link/deactivate`
-  - _Effect:_ Disables the link permanently (until regenerated).
-- **Get Link Stats:** `GET /api/v1/dashboard/referrals/link/stats`
-  - Returns `LinkStats`.
-
-### 4. List Referrals (History)
-
-- **Endpoint:** `GET /api/v1/dashboard/referrals/list-with-details`
-- **Query Params:**
-  - `page`: number (default 1)
-  - `limit`: number (default 20)
-  - `status`: 'pending' | 'active' | 'completed' | 'cancelled' (optional)
-- **Usage:** Show a paginated table of users referred. Use `referredUserData` to show names/emails.
-
-**Response Data:**
-
-```json
-{
-  "referrals": [ ...Array of Referral objects... ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 50,
-    "totalPages": 3
-  }
+```typescript
+interface ReferralStatsV2 {
+  referrerStats: {
+    totalReferralsInvited: number;
+    claimedReferrals: number; // Successful ones
+    pendingClaimReferrals: number; // Waiting for friend to claim
+    totalReferrerEarnings: number; // Lifetime earnings
+    pendingReferrerAmount: number; // Available to withdraw
+    withdrawnReferrerAmount: number;
+  };
+  referredStats: {
+    referrerName: string; // "John Doe"
+    referralStatus: "pending" | "claimed" | "cancelled";
+    totalReferredEarnings: number;
+    pendingReferredAmount: number; // Available to withdraw
+    withdrawnReferredAmount: number;
+    claimedAt: string | null; // ISO Date
+  } | null; // null if user wasn't referred
 }
 ```
 
-### 5. Claim Referral Bonus
+### 2. The "Claim" Action (Critical)
 
-- **Endpoint:** `POST /api/v1/dashboard/referrals/claim`
-- **Usage:** This is for the **Referred User** (the new user) to claim their sign-up bonus.
-- **Prerequisite:** User must be verified.
-- **Condition:** Can only be called if the user has a `pending` referral status where they are the `referredUserId`.
+If `referredStats.referralStatus === 'pending'`, show a **"Claim Bonus"** button.
 
-**Response (200 OK):**
+- **Endpoint:** `POST /claim-v2`
+- **Body:** `{}` (empty)
+- **Effect:**
+  - Locks in the reward (e.g., 500 points split 50/50).
+  - Updates status to `claimed`.
+  - Increases `pendingReferredAmount` for the user.
+  - Increases `pendingReferrerAmount` for the inviter.
+- **UI Update:** Refresh stats after success. Button changes to "Claimed".
+
+### 3. Withdrawal Flow
+
+This replaces the old withdrawal system. Users withdraw directly from their referral balance.
+
+#### Step A: Check Balance
+
+- **Endpoint:** `GET /available-balance-v2`
+- **Query:** `type` = `'referrer'` OR `'referred'`
+  - _Note:_ You usually withdraw these separately or sum them up in UI.
+- **Response:**
 
 ```json
 {
-  "success": true,
-  "message": "Referral bonus claimed...",
-  "data": {
-    "rewardAmount": 500,
-    "rewardSplit": { "referrerAmount": 250, "referredAmount": 250 }
-  }
+  "totalAvailable": 2500, // Points/Currency units
+  "claimCount": 5,        // Number of contributors
+  "claims": [ ... ]       // Details if needed
 }
 ```
 
----
+#### Step B: Execute Withdrawal
 
-## 💰 User Flow: Withdrawals
-
-These endpoints handle converting earned rewards into wallet balance or cash.
-**Note:** Ensure `withdrawals.routes.ts` is mounted (e.g., at `/api/v1/withdrawals`) in the backend configuration.
-
-### 1. Check Available Balance
-
-Before requesting a withdrawal, the user needs to know how much they can withdraw from a specific reward pool.
-
-- **Endpoint:** `GET /api/v1/withdrawals/balance/:rewardId`
-- **Params:** `rewardId` (The ID of the Reward entity associated with the referral program).
-  - _Tip:_ You can get the `rewardId` from the User's Badge/Reward summary (`GET /api/v1/dashboard/rewards`) or hardcode it if there is a global "Referral Reward" ID.
-- **Usage:** Display "Available for Withdrawal: ₦5,000".
-
-**Response Data:**
-Returns `WithdrawalBalance` object.
-
-### 2. Request Withdrawal
-
-- **Endpoint:** `POST /api/v1/withdrawals/request`
+- **Endpoint:** `POST /withdraw-v2`
 - **Body:**
 
 ```json
 {
-  "rewardId": "uuid-string",
-  "amount": 1000
+  "amount": 1000,
+  "userType": "referrer" // or "referred"
 }
 ```
 
-- **Usage:** Form to input amount. Max amount is determined by Step 1.
+- **Effect:**
+  - Deducts from available balance.
+  - Creates a withdrawal record.
+  - (Backend) Credits user's main wallet or processes payout.
+- **UI Update:** Show success message "Successfully withdrawn 1000". Refresh balance.
 
-**Response:** Returns created `Withdrawal` object with status `pending`.
+### 4. Referral List (History)
 
-### 3. Withdrawal History
+- **Endpoint:** `GET /list-with-details`
+- **Query:**
+  - `page`: number
+  - `limit`: number
+  - `status`: `'claimed'` (default), `'pending'`, `'cancelled'`
+- **Response:** Paginated list of people invited.
+- **UI Hint:** Use `status='pending'` to show "Pending Invites" (nudge them!). Use `status='claimed'` to show "Successful Referrals".
 
-- **Endpoint:** `GET /api/v1/withdrawals/history`
-- **Query Params:** `status` (optional)
-- **Usage:** List of past withdrawal requests.
+### 5. Referral Link Management
+
+- **Get Link:** `GET /link` (Returns code, short link, QR)
+- **Regenerate:** `POST /link/regenerate`
+- **Deactivate:** `POST /link/deactivate`
 
 ---
 
-## 🛡️ Admin Flow: Management
+## 🛡️ Admin Flow
 
-These endpoints require an Admin Token.
+### 1. Leaderboard
 
-### 1. Referral Leaderboard
+- **Endpoint:** `GET /leaderboard`
+- **Query:** `limit=10`
+- **Usage:** "Top Referrers" widget.
 
-- **Endpoint:** `GET /api/v1/dashboard/referrals/leaderboard`
-- **Query:** `limit` (default 10)
-- **Usage:** Widget showing top referrers.
+### 2. Manual Override
 
-### 2. Manage Withdrawals
+- **Complete Referral:** `POST /:referralId/complete` (Forces status to claimed)
+- **Audit Withdrawals:** Query `referral_withdrawals` table directly (Admin API TBD).
 
-- **View Pending:** `GET /api/v1/withdrawals/admin/pending`
-  - _Note:_ Check exact mounting path in backend. Likely `/api/v1/withdrawals/admin/pending`.
-  - Returns list of withdrawals waiting for approval.
+---
 
-- **Approve:** `POST /api/v1/withdrawals/admin/:withdrawalId/approve`
-  - Action: Credits the user's wallet, marks withdrawal as completed.
+## 🔄 Migration Notes (V1 -> V2)
 
-- **Reject:** `POST /api/v1/withdrawals/admin/:withdrawalId/reject`
-  - Body: `{ "reason": "Suspicious activity" }`
-  - Action: Marks as rejected, user can try again (or funds returned depending on logic).
-
-### 3. Referral Operations (Advanced)
-
-- **Batch Process:** `POST /api/v1/dashboard/referrals/batch-process`
-  - Body: `{ "limit": 100 }`
-  - Usage: Trigger background processing of pending rewards.
-- **Force Complete:** `POST /api/v1/dashboard/referrals/:referralId/complete`
-- **Process Reward:** `POST /api/v1/dashboard/referrals/:referralId/process-reward`
+- **Status Mapping:**
+  - Old `active` / `completed` -> New `claimed`.
+  - Old `pending` -> New `pending`.
+- **Withdrawals:**
+  - Old `withdrawals` endpoints are **deprecated** for referrals. Use `withdraw-v2`.
