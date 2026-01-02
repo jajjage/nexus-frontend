@@ -28,9 +28,11 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   useAdminUser,
+  useAdminUserSessions,
   useCreditWallet,
   useDebitWallet,
   useDisable2FA,
+  useRevokeUserSessions,
   useSuspendUser,
   useUnsuspendUser,
   useUpdateUser,
@@ -40,6 +42,8 @@ import {
   Ban,
   CheckCircle,
   CreditCard,
+  Laptop,
+  Loader2,
   MinusCircle,
   Pencil,
   PlusCircle,
@@ -54,12 +58,15 @@ interface UserDetailViewProps {
 
 export function UserDetailView({ userId }: UserDetailViewProps) {
   const { data, isLoading, isError } = useAdminUser(userId);
+  const { data: sessionsData, isLoading: isSessionsLoading } =
+    useAdminUserSessions(userId);
   const suspendMutation = useSuspendUser();
   const unsuspendMutation = useUnsuspendUser();
   const creditMutation = useCreditWallet();
   const debitMutation = useDebitWallet();
   const disable2FAMutation = useDisable2FA();
   const updateUserMutation = useUpdateUser();
+  const revokeSessionsMutation = useRevokeUserSessions();
 
   const [creditAmount, setCreditAmount] = useState("");
   const [debitAmount, setDebitAmount] = useState("");
@@ -67,6 +74,7 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
   const [editForm, setEditForm] = useState({ fullName: "", phoneNumber: "" });
 
   const user = data?.data;
+  const sessions = sessionsData?.data?.sessions || [];
 
   // Sync edit form with user data when loaded
   useEffect(() => {
@@ -366,6 +374,83 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+          </CardContent>
+        </Card>
+
+        {/* Sessions Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="flex items-center gap-2">
+              <Laptop className="h-5 w-5" />
+              Active Sessions
+            </CardTitle>
+            {sessions.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={revokeSessionsMutation.isPending}
+                  >
+                    {revokeSessionsMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Revoke All
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Revoke All Sessions?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will log {user.fullName} out of all devices. They
+                      will need to log in again.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => revokeSessionsMutation.mutate(userId)}
+                    >
+                      Revoke Sessions
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </CardHeader>
+          <CardContent>
+            {isSessionsLoading ? (
+              <div className="space-y-2">
+                {[...Array(2)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : sessions.length === 0 ? (
+              <p className="text-muted-foreground py-4 text-center text-sm">
+                No active sessions
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {sessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">
+                        {session.deviceInfo || "Unknown Device"}
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        {session.ipAddress || "Unknown IP"} •{" "}
+                        {session.lastActiveAt
+                          ? new Date(session.lastActiveAt).toLocaleString()
+                          : new Date(session.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
