@@ -6,12 +6,17 @@ interface ProductCardProps {
   product: Product;
   onClick?: () => void;
   markupPercent?: number;
+  // Offer eligibility props (Two-Request Merge pattern)
+  isEligibleForOffer?: boolean;
+  isGuest?: boolean;
 }
 
 export function ProductCard({
   product,
   onClick,
   markupPercent = 0,
+  isEligibleForOffer = false,
+  isGuest = false,
 }: ProductCardProps) {
   // 1. Format Main Display (Volume or Amount)
   const formatMainDisplay = (p: Product) => {
@@ -31,43 +36,78 @@ export function ProductCard({
 
   const mainDisplayText = formatMainDisplay(product);
 
-  // 2. Determine Price with Markup
+  // 2. Determine Price
   const faceValue = parseFloat(product.denomAmount || "0");
   const supplierOffer = product.supplierOffers?.[0];
   const supplierPrice = supplierOffer
     ? parseFloat(supplierOffer.supplierPrice)
     : faceValue;
 
-  // Calculate selling price: supplierPrice + (supplierPrice * markup%)
-  // markupPercent can be either decimal (0.10) or percentage (10)
-  // If it's less than 1, treat as decimal; otherwise divide by 100
+  // Calculate base selling price (with markup)
   const actualMarkup = markupPercent < 1 ? markupPercent : markupPercent / 100;
-  const sellingPrice = supplierPrice + supplierPrice * actualMarkup;
+  const baseSellingPrice = supplierPrice + supplierPrice * actualMarkup;
 
-  console.log("[ProductCard Debug]", {
-    productId: product.id,
-    faceValue,
-    supplierPrice,
-    markupPercent,
-    actualMarkup,
-    sellingPrice,
-    calculation: `${supplierPrice} + (${supplierPrice} * ${actualMarkup}) = ${sellingPrice}`,
-  });
+  // 3. Offer Logic (Two-Request Merge pattern)
+  const hasOffer = !!product.activeOffer;
+  const showDiscountedPrice = hasOffer && (isGuest || isEligibleForOffer);
 
-  let hasDiscount = false;
+  // Use pre-calculated discountedPrice from API if available, otherwise use base price
+  const displayPrice =
+    showDiscountedPrice && product.discountedPrice
+      ? product.discountedPrice
+      : baseSellingPrice;
+
+  // Show strikethrough price when display price is less than face value
+  // This covers BOTH supplier pricing discounts AND offer discounts
+  const originalPrice = displayPrice < faceValue ? faceValue : null;
+
+  // Calculate discount percentage for badge
   let discountPercentage = 0;
-
-  // Only show discount if selling price is less than face value
-  if (sellingPrice < faceValue) {
-    const savings = faceValue - sellingPrice;
-    discountPercentage = Math.round((savings / faceValue) * 100);
-    hasDiscount = true;
+  if (
+    showDiscountedPrice &&
+    product.discountedPrice &&
+    product.discountedPrice < faceValue
+  ) {
+    discountPercentage = Math.round(
+      ((faceValue - product.discountedPrice) / faceValue) * 100
+    );
+  } else if (baseSellingPrice < faceValue) {
+    discountPercentage = Math.round(
+      ((faceValue - baseSellingPrice) / faceValue) * 100
+    );
   }
 
-  // 3. Format Validity
+  // 4. Determine Offer Badge
+  const getOfferBadge = () => {
+    if (!hasOffer) return null;
+
+    if (isGuest) {
+      return {
+        text: "Login to Claim",
+        className: "bg-blue-100 text-blue-600 dark:bg-blue-900/20",
+      };
+    }
+
+    if (isEligibleForOffer) {
+      return {
+        text: product.activeOffer?.title || "Special Deal",
+        className: "bg-green-100 text-green-600 dark:bg-green-900/20",
+      };
+    }
+
+    // Ineligible user - show grayed badge
+    return {
+      text: product.activeOffer?.title || "Limited Offer",
+      className: "bg-gray-100 text-gray-500 dark:bg-gray-800/50",
+    };
+  };
+
+  const offerBadge = getOfferBadge();
+
+  // 5. Format Validity
   const duration = product.validityDays
     ? `${product.validityDays} ${product.validityDays === 1 ? "Day" : "Days"}`
-    : "30 Days"; // Default fallback
+    : "30 Days";
 
   return (
     <Card
@@ -76,8 +116,17 @@ export function ProductCard({
     >
       {/* Badges Container */}
       <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
-        {/* Discount Badge */}
-        {hasDiscount && (
+        {/* Offer Badge */}
+        {offerBadge && (
+          <Badge
+            variant="secondary"
+            className={`h-5 px-1.5 text-[10px] font-bold ${offerBadge.className}`}
+          >
+            {offerBadge.text}
+          </Badge>
+        )}
+        {/* Discount Percentage Badge - Show for any discount */}
+        {discountPercentage > 0 && (
           <Badge
             variant="secondary"
             className="h-5 bg-green-100 px-1.5 text-[10px] font-bold text-green-600 dark:bg-green-900/20"
@@ -85,15 +134,6 @@ export function ProductCard({
             -{discountPercentage}% Off
           </Badge>
         )}
-        {/* Cashback Badge (Earn) */}
-        {/* {product.has_cashback && (
-          <Badge
-            variant="secondary"
-            className="h-5 bg-blue-100 px-1.5 text-[10px] font-bold text-blue-600 dark:bg-blue-900/20"
-          >
-            +{product.cashback_percentage}% Back
-          </Badge>
-        )} */}
       </div>
 
       {/* Main Display (Volume or Airtime Amount) */}
@@ -121,16 +161,16 @@ export function ProductCard({
       {/* Pricing */}
       <div className="mb-3 flex flex-col items-center gap-0.5">
         <span className="text-foreground text-lg font-bold">
-          ₦{sellingPrice.toLocaleString()}
+          ₦{displayPrice.toLocaleString()}
         </span>
-        {hasDiscount && (
+        {originalPrice && (
           <span className="text-muted-foreground text-xs line-through">
-            ₦{faceValue.toLocaleString()}
+            ₦{originalPrice.toLocaleString()}
           </span>
         )}
       </div>
 
-      {/* Cashback Badge (Earn) - Position at bottom to avoid overlapping */}
+      {/* Cashback Badge (Earn) - Position at bottom */}
       {product.has_cashback && (
         <div className="mt-auto pt-2">
           <Badge

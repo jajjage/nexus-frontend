@@ -5,6 +5,7 @@
 
 import apiClient from "@/lib/api-client";
 import {
+  AdminSetup2FAResponse,
   AdminUser,
   AdminUserListResponse,
   AdminUserQueryParams,
@@ -116,11 +117,23 @@ export const adminUserService = {
   },
 
   /**
+   * Setup 2FA for a user (Admin-initiated)
+   */
+  setup2FA: async (
+    userId: string
+  ): Promise<ApiResponse<AdminSetup2FAResponse>> => {
+    const response = await apiClient.post<ApiResponse<AdminSetup2FAResponse>>(
+      `${BASE_PATH}/${userId}/2fa/setup`
+    );
+    return response.data;
+  },
+
+  /**
    * Disable 2FA for a user
    */
   disable2FA: async (userId: string): Promise<ApiResponse> => {
     const response = await apiClient.post<ApiResponse>(
-      `${BASE_PATH}/${userId}/disable-2fa`
+      `${BASE_PATH}/${userId}/2fa/disable`
     );
     return response.data;
   },

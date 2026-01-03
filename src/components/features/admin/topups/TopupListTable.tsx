@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -20,32 +21,89 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAdminTopups } from "@/hooks/admin/useAdminTopups";
-import { AdminTopupRequest } from "@/types/admin/topup.types";
-import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { AdminTopupRequest, TopupStatus } from "@/types/admin/topup.types";
+import { format } from "date-fns";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Phone,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-const statusColors = {
+const statusColors: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
   pending: "secondary",
+  success: "default",
   completed: "default",
   failed: "destructive",
+  reversed: "outline",
+  retry: "secondary",
   cancelled: "outline",
-} as const;
+};
+
+const operatorColors: Record<string, string> = {
+  MTN: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+  AIRTEL: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  GLO: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  "9MOBILE":
+    "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+};
 
 export function TopupListTable() {
   const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
   const [status, setStatus] = useState<string>("all");
+  const [operator, setOperator] = useState<string>("all");
   const limit = 15;
 
+  // Filter change handlers that reset page
+  const handleStatusChange = (value: string) => {
+    console.log("Selected status:", value);
+    setStatus(value);
+    setPage(1);
+  };
+
+  const handleOperatorChange = (value: string) => {
+    console.log("Selected operator:", value);
+    setOperator(value);
+    setPage(1);
+  };
+
+  // Use filters that API supports
   const { data, isLoading, isError, refetch } = useAdminTopups({
     page,
     limit,
-    status:
-      status !== "all" ? (status as AdminTopupRequest["status"]) : undefined,
+    status: status !== "all" ? (status as TopupStatus) : undefined,
+    operator: operator !== "all" ? operator : undefined,
   });
 
-  const requests = data?.data?.requests || [];
+  // Debug log to see actual API response
+  console.log("Topup API Response:", data);
+
+  // Data access
+  const allRequests = data?.data?.requests || [];
   const pagination = data?.data?.pagination;
+
+  // Client-side search filtering
+  const requests = useMemo(() => {
+    if (!searchInput.trim()) {
+      return allRequests;
+    }
+    const searchLower = searchInput.toLowerCase();
+    return allRequests.filter(
+      (req: AdminTopupRequest) =>
+        req.user?.fullName?.toLowerCase().includes(searchLower) ||
+        req.user?.email?.toLowerCase().includes(searchLower) ||
+        req.recipientPhone?.includes(searchInput) ||
+        req.operator?.code?.toLowerCase().includes(searchLower) ||
+        req.operator?.name?.toLowerCase().includes(searchLower)
+    );
+  }, [allRequests, searchInput]);
 
   if (isLoading) {
     return (
@@ -88,30 +146,54 @@ export function TopupListTable() {
       </CardHeader>
       <CardContent>
         {/* Filters */}
-        <div className="mb-4 flex items-center gap-3">
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-[160px]">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="relative max-w-sm min-w-[200px] flex-1">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <Input
+              placeholder="Search by user, phone..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={status} onValueChange={handleStatusChange}>
+            <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="success">Success</SelectItem>
               <SelectItem value="failed">Failed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="reversed">Reversed</SelectItem>
+              <SelectItem value="retry">Retry</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={operator} onValueChange={handleOperatorChange}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Operator" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Operators</SelectItem>
+              <SelectItem value="MTN">MTN</SelectItem>
+              <SelectItem value="AIRTEL">Airtel</SelectItem>
+              <SelectItem value="GLO">Glo</SelectItem>
+              <SelectItem value="9MOBILE">9mobile</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Table */}
-        <div className="rounded-md border">
-          <Table>
+        <div className="overflow-x-auto rounded-md border">
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>
+                <TableHead>Recipient</TableHead>
+                <TableHead>Operator</TableHead>
                 <TableHead>Amount</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Provider</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -119,33 +201,98 @@ export function TopupListTable() {
             <TableBody>
               {requests.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center">
-                    No topup requests found
+                  <TableCell colSpan={8} className="py-8 text-center">
+                    {searchInput || status !== "all" || operator !== "all"
+                      ? "No matching topup requests"
+                      : "No topup requests found"}
                   </TableCell>
                 </TableRow>
               ) : (
                 requests.map((req: AdminTopupRequest) => (
                   <TableRow key={req.id || req.requestId}>
+                    {/* User */}
                     <TableCell>
                       <div>
-                        <p className="font-medium">{req.userName || "N/A"}</p>
+                        <p className="font-medium">
+                          {req.user?.fullName || "Unknown"}
+                        </p>
                         <p className="text-muted-foreground text-xs">
-                          {req.userEmail || req.userId}
+                          {req.user?.email || req.userId}
                         </p>
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">₦{req.amount}</TableCell>
+
+                    {/* Recipient Phone */}
                     <TableCell>
-                      <Badge variant={statusColors[req.status]}>
+                      {req.recipientPhone ? (
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="text-muted-foreground h-3 w-3" />
+                          <span className="text-sm">{req.recipientPhone}</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+
+                    {/* Operator */}
+                    <TableCell>
+                      {req.operator ? (
+                        <Badge
+                          className={
+                            operatorColors[req.operator.code] ||
+                            "bg-gray-100 text-gray-800"
+                          }
+                        >
+                          {req.operator.code}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+
+                    {/* Amount */}
+                    <TableCell>
+                      <div>
+                        <p className="font-semibold">
+                          ₦
+                          {typeof req.amount === "number"
+                            ? req.amount.toLocaleString()
+                            : req.amount}
+                        </p>
+                        {req.cost && (
+                          <p className="text-muted-foreground text-xs">
+                            Cost: ₦
+                            {typeof req.cost === "number"
+                              ? req.cost.toLocaleString()
+                              : req.cost}
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    {/* Type */}
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize">
+                        {req.type || "airtime"}
+                      </Badge>
+                    </TableCell>
+
+                    {/* Status */}
+                    <TableCell>
+                      <Badge
+                        variant={statusColors[req.status] || "secondary"}
+                        className="capitalize"
+                      >
                         {req.status}
                       </Badge>
                     </TableCell>
+
+                    {/* Date */}
                     <TableCell className="text-muted-foreground text-sm">
-                      {req.provider || "—"}
+                      {format(new Date(req.createdAt), "PP p")}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {new Date(req.createdAt).toLocaleDateString()}
-                    </TableCell>
+
+                    {/* Actions */}
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" asChild>
                         <Link

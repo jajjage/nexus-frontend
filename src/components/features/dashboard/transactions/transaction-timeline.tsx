@@ -64,10 +64,23 @@ export function TransactionTimeline({
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    try {
+      const dateObj = new Date(date);
+
+      // Check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        console.warn(`Invalid date received: ${date}`);
+        return "Invalid Time";
+      }
+
+      return dateObj.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      console.warn(`Error parsing date: ${date}`, error);
+      return "Invalid Time";
+    }
   };
 
   return (

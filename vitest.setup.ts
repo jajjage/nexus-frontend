@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom";
-import { vi, beforeAll, afterEach, afterAll } from "vitest";
-import { TextEncoder, TextDecoder } from "util";
 import { fetch, Headers, Request, Response } from "undici";
+import { TextDecoder, TextEncoder } from "util";
+import { vi } from "vitest";
 
 // Polyfills for MSW and JSDOM
 Object.assign(global, {
@@ -27,6 +27,13 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: vi.fn(),
   })),
 });
+
+// Mock ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 // Polyfill for TransformStream and other web streams if needed
 if (!global.TransformStream) {

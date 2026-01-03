@@ -201,14 +201,27 @@ const getTransactionDetailTypeLabel = (transaction: Transaction): string => {
 // Helper to format date
 const formatDate = (date: Date | string | undefined): string => {
   if (!date) return "N/A";
-  const dateObj = typeof date === "string" ? new Date(date) : date;
-  return dateObj.toLocaleString("en-NG", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+
+  try {
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+
+    // Check if date is valid
+    if (dateObj instanceof Date && isNaN(dateObj.getTime())) {
+      console.warn(`Invalid date received: ${date}`);
+      return "Invalid Date";
+    }
+
+    return dateObj.toLocaleString("en-NG", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch (error) {
+    console.warn(`Error parsing date: ${date}`, error);
+    return "Invalid Date";
+  }
 };
 
 // Helper to copy to clipboard

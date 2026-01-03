@@ -132,14 +132,27 @@ const getTransactionDescription = (transaction: Transaction): string => {
 // Format date
 const formatDate = (date: Date | string | undefined): string => {
   if (!date) return "N/A";
-  const dateObj = typeof date === "string" ? new Date(date) : date;
-  return dateObj.toLocaleString("en-NG", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+
+  try {
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+
+    // Check if date is valid
+    if (dateObj instanceof Date && isNaN(dateObj.getTime())) {
+      console.warn(`Invalid date received: ${date}`);
+      return "Invalid Date";
+    }
+
+    return dateObj.toLocaleString("en-NG", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch (error) {
+    console.warn(`Error parsing date: ${date}`, error);
+    return "Invalid Date";
+  }
 };
 
 export const TransactionReceipt = React.forwardRef<

@@ -1,7 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useSecurityStore } from "@/store/securityStore";
 import { BiometricVerificationModal } from "@/components/auth/BiometricVerificationModal";
 import { PinVerificationModal } from "@/components/auth/PinVerificationModal";
 import { PinSetupModal } from "@/components/features/security/pin-setup-modal";
@@ -12,10 +10,13 @@ import { useProducts } from "@/hooks/useProducts";
 import { useSupplierMarkupMap } from "@/hooks/useSupplierMarkup";
 import { useTopup } from "@/hooks/useTopup";
 import { useUpdateProfile } from "@/hooks/useUser";
+import { useEligibleOffers } from "@/hooks/useUserOffers";
 import { detectNetworkProvider } from "@/lib/network-utils";
+import { useSecurityStore } from "@/store/securityStore";
 import { Product } from "@/types/product.types";
 import { useQueryClient } from "@tanstack/react-query";
 import { Grid, LayoutList } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CheckoutModal } from "../shared/checkout-modal";
@@ -86,6 +87,13 @@ export function DataPlans() {
   );
 
   const products = data?.products || [];
+
+  // Get user's eligible offers (Two-Request Merge pattern)
+  const isGuest = !user;
+  const { eligibleIds } = useEligibleOffers(!isGuest);
+
+  // Track selected offer ID for checkout
+  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
 
   // Get markup map for all suppliers
   const markupMap = useSupplierMarkupMap();
@@ -205,6 +213,14 @@ export function DataPlans() {
     const supplierId = product.supplierOffers?.[0]?.supplierId || "";
     const markup = markupMap.get(supplierId) || 0;
     setSelectedMarkupPercent(markup);
+
+    // Track offer ID if product has an active offer and user is eligible
+    if (product.activeOffer) {
+      const isEligible = eligibleIds.has(product.activeOffer.id);
+      setSelectedOfferId(isEligible ? product.activeOffer.id : null);
+    } else {
+      setSelectedOfferId(null);
+    }
 
     setIsCheckoutOpen(true);
   };
@@ -356,6 +372,7 @@ export function DataPlans() {
         useCashback,
         verificationToken, // Include verification token if biometric was used
         pin, // Include PIN if PIN verification was used
+        offerId: selectedOfferId || undefined, // Include offer ID if eligible
       },
       {
         onSuccess: () => {
@@ -490,6 +507,12 @@ export function DataPlans() {
                 product={product}
                 onClick={() => handlePlanClick(product)}
                 markupPercent={markupPercent}
+                isGuest={isGuest}
+                isEligibleForOffer={
+                  product.activeOffer
+                    ? eligibleIds.has(product.activeOffer.id)
+                    : false
+                }
               />
             );
           })}

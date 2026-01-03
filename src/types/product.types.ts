@@ -14,6 +14,14 @@ export interface SupplierOffer {
   leadTimeSeconds: number;
 }
 
+export interface ActiveOffer {
+  id: string;
+  title: string;
+  description?: string;
+  discountType: "percentage" | "fixed_amount" | "fixed_price";
+  discountValue: number;
+}
+
 export interface Product {
   id: string;
   operatorId: string;
@@ -31,6 +39,9 @@ export interface Product {
   createdAt: string;
   operator: Operator;
   supplierOffers: SupplierOffer[];
+  // Offer fields
+  discountedPrice?: number;
+  activeOffer?: ActiveOffer;
 }
 
 export interface Pagination {

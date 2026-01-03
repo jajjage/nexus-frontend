@@ -195,6 +195,18 @@ export function useDebitWallet() {
 }
 
 /**
+ * Setup 2FA mutation (Admin-initiated)
+ */
+export function useSetup2FA() {
+  return useMutation({
+    mutationFn: (userId: string) => adminUserService.setup2FA(userId),
+    onError: (error: AxiosError<any>) => {
+      toast.error(error.response?.data?.message || "Failed to setup 2FA");
+    },
+  });
+}
+
+/**
  * Disable 2FA mutation
  */
 export function useDisable2FA() {

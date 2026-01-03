@@ -17,20 +17,34 @@ import { useAdminUsers } from "@/hooks/admin/useAdminUsers";
 import { AdminUser } from "@/types/admin/user.types";
 import { ChevronLeft, ChevronRight, Search, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export function UserListTable() {
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const limit = 10;
 
-  const { data, isLoading, isError } = useAdminUsers({
+  const { data, isLoading, isError, refetch } = useAdminUsers({
     page,
     limit,
   });
 
-  const users = data?.data?.users || [];
+  const allUsers = data?.data?.users || [];
   const pagination = data?.data?.pagination;
+
+  // Client-side filtering for search
+  const users = useMemo(() => {
+    if (!searchInput.trim()) {
+      return allUsers;
+    }
+    const searchLower = searchInput.toLowerCase();
+    return allUsers.filter(
+      (user) =>
+        user.fullName?.toLowerCase().includes(searchLower) ||
+        user.email?.toLowerCase().includes(searchLower) ||
+        user.phoneNumber?.toLowerCase().includes(searchLower)
+    );
+  }, [allUsers, searchInput]);
 
   if (isLoading) {
     return (
@@ -54,7 +68,7 @@ export function UserListTable() {
       <Card>
         <CardContent className="py-8 text-center">
           <p className="text-muted-foreground">Failed to load users</p>
-          <Button variant="outline" className="mt-4" onClick={() => setPage(1)}>
+          <Button variant="outline" className="mt-4" onClick={() => refetch()}>
             Retry
           </Button>
         </CardContent>
@@ -80,8 +94,8 @@ export function UserListTable() {
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               placeholder="Search users..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="pl-9"
             />
           </div>
@@ -96,15 +110,14 @@ export function UserListTable() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Balance</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center">
-                    No users found
+                  <TableCell colSpan={5} className="py-8 text-center">
+                    {searchInput ? "No matching users found" : "No users found"}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -126,7 +139,6 @@ export function UserListTable() {
                         <Badge variant="default">Active</Badge>
                       )}
                     </TableCell>
-                    <TableCell>₦{user.balance}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" asChild>
                         <Link

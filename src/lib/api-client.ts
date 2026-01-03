@@ -25,7 +25,7 @@ import { toast } from "sonner";
  */
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+  process.env.NEXT_PUBLIC_API_URL || "https://localhost:8000/api/v1";
 
 // ============================================================================
 // COOKIE UTILITIES
@@ -202,6 +202,7 @@ apiClient.interceptors.response.use(
     const isAuthEndpoint = authEndpoints.some((endpoint) =>
       originalRequest.url?.includes(endpoint)
     );
+    console.log(BASE_URL);
 
     // ========================================================================
     // HANDLE NETWORK ERRORS (e.g., ERR_CONNECTION_RESET after sleep)
@@ -249,7 +250,7 @@ apiClient.interceptors.response.use(
         method: originalRequest.method,
         refreshAttemptCount,
         maxAttempts: MAX_REFRESH_ATTEMPTS,
-        hasRefreshToken: !!getCookie("refreshToken"),
+
         cookies: document.cookie,
       });
 
@@ -305,7 +306,6 @@ apiClient.interceptors.response.use(
         console.log("[AUTH] Starting token refresh", {
           attempt: refreshAttemptCount,
           maxAttempts: MAX_REFRESH_ATTEMPTS,
-          hasRefreshToken: !!getCookie("refreshToken"),
         });
 
         // Call refresh endpoint

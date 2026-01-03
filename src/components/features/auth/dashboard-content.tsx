@@ -1,11 +1,11 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
 import {
   PermissionGuard,
   RoleGuard,
 } from "@/components/features/auth/permission-guard";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 export const DashboardContent = () => {
   const {

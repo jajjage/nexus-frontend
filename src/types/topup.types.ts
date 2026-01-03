@@ -7,6 +7,7 @@ export interface TopupRequest {
   supplierSlug?: string;
   supplierMappingId?: string;
   useCashback?: boolean;
+  offerId?: string; // Optional - offer ID if applying a discount
 }
 
 export interface TopupResponse {

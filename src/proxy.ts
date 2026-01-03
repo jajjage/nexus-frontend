@@ -20,149 +20,29 @@
  * - SameSite cookies prevent CSRF attacks
  */
 
-import { jwtDecode } from "jwt-decode";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-interface DecodedToken {
-  role: string;
-  exp: number;
-  userId: string;
-}
-
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
-
-const PROTECTED_PATHS = ["/dashboard", "/admin"];
-const AUTH_PATHS = ["/login", "/register", "/forgot-password"];
+const PROTECTED_PATHS = ["/dashboard", "/admin/dashboard"];
+const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/admin/login"];
 const PUBLIC_PATHS = ["/"];
-
-// ============================================================================
-// HELPER: Validate Token Expiration
-// ============================================================================
-
-function isTokenValid(token: string | undefined): boolean {
-  if (!token) return false;
-
-  try {
-    const decoded = jwtDecode<DecodedToken>(token);
-
-    // Check if token is expired
-    // exp is in seconds, Date.now() is in milliseconds
-    const isExpired = Date.now() >= decoded.exp * 1000;
-
-    return !isExpired;
-  } catch (error) {
-    console.error("[PROXY] Invalid token:", error);
-    return false;
-  }
-}
-
-// ============================================================================
-// HELPER: Extract User Role
-// ============================================================================
-
-function getUserRole(token: string | undefined): string | null {
-  if (!token) return null;
-
-  try {
-    const decoded = jwtDecode<DecodedToken>(token);
-    return decoded.role || null;
-  } catch {
-    return null;
-  }
-}
-
-// ============================================================================
-// MAIN PROXY FUNCTION
-// ============================================================================
 
 export default function proxy(request: NextRequest) {
   const response = NextResponse.next();
   const { pathname } = request.nextUrl;
 
-  // ========================================================================
-  // GET TOKENS FROM COOKIES
-  // ========================================================================
+  const hasAuth =
+    request.cookies.get("accessToken") || request.cookies.get("refreshToken");
 
-  const accessToken = request.cookies.get("accessToken")?.value;
-  const refreshToken = request.cookies.get("refreshToken")?.value;
-
-  // ========================================================================
-  // VALIDATE TOKENS
-  // ========================================================================
-
-  const isAccessTokenValid = isTokenValid(accessToken);
-  const hasRefreshToken = !!refreshToken;
-  const userRole = getUserRole(accessToken);
-
-  // User is considered authenticated if:
-  // - Access token is valid, OR
-  // - Refresh token exists (can be refreshed on client side)
-  const isUserAuthenticated = isAccessTokenValid || hasRefreshToken;
-
-  // ========================================================================
-  // HANDLE PROTECTED PATHS
-  // ========================================================================
-
-  const isProtectedPath = PROTECTED_PATHS.some((path: string) =>
-    pathname.startsWith(path)
+  const isProtectedPath = PROTECTED_PATHS.some(
+    (path: string) => pathname.startsWith(path) && !hasAuth
   );
 
-  if (isProtectedPath) {
-    // If no auth tokens, redirect to login
-    if (!isUserAuthenticated) {
-      console.log("[PROXY] Unauthenticated user accessing protected path", {
-        pathname,
-      });
-      return NextResponse.redirect(
-        new URL("/login?reason=session-expired", request.url)
-      );
-    }
-
-    // If user is regular user but tries to access admin
-    if (userRole === "user" && pathname.startsWith("/admin")) {
-      console.log("[PROXY] Regular user accessing admin path", {
-        pathname,
-        userRole,
-      });
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-
-    // If user is admin but tries to access user dashboard
-    if (userRole === "admin" && pathname === "/dashboard") {
-      console.log("[PROXY] Admin user accessing user dashboard", {
-        pathname,
-        userRole,
-      });
-      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
-    }
+  if (isProtectedPath && !hasAuth) {
+    return NextResponse.redirect(
+      new URL("/login?reason=session-expired", request.url)
+    );
   }
-
-  // ========================================================================
-  // HANDLE AUTH PATHS (login, register, etc.)
-  // ========================================================================
-  // Do NOT redirect away from auth pages based solely on access token validity.
-  // Let the client verify user profile and handle redirect if needed.
-
-  // ========================================================================
-  // ADD METADATA COOKIE
-  // ========================================================================
-
-  // Set a readable cookie to indicate auth status
-  // Client-side JavaScript can read this to determine initial state
-  response.cookies.set(
-    "auth_status",
-    isUserAuthenticated ? "authenticated" : "unauthenticated",
-    {
-      httpOnly: false, // Client can read this
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60, // 1 hour
-    }
-  );
 
   return response;
 }

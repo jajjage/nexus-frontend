@@ -32,10 +32,10 @@ export const adminTopupService = {
    */
   getTopupRequestById: async (
     requestId: string
-  ): Promise<ApiResponse<{ request: AdminTopupRequest }>> => {
-    const response = await apiClient.get<
-      ApiResponse<{ request: AdminTopupRequest }>
-    >(`${BASE_PATH}/${requestId}`);
+  ): Promise<ApiResponse<AdminTopupRequest>> => {
+    const response = await apiClient.get<ApiResponse<AdminTopupRequest>>(
+      `${BASE_PATH}/${requestId}`
+    );
     return response.data;
   },
 

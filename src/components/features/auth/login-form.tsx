@@ -60,6 +60,7 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
       password: "",
     },
   });
+  console.log("API BASE URL:", process.env.NEXT_PUBLIC_API_URL);
 
   // Pre-fill email and password from URL params and sessionStorage (when redirected from register)
   useEffect(() => {

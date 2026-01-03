@@ -33,6 +33,7 @@ export interface AdminUser {
   role: string;
   isVerified: boolean;
   isSuspended: boolean;
+  twoFactorEnabled?: boolean;
   balance: string;
   createdAt?: string;
   updatedAt?: string;
@@ -72,4 +73,12 @@ export interface AdminUserQueryParams {
   search?: string;
   role?: string;
   status?: "active" | "suspended";
+}
+
+// ============= 2FA Types =============
+
+export interface AdminSetup2FAResponse {
+  secret: string;
+  qrCode: string; // data:image/png;base64,...
+  backupCodes: string[];
 }

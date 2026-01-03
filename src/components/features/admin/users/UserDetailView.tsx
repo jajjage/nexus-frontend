@@ -37,11 +37,13 @@ import {
   useUnsuspendUser,
   useUpdateUser,
 } from "@/hooks/admin/useAdminUsers";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Ban,
   CheckCircle,
   CreditCard,
+  KeyRound,
   Laptop,
   Loader2,
   MinusCircle,
@@ -51,12 +53,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Setup2FAModal } from "./Setup2FAModal";
 
 interface UserDetailViewProps {
   userId: string;
 }
 
 export function UserDetailView({ userId }: UserDetailViewProps) {
+  const queryClient = useQueryClient();
   const { data, isLoading, isError } = useAdminUser(userId);
   const { data: sessionsData, isLoading: isSessionsLoading } =
     useAdminUserSessions(userId);
@@ -71,6 +75,7 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
   const [creditAmount, setCreditAmount] = useState("");
   const [debitAmount, setDebitAmount] = useState("");
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({ fullName: "", phoneNumber: "" });
 
   const user = data?.data;
@@ -247,7 +252,12 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
           <CardContent className="space-y-4">
             <div className="bg-muted rounded-lg p-4 text-center">
               <p className="text-muted-foreground text-sm">Current Balance</p>
-              <p className="text-3xl font-bold">₦{user.balance}</p>
+              <p className="text-3xl font-bold">
+                ₦
+                {user.balance !== undefined && user.balance !== null
+                  ? Number(user.balance).toLocaleString()
+                  : 0}
+              </p>
             </div>
 
             <div className="grid gap-4">
@@ -349,31 +359,55 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
               </AlertDialog>
             )}
 
-            {/* Disable 2FA */}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" className="w-full">
-                  Disable 2FA
+            {/* 2FA Actions */}
+            <div className="space-y-2">
+              {/* 2FA Status */}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">2FA Status</span>
+                <Badge
+                  variant={user.twoFactorEnabled ? "default" : "secondary"}
+                >
+                  {user.twoFactorEnabled ? "Enabled" : "Disabled"}
+                </Badge>
+              </div>
+
+              {/* Setup or Disable 2FA */}
+              {user.twoFactorEnabled ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      Disable 2FA
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Disable 2FA?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will disable two-factor authentication for{" "}
+                        {user.fullName}. They will need to set it up again.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => disable2FAMutation.mutate(userId)}
+                      >
+                        Disable 2FA
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setIs2FAModalOpen(true)}
+                >
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  Setup 2FA
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Disable 2FA?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will disable two-factor authentication for{" "}
-                    {user.fullName}. They will need to set it up again.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => disable2FAMutation.mutate(userId)}
-                  >
-                    Disable 2FA
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -431,20 +465,36 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
               </p>
             ) : (
               <div className="space-y-3">
-                {sessions.map((session) => (
+                {sessions.map((session: any) => (
                   <div
                     key={session.id}
                     className="flex items-center justify-between rounded-lg border p-3"
                   >
-                    <div>
-                      <p className="text-sm font-medium">
-                        {session.deviceInfo || "Unknown Device"}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-medium">
+                          {session.userAgent?.device ||
+                            session.deviceInfo ||
+                            "Unknown Device"}
+                        </p>
+                        {session.userAgent?.type && (
+                          <Badge variant="outline" className="text-xs">
+                            {session.userAgent.type}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-muted-foreground mt-1 text-xs">
+                        {session.userAgent?.browser || "Unknown Browser"} •{" "}
+                        {session.userAgent?.os || "Unknown OS"}
                       </p>
                       <p className="text-muted-foreground text-xs">
-                        {session.ipAddress || "Unknown IP"} •{" "}
-                        {session.lastActiveAt
-                          ? new Date(session.lastActiveAt).toLocaleString()
-                          : new Date(session.createdAt).toLocaleString()}
+                        IP: {session.ip || session.ipAddress || "Unknown"} •
+                        Last active:{" "}
+                        {session.lastActivity
+                          ? new Date(session.lastActivity).toLocaleString()
+                          : session.lastActiveAt
+                            ? new Date(session.lastActiveAt).toLocaleString()
+                            : "N/A"}
                       </p>
                     </div>
                   </div>
@@ -454,6 +504,19 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Setup 2FA Modal */}
+      <Setup2FAModal
+        isOpen={is2FAModalOpen}
+        onClose={() => setIs2FAModalOpen(false)}
+        userId={userId}
+        userName={user.fullName}
+        onSuccess={() => {
+          queryClient.invalidateQueries({
+            queryKey: ["admin", "users", "detail", userId],
+          });
+        }}
+      />
     </div>
   );
 }

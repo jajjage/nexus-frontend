@@ -18,12 +18,24 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth, useLogout } from "@/hooks/useAuth";
 import {
+  BarChart3Icon,
+  BellIcon,
+  BriefcaseIcon,
   CreditCardIcon,
+  FingerprintIcon,
+  GiftIcon,
   HomeIcon,
+  LandmarkIcon,
   LogOutIcon,
+  PackageIcon,
+  PercentIcon,
+  RadioIcon,
+  ServerIcon,
   SettingsIcon,
   ShieldCheckIcon,
+  ShieldIcon,
   UsersIcon,
+  WalletIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -35,6 +47,11 @@ const navItems = [
     icon: HomeIcon,
   },
   {
+    title: "Analytics",
+    href: "/admin/dashboard/analytics",
+    icon: BarChart3Icon,
+  },
+  {
     title: "Users",
     href: "/admin/dashboard/users",
     icon: UsersIcon,
@@ -43,6 +60,61 @@ const navItems = [
     title: "Transactions",
     href: "/admin/dashboard/transactions",
     icon: CreditCardIcon,
+  },
+  {
+    title: "Topups",
+    href: "/admin/dashboard/topups",
+    icon: WalletIcon,
+  },
+  {
+    title: "Jobs",
+    href: "/admin/dashboard/jobs",
+    icon: BriefcaseIcon,
+  },
+  {
+    title: "Settlements",
+    href: "/admin/dashboard/settlements",
+    icon: LandmarkIcon,
+  },
+  {
+    title: "Operators",
+    href: "/admin/dashboard/operators",
+    icon: RadioIcon,
+  },
+  {
+    title: "Suppliers",
+    href: "/admin/dashboard/suppliers",
+    icon: ServerIcon,
+  },
+  {
+    title: "Markups",
+    href: "/admin/dashboard/supplier-markups",
+    icon: PercentIcon,
+  },
+  {
+    title: "Products",
+    href: "/admin/dashboard/products",
+    icon: PackageIcon,
+  },
+  {
+    title: "Offers",
+    href: "/admin/dashboard/offers",
+    icon: GiftIcon,
+  },
+  {
+    title: "Notifications",
+    href: "/admin/dashboard/notifications",
+    icon: BellIcon,
+  },
+  {
+    title: "Biometric",
+    href: "/admin/dashboard/biometric",
+    icon: FingerprintIcon,
+  },
+  {
+    title: "Roles",
+    href: "/admin/dashboard/roles",
+    icon: ShieldIcon,
   },
   {
     title: "Settings",
