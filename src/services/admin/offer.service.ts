@@ -244,4 +244,24 @@ export const adminOfferService = {
     >(`${BASE_PATH}/${offerId}/redemptions`, data);
     return response.data;
   },
+
+  /**
+   * Get all suppliers for selection
+   */
+  getSuppliers: async (): Promise<ApiResponse<{ suppliers: any[] }>> => {
+    const response =
+      await apiClient.get<ApiResponse<{ suppliers: any[] }>>(
+        `/admin/suppliers`
+      );
+    return response.data;
+  },
+
+  /**
+   * Get all products for selection
+   */
+  getProducts: async (): Promise<ApiResponse<{ products: any[] }>> => {
+    const response =
+      await apiClient.get<ApiResponse<{ products: any[] }>>(`/admin/products`);
+    return response.data;
+  },
 };

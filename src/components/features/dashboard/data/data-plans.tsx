@@ -178,20 +178,23 @@ export function DataPlans() {
 
       if (product.operator?.name !== selectedNetwork) return false;
 
-      const validity = product.validityDays || 30;
+      const validity = product.validityDays; // Don't default to 30, use actual value
       const name = product.name.toLowerCase();
 
       switch (selectedCategory) {
         case "Daily":
-          return validity <= 2;
+          return !!validity && validity <= 1;
         case "Weekly":
-          return validity > 2 && validity <= 7;
+          return !!validity && validity > 1 && validity <= 7;
         case "Monthly":
-          return validity > 7 && validity <= 30;
+          return !!validity && validity > 7 && validity <= 45; // Extended to 45 to cover slightly longer months
         case "XtraValue":
           return name.includes("xtra") || name.includes("extra");
         case "Roaming":
           return name.includes("roam") || name.includes("intl");
+        case "Other":
+          // Show if no validity, or very long validity, or doesn't fit mostly
+          return !validity || validity > 45;
         case "HOT":
         default:
           return true;

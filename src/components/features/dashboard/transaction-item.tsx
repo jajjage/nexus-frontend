@@ -27,18 +27,37 @@ const getStatusColor = (status: string) => {
   }
 };
 
+// Helper to detect if a transaction is for data (with fallback for incorrect backend type)
+const isDataTransaction = (transaction: Transaction): boolean => {
+  // First check the related.type from backend
+  if (transaction.related?.type?.toLowerCase() === "data") {
+    return true;
+  }
+
+  // Fallback: Check productCode patterns that indicate data products
+  const productCode = (transaction.productCode || "").toUpperCase();
+  const dataPatterns = ["DATA", "GB", "MB", "TB", "BUNDLE"];
+
+  return dataPatterns.some((pattern) => productCode.includes(pattern));
+};
+
+// Helper to get product type label with smart detection
+const getProductTypeLabel = (transaction: Transaction): string => {
+  return isDataTransaction(transaction) ? "Data" : "Airtime";
+};
+
 // Helper to determine the transaction icon
 const getTransactionIcon = (transaction: Transaction) => {
   const isDebit = transaction.direction === "debit";
 
   if (isDebit) {
     if (transaction.relatedType === "topup_request") {
-      if (transaction.related?.type === "data") {
+      // Use smart detection for data vs airtime
+      if (isDataTransaction(transaction)) {
         return <Wifi className="size-5 text-purple-600" />;
       }
-      if (transaction.related?.type === "airtime") {
-        return <Phone className="size-5 text-blue-600" />;
-      }
+      // Default to phone icon for airtime
+      return <Phone className="size-5 text-blue-600" />;
     }
     // Default debit icon
     return <ArrowUp className="size-5 text-red-600" />;
@@ -86,24 +105,42 @@ export function TransactionItem({ transaction, source }: TransactionItemProps) {
         >
           {getTransactionIcon(transaction)}
         </div>
-
         {/* Details Section */}
         <div>
           {isDebit && transaction.relatedType === "topup_request" ? (
             <>
-              <div className="flex items-baseline gap-2">
-                <p className="text-sm font-semibold">
-                  to{" "}
-                  {transaction.related?.operatorCode?.toUpperCase() ||
-                    "Unknown"}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  ({transaction.related?.recipient_phone || "N/A"})
-                </p>
-              </div>
-              <p className="text-muted-foreground text-xs capitalize">
-                {transaction.related?.type}
-              </p>
+              {isDataTransaction(transaction) ? (
+                // Data: Show product name/code as main title
+                <>
+                  <p className="text-sm font-semibold">
+                    {transaction.productCode || "Data Bundle"}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    to{" "}
+                    {transaction.related?.operatorCode?.toUpperCase() ||
+                      "Unknown"}{" "}
+                    ({transaction.related?.recipient_phone || "N/A"})
+                  </p>
+                </>
+              ) : (
+                // Airtime: Show product name like "MTN 100 Airtime"
+                <>
+                  <p className="text-sm font-semibold">
+                    {transaction.related?.operatorCode?.toUpperCase() ||
+                      "Unknown"}{" "}
+                    {transaction.denomAmount
+                      ? `₦${transaction.denomAmount.toLocaleString()}`
+                      : ""}{" "}
+                    Airtime
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    to{" "}
+                    {transaction.related?.operatorCode?.toUpperCase() ||
+                      "Unknown"}{" "}
+                    ({transaction.related?.recipient_phone || "N/A"})
+                  </p>
+                </>
+              )}
             </>
           ) : (
             <>
@@ -129,17 +166,18 @@ export function TransactionItem({ transaction, source }: TransactionItemProps) {
           {isDebit ? "-₦" : "+₦"}
           {formattedAmount}
         </p>
-        {/* Status Badge */}
-        {transaction.related?.status && (
-          <Badge
-            className={cn(
-              "mt-1 inline-block rounded-full border-0 px-2 py-0.5 text-xs text-white capitalize",
-              getStatusColor(transaction.related.status)
-            )}
-          >
-            {transaction.related.status}
-          </Badge>
-        )}
+        {/* Status Badge - Only show for topup requests, not for instant wallet operations */}
+        {transaction.relatedType === "topup_request" &&
+          transaction.related?.status && (
+            <Badge
+              className={cn(
+                "mt-1 inline-block rounded-full border-0 px-2 py-0.5 text-xs text-white capitalize",
+                getStatusColor(transaction.related.status)
+              )}
+            >
+              {transaction.related.status}
+            </Badge>
+          )}
       </div>
     </div>
   );

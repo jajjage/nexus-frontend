@@ -1,5 +1,6 @@
 "use client";
 
+import { CreateOfferWizard } from "@/components/features/admin/offers/CreateOfferWizard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,8 +13,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -30,19 +29,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  useAdminOffers,
-  useCreateOffer,
-  useDeleteOffer,
-} from "@/hooks/admin/useAdminOffers";
-import {
-  DiscountType,
-  EligibilityLogic,
-  Offer,
-  OfferApplyTo,
-  OfferStatus,
-} from "@/types/admin/offer.types";
+import { useAdminOffers, useDeleteOffer } from "@/hooks/admin/useAdminOffers";
+import { Offer, OfferStatus } from "@/types/admin/offer.types";
 import { format, isValid } from "date-fns";
 import {
   ChevronLeft,
@@ -74,22 +62,6 @@ export function OfferListTable() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Form state
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [code, setCode] = useState("");
-  const [status, setStatus] = useState<OfferStatus>("draft");
-  const [discountType, setDiscountType] = useState<DiscountType>("percentage");
-  const [discountValue, setDiscountValue] = useState("");
-  const [perUserLimit, setPerUserLimit] = useState("");
-  const [totalUsageLimit, setTotalUsageLimit] = useState("");
-  const [applyTo, setApplyTo] = useState<OfferApplyTo>("all");
-  const [allowAll, setAllowAll] = useState(true);
-  const [eligibilityLogic, setEligibilityLogic] =
-    useState<EligibilityLogic>("all");
-  const [startsAt, setStartsAt] = useState("");
-  const [endsAt, setEndsAt] = useState("");
-
   const limit = 15;
 
   const { data, isLoading, isError, refetch } = useAdminOffers({
@@ -98,59 +70,10 @@ export function OfferListTable() {
     status: statusFilter !== "all" ? (statusFilter as OfferStatus) : undefined,
   });
 
-  const createMutation = useCreateOffer();
   const deleteMutation = useDeleteOffer();
 
   const offers = data?.data?.offers || [];
   const pagination = data?.data?.pagination;
-
-  const resetForm = () => {
-    setTitle("");
-    setDescription("");
-    setCode("");
-    setStatus("draft");
-    setDiscountType("percentage");
-    setDiscountValue("");
-    setPerUserLimit("");
-    setTotalUsageLimit("");
-    setApplyTo("all");
-    setAllowAll(true);
-    setEligibilityLogic("all");
-    setStartsAt("");
-    setEndsAt("");
-  };
-
-  const handleCreate = () => {
-    createMutation.mutate(
-      {
-        title,
-        description: description || undefined,
-        code: code || undefined,
-        status,
-        discountType,
-        discountValue: discountValue ? parseFloat(discountValue) : 0,
-        perUserLimit: perUserLimit ? parseInt(perUserLimit) : undefined,
-        totalUsageLimit: totalUsageLimit
-          ? parseInt(totalUsageLimit)
-          : undefined,
-        applyTo,
-        allowAll,
-        eligibilityLogic,
-        startsAt: startsAt
-          ? new Date(startsAt).toISOString()
-          : new Date().toISOString(),
-        endsAt: endsAt
-          ? new Date(endsAt).toISOString()
-          : new Date().toISOString(),
-      },
-      {
-        onSuccess: () => {
-          setIsCreateOpen(false);
-          resetForm();
-        },
-      }
-    );
-  };
 
   const handleDelete = () => {
     if (deleteId) {
@@ -227,236 +150,18 @@ export function OfferListTable() {
             </Button>
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" onClick={resetForm}>
+                <Button size="sm">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Offer
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create Offer</DialogTitle>
-                  <DialogDescription>
-                    Create a new promotional offer.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Title *</Label>
-                      <Input
-                        id="title"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="Offer title"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Status</Label>
-                      <Select
-                        value={status}
-                        onValueChange={(v) => setStatus(v as OfferStatus)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="scheduled">Scheduled</SelectItem>
-                          <SelectItem value="paused">Paused</SelectItem>
-                          <SelectItem value="expired">Expired</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="code">Code</Label>
-                      <Input
-                        id="code"
-                        value={code}
-                        onChange={(e) => setCode(e.target.value)}
-                        placeholder="PROMO123"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Apply To</Label>
-                      <Select
-                        value={applyTo}
-                        onValueChange={(v) => setApplyTo(v as OfferApplyTo)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Products</SelectItem>
-                          <SelectItem value="operator_product">
-                            Operator
-                          </SelectItem>
-                          <SelectItem value="supplier_product">
-                            Supplier
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Optional description"
-                      rows={2}
-                    />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Discount Type</Label>
-                      <Select
-                        value={discountType}
-                        onValueChange={(v) =>
-                          setDiscountType(v as DiscountType)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="percentage">Percentage</SelectItem>
-                          <SelectItem value="fixed_amount">
-                            Fixed Amount
-                          </SelectItem>
-                          <SelectItem value="fixed_price">
-                            Fixed Price
-                          </SelectItem>
-                          <SelectItem value="buy_x_get_y">
-                            Buy X Get Y
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="discountValue">Discount Value</Label>
-                      <Input
-                        id="discountValue"
-                        type="number"
-                        min="0"
-                        value={discountValue}
-                        onChange={(e) => setDiscountValue(e.target.value)}
-                        placeholder="Value"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Eligibility Logic</Label>
-                      <Select
-                        value={eligibilityLogic}
-                        onValueChange={(v) =>
-                          setEligibilityLogic(v as EligibilityLogic)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">
-                            Match All Criteria
-                          </SelectItem>
-                          <SelectItem value="any">
-                            Match Any Criteria
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Allow All Users?</Label>
-                      <Select
-                        value={allowAll ? "yes" : "no"}
-                        onValueChange={(v) => setAllowAll(v === "yes")}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="yes">Yes</SelectItem>
-                          <SelectItem value="no">No (Targeted)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="perUserLimit">Per User Limit</Label>
-                      <Input
-                        id="perUserLimit"
-                        type="number"
-                        min="0"
-                        value={perUserLimit}
-                        onChange={(e) => setPerUserLimit(e.target.value)}
-                        placeholder="e.g. 1"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="totalUsageLimit">Total Usage Limit</Label>
-                      <Input
-                        id="totalUsageLimit"
-                        type="number"
-                        min="0"
-                        value={totalUsageLimit}
-                        onChange={(e) => setTotalUsageLimit(e.target.value)}
-                        placeholder="e.g. 1000"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="startsAt">Valid From</Label>
-                      <Input
-                        id="startsAt"
-                        type="datetime-local"
-                        value={startsAt}
-                        onChange={(e) => setStartsAt(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="endsAt">Valid To</Label>
-                      <Input
-                        id="endsAt"
-                        type="datetime-local"
-                        value={endsAt}
-                        onChange={(e) => setEndsAt(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsCreateOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleCreate}
-                    disabled={
-                      createMutation.isPending || !title || !discountValue
-                    }
-                  >
-                    {createMutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Create
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
+              <CreateOfferWizard
+                onClose={() => setIsCreateOpen(false)}
+                onSuccess={() => {
+                  setIsCreateOpen(false);
+                  refetch();
+                }}
+              />
             </Dialog>
           </div>
         </CardHeader>

@@ -328,35 +328,43 @@ export function OfferDetailView({ offerId }: OfferDetailViewProps) {
           Let's keep it but handle empty states.
       */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             Eligible Users ({eligibleTotal})
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => setIsPreviewOpen(true)}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsPreviewOpen(true)}
+              className="w-full sm:w-auto"
+            >
               <Eye className="mr-2 h-4 w-4" />
-              Preview Criteria
+              Preview
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handleComputeSegment}
               disabled={computeSegmentMutation.isPending}
+              className="w-full sm:w-auto"
             >
               {computeSegmentMutation.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Calculator className="mr-2 h-4 w-4" />
               )}
-              {offer.allowAll ? "Recompute All" : "Compute Segment"}
+              {offer.allowAll ? "Recompute" : "Compute"}
             </Button>
             <Button
               size="sm"
               onClick={() => setIsRedemptionOpen(true)}
               disabled={eligibleTotal === 0}
+              className="w-full sm:w-auto"
             >
-              Create Redemptions
+              <Gift className="mr-2 h-4 w-4" />
+              Redeem
             </Button>
           </div>
         </CardHeader>

@@ -32,6 +32,25 @@ const methodLabels: Record<string, string> = {
   refund: "Refund",
 };
 
+// Helper to detect if a transaction is for data (with fallback for incorrect backend type)
+const isDataTransaction = (transaction: any): boolean => {
+  // First check the related.type from backend
+  if (transaction?.related?.type?.toLowerCase() === "data") {
+    return true;
+  }
+
+  // Fallback: Check productCode patterns that indicate data products
+  const productCode = (transaction?.productCode || "").toUpperCase();
+  const dataPatterns = ["DATA", "GB", "MB", "TB", "BUNDLE"];
+
+  return dataPatterns.some((pattern) => productCode.includes(pattern));
+};
+
+// Helper to get product type label with smart detection
+const getProductTypeLabel = (transaction: any): string => {
+  return isDataTransaction(transaction) ? "Data" : "Airtime";
+};
+
 export function TransactionDetailView({
   transactionId,
 }: TransactionDetailViewProps) {
@@ -348,11 +367,11 @@ export function TransactionDetailView({
                   <p className="font-medium">₦{transaction.related.cost}</p>
                 </div>
               )}
-              {transaction.related.type && (
+              {transaction.relatedType === "topup_request" && (
                 <div>
                   <Label className="text-muted-foreground text-xs">Type</Label>
                   <p className="font-medium capitalize">
-                    {transaction.related.type}
+                    {getProductTypeLabel(transaction)}
                   </p>
                 </div>
               )}

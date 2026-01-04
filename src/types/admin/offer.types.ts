@@ -135,6 +135,19 @@ export interface CreateRedemptionsResponse {
 
 // ============= Request Types =============
 
+export type OfferRuleType =
+  | "min_spend"
+  | "min_tx_count"
+  | "new_user"
+  | "specific_role";
+
+export interface OfferRule {
+  rule_key: string;
+  rule_type: OfferRuleType;
+  description?: string;
+  params: Record<string, any>;
+}
+
 export interface CreateOfferRequest {
   title: string;
   description?: string;
@@ -149,6 +162,11 @@ export interface CreateOfferRequest {
   applyTo?: OfferApplyTo;
   allowAll?: boolean;
   eligibilityLogic?: EligibilityLogic;
+  // Associations
+  productIds?: string[];
+  supplierIds?: string[];
+  // Rules
+  rules?: OfferRule[];
 }
 
 export interface UpdateOfferRequest {
@@ -161,6 +179,14 @@ export interface UpdateOfferRequest {
   totalUsageLimit?: number;
   startsAt?: string;
   endsAt?: string;
+  // Associations
+  applyTo?: OfferApplyTo;
+  productIds?: string[];
+  supplierIds?: string[];
+  // Rules
+  allowAll?: boolean;
+  eligibilityLogic?: EligibilityLogic;
+  rules?: OfferRule[];
 }
 
 export interface CreateRedemptionsRequest {

@@ -52,8 +52,14 @@ export function SupplierMarkupDetailView({
   const handleEdit = () => {
     if (markup) {
       setEditMarkupPercent(markup.markupPercent);
-      setEditValidFrom(markup.validFrom.split("T")[0]);
-      setEditValidUntil(markup.validUntil.split("T")[0]);
+      // Safeguard against null/undefined date strings
+      const fromDate = markup.validFrom ? markup.validFrom.split("T")[0] : "";
+      const untilDate = markup.validUntil
+        ? markup.validUntil.split("T")[0]
+        : "";
+
+      setEditValidFrom(fromDate);
+      setEditValidUntil(untilDate);
       setEditDescription(markup.description || "");
       setIsEditOpen(true);
     }
@@ -213,11 +219,17 @@ export function SupplierMarkupDetailView({
           <InfoRow label="Markup" value={`${markup.markupPercent}%`} />
           <InfoRow
             label="Valid From"
-            value={format(new Date(markup.validFrom), "PPP")}
+            value={
+              markup.validFrom ? format(new Date(markup.validFrom), "PPP") : "—"
+            }
           />
           <InfoRow
             label="Valid Until"
-            value={format(new Date(markup.validUntil), "PPP")}
+            value={
+              markup.validUntil
+                ? format(new Date(markup.validUntil), "PPP")
+                : "—"
+            }
           />
           {markup.description && (
             <InfoRow label="Description" value={markup.description} />

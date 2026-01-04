@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 interface CategoryTabsProps {
   selectedCategory: string;
@@ -13,6 +13,7 @@ const CATEGORIES = [
   "Monthly",
   "XtraValue",
   "Roaming",
+  "Other",
 ];
 
 export function CategoryTabs({

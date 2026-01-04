@@ -42,6 +42,8 @@ export function CreateProductForm() {
   const [dataMb, setDataMb] = useState<number | undefined>();
   const [validityDays, setValidityDays] = useState<number | undefined>();
   const [isActive, setIsActive] = useState(true);
+  const [hasCashback, setHasCashback] = useState(false);
+  const [cashbackPercentage, setCashbackPercentage] = useState("");
   const [metadata, setMetadata] = useState("");
 
   // Optional supplier mapping fields
@@ -83,6 +85,11 @@ export function CreateProductForm() {
         dataMb,
         validityDays,
         isActive,
+        hasCashback,
+        cashbackPercentage:
+          hasCashback && cashbackPercentage
+            ? parseFloat(cashbackPercentage)
+            : undefined,
         metadata: parsedMetadata,
         // Include supplier mapping if enabled
         ...(includeMapping && supplierId
@@ -243,6 +250,37 @@ export function CreateProductForm() {
                 checked={isActive}
                 onCheckedChange={setIsActive}
               />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Cashback Enabled</Label>
+                  <p className="text-muted-foreground text-xs">
+                    Product gives cashback on purchase
+                  </p>
+                </div>
+                <Switch
+                  checked={hasCashback}
+                  onCheckedChange={setHasCashback}
+                />
+              </div>
+
+              {hasCashback && (
+                <div className="space-y-2">
+                  <Label>Cashback Percentage (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={cashbackPercentage}
+                    onChange={(e) => setCashbackPercentage(e.target.value)}
+                    placeholder="e.g. 5.0"
+                    required={hasCashback}
+                  />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

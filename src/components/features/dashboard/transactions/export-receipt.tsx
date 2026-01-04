@@ -130,20 +130,61 @@ const formatDate = (date: Date | string | undefined): string => {
   }
 };
 
+// Helper to detect if a transaction is for data (with fallback for incorrect backend type)
+const isDataTransaction = (transaction: Transaction): boolean => {
+  // First check the related.type from backend
+  if (transaction.related?.type?.toLowerCase() === "data") {
+    return true;
+  }
+
+  // Fallback: Check productCode patterns that indicate data products
+  const productCode = (transaction.productCode || "").toUpperCase();
+  const dataPatterns = ["DATA", "GB", "MB", "TB", "BUNDLE"];
+
+  return dataPatterns.some((pattern) => productCode.includes(pattern));
+};
+
+// Helper to get service type label with smart detection
+const getServiceTypeLabel = (transaction: Transaction): string => {
+  return isDataTransaction(transaction) ? "Data Bundle" : "Airtime";
+};
+
 export const ExportReceipt = React.forwardRef<
   HTMLDivElement,
   ExportReceiptProps
 >(({ transaction, operatorLogo }, ref) => {
   const isCredit = transaction.direction === "credit";
-  const formattedAmount = isCredit
-    ? transaction.amount.toLocaleString("en-NG", {
-        style: "currency",
-        currency: "NGN",
-      })
-    : `₦${transaction.denomAmount.toLocaleString("en-NG", {
-        style: "currency",
-        currency: "NGN",
-      })}`;
+
+  // For topup transactions, show product name in main display
+  // Uses smart detection that checks productCode patterns as fallback
+  const isDataProduct = isDataTransaction(transaction);
+  const isTopupRequest = transaction.relatedType === "topup_request";
+
+  // Main display: For topups show product name, for other transactions show amount
+  let formattedAmount: string;
+  if (isTopupRequest) {
+    if (isDataProduct) {
+      // Data: Show product code/name
+      formattedAmount =
+        transaction.productCode ||
+        transaction.related?.productCode ||
+        "Data Bundle";
+    } else {
+      // Airtime: Show "MTN ₦100 Airtime" format
+      const operator =
+        transaction.related?.operatorCode?.toUpperCase() || "Unknown";
+      const denom = transaction.denomAmount
+        ? `₦${transaction.denomAmount.toLocaleString()}`
+        : "";
+      formattedAmount = `${operator} ${denom} Airtime`;
+    }
+  } else {
+    // Other transactions: show amount
+    formattedAmount = transaction.amount.toLocaleString("en-NG", {
+      style: "currency",
+      currency: "NGN",
+    });
+  }
 
   const formattedAmountPaid = transaction.amount.toLocaleString("en-NG", {
     style: "currency",
@@ -366,7 +407,7 @@ export const ExportReceipt = React.forwardRef<
               </tr>
             )}
 
-            {transaction.related?.type && (
+            {transaction.relatedType === "topup_request" && (
               <tr>
                 <td
                   style={{
@@ -392,9 +433,7 @@ export const ExportReceipt = React.forwardRef<
                       color: "#111827",
                     }}
                   >
-                    {transaction.related.type === "airtime"
-                      ? "Airtime"
-                      : "Data Bundle"}
+                    {getServiceTypeLabel(transaction)}
                   </div>
                   <div style={{ fontSize: "12px", color: "#6B7280" }}>
                     {operatorName}
