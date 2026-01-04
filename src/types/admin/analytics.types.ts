@@ -43,6 +43,13 @@ export interface TransactionOverview {
   };
 }
 
+// 3b. GMV (Gross Merchandise Volume) Overview
+export interface GmvOverview {
+  totalGMV: number; // Total volume based on Face Value
+  totalTransactions: number; // Total transaction count
+  averageOrderValue: number; // Average order value (GMV / transactions)
+}
+
 // 4. Topup Overview
 export interface TopupOverview {
   totalTopups: number;

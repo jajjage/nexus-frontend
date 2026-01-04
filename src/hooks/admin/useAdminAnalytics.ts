@@ -19,6 +19,8 @@ const analyticsKeys = {
   userOverview: () => [...analyticsKeys.all, "users", "overview"] as const,
   transactionOverview: (params?: DateRangeParams) =>
     [...analyticsKeys.all, "transactions", "overview", params] as const,
+  gmvOverview: (params?: DateRangeParams) =>
+    [...analyticsKeys.all, "gmv", "overview", params] as const,
   topupOverview: (params?: DateRangeParams) =>
     [...analyticsKeys.all, "topup", "overview", params] as const,
   walletOverview: () => [...analyticsKeys.all, "wallet", "overview"] as const,
@@ -60,6 +62,20 @@ export function useTransactionOverview(params?: DateRangeParams) {
   return useQuery({
     queryKey: analyticsKeys.transactionOverview(params),
     queryFn: () => adminAnalyticsService.getTransactionOverview(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    select: (data) => data.data,
+  });
+}
+
+/**
+ * Fetch GMV (Gross Merchandise Volume) overview
+ * Based on Face Value, not Net Revenue
+ * Medium cache - 5 minutes
+ */
+export function useGmvOverview(params?: DateRangeParams) {
+  return useQuery({
+    queryKey: analyticsKeys.gmvOverview(params),
+    queryFn: () => adminAnalyticsService.getGmvOverview(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
     select: (data) => data.data,
   });

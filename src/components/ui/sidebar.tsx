@@ -151,6 +151,8 @@ function SidebarProvider({
   );
 }
 
+import { usePathname } from "next/navigation";
+
 function Sidebar({
   side = "left",
   variant = "sidebar",
@@ -164,6 +166,14 @@ function Sidebar({
   collapsible?: "offcanvas" | "icon" | "none";
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const pathname = usePathname();
+
+  // Close mobile sidebar on route change
+  React.useEffect(() => {
+    if (isMobile && openMobile) {
+      setOpenMobile(false);
+    }
+  }, [pathname, isMobile, setOpenMobile]);
 
   if (collapsible === "none") {
     return (
@@ -187,7 +197,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+          className="bg-background text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,

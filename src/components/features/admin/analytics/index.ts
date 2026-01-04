@@ -1,4 +1,5 @@
 // Analytics Components Index
+export { GmvOverviewCard } from "./GmvOverviewCard";
 export { KeyMetricsCards } from "./KeyMetricsCards";
 export { TopupPerformanceChart } from "./TopupPerformanceChart";
 export { TransactionOverviewCard } from "./TransactionOverviewCard";

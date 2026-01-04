@@ -94,7 +94,7 @@ export function WalletOverviewCard() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
           {stats.map((stat) => (
             <div
               key={stat.label}
@@ -102,7 +102,9 @@ export function WalletOverviewCard() {
             >
               {stat.icon}
               <p className="text-muted-foreground mt-2 text-xs">{stat.label}</p>
-              <p className="mt-1 text-lg font-bold">{stat.value}</p>
+              <p className="mt-1 text-base font-bold md:text-lg">
+                {stat.value}
+              </p>
             </div>
           ))}
         </div>

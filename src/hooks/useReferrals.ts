@@ -107,6 +107,9 @@ export const useClaimReferralBonusV2 = () => {
     mutationFn: () => referralService.claimReferralBonusV2(),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: referralKeys.statsV2() });
+      queryClient.invalidateQueries({
+        queryKey: referralKeys.withdrawals.all(),
+      });
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       toast.success(data.message || "Referral bonus claimed successfully!");
     },
@@ -127,13 +130,20 @@ export const useRequestWithdrawalV2 = () => {
   return useMutation({
     mutationFn: (data: WithdrawalRequestV2) =>
       referralService.requestWithdrawalV2(data),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: referralKeys.withdrawals.all(),
       });
       queryClient.invalidateQueries({ queryKey: referralKeys.statsV2() });
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
-      toast.success("Withdrawal request submitted successfully");
+
+      const formattedAmount = new Intl.NumberFormat("en-NG", {
+        style: "currency",
+        currency: "NGN",
+        maximumFractionDigits: 0,
+      }).format(variables.amount);
+
+      toast.success(`Successfully withdrawn ${formattedAmount}`);
     },
     onError: (error: AxiosError<any>) => {
       toast.error(

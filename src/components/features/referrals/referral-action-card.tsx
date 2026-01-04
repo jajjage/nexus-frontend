@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  useAvailableBalanceV2,
   useClaimReferralBonusV2,
   useReferralStatsV2,
 } from "@/hooks/useReferrals";
@@ -18,6 +19,11 @@ import { WithdrawalModal } from "./withdrawal-modal";
 
 export function ReferralActionCard() {
   const { data: stats, isLoading: isLoadingStats } = useReferralStatsV2();
+  const { data: referrerBalanceV2, isLoading: isLoadingReferrer } =
+    useAvailableBalanceV2("referrer");
+  const { data: referredBalanceV2, isLoading: isLoadingReferred } =
+    useAvailableBalanceV2("referred");
+
   const { mutate: claimBonus, isPending: isClaiming } =
     useClaimReferralBonusV2();
 
@@ -33,11 +39,29 @@ export function ReferralActionCard() {
   const signupBonusAmount = 250; // Heuristic split share if amount not in referredStats
 
   // 2. Withdrawal Actions
-  // We show withdrawal options if there is available balance
-  const hasReferrerBalance = (referrerStats?.pendingReferrerAmount || 0) > 0;
-  const hasReferredBalance = (referredStats?.pendingReferredAmount || 0) > 0;
+  // Use authoritative V2 balances
+  const referrerAmount = referrerBalanceV2?.totalAvailable || 0;
+  const referredAmount = referredBalanceV2?.totalAvailable || 0;
 
-  if (isLoadingStats) return null;
+  const hasReferrerBalance = referrerAmount > 0;
+  // For referred balance, we show it if they have > 0 OR if they can claim (which might eventually give them balance)
+  const hasReferredBalance = referredAmount > 0;
+
+  const isLoading = isLoadingStats || isLoadingReferrer || isLoadingReferred;
+
+  if (isLoading) {
+    return (
+      <Card className="animate-pulse border-amber-200 bg-amber-50/50">
+        <CardHeader className="space-y-2 pb-2">
+          <div className="h-6 w-1/3 rounded bg-amber-100/50"></div>
+          <div className="h-4 w-1/2 rounded bg-amber-100/50"></div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-24 w-full rounded bg-amber-100/50"></div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Hide if nothing to act on
   if (!canClaimBonus && !hasReferrerBalance && !hasReferredBalance) {
@@ -77,7 +101,7 @@ export function ReferralActionCard() {
                 <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
                   ₦
                   {(hasReferredBalance
-                    ? referredStats?.pendingReferredAmount
+                    ? referredAmount
                     : signupBonusAmount
                   )?.toLocaleString()}
                 </p>
@@ -91,7 +115,7 @@ export function ReferralActionCard() {
                   Referral Earnings
                 </p>
                 <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                  ₦{referrerStats?.pendingReferrerAmount.toLocaleString()}
+                  ₦{referrerAmount.toLocaleString()}
                 </p>
               </div>
             )}

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  GmvOverviewCard,
   KeyMetricsCards,
   TopupPerformanceChart,
   TransactionOverviewCard,
@@ -13,7 +14,7 @@ import { BarChart3, Wallet } from "lucide-react";
 
 export default function AnalyticsPage() {
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-4 p-2 md:gap-6 md:p-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -43,13 +44,13 @@ export default function AnalyticsPage() {
           <KeyMetricsCards />
 
           {/* User & Transaction Overview Row */}
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <UserOverviewCard />
             <TransactionOverviewCard />
           </div>
 
           {/* Charts Row */}
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <TopupPerformanceChart />
             <TransactionTypeChart />
           </div>
@@ -60,11 +61,14 @@ export default function AnalyticsPage() {
           {/* Wallet Overview - Full Width */}
           <WalletOverviewCard />
 
-          {/* Additional visualizations can be added here */}
-          <div className="grid gap-6 md:grid-cols-2">
+          {/* GMV vs Transaction comparison */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <GmvOverviewCard />
             <TransactionOverviewCard />
-            <TopupPerformanceChart />
           </div>
+
+          {/* Additional visualizations */}
+          <TopupPerformanceChart />
         </TabsContent>
       </Tabs>
     </div>

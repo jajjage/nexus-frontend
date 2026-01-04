@@ -45,7 +45,7 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
   const [twoFactorError, setTwoFactorError] = useState<string | undefined>();
 
   const searchParams = useSearchParams();
-  const loginMutation = useLogin();
+  const loginMutation = useLogin(role);
   const {
     register,
     handleSubmit,

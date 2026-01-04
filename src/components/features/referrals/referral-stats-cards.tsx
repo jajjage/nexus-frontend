@@ -2,11 +2,20 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useReferralStatsV2 } from "@/hooks/useReferrals";
-import { Banknote, Users, UserCheck, Clock, TrendingUp } from "lucide-react";
+import {
+  useAvailableBalanceV2,
+  useReferralStatsV2,
+} from "@/hooks/useReferrals";
+import { Banknote, Clock, TrendingUp, Users } from "lucide-react";
 
 export function ReferralStatsCards() {
-  const { data: stats, isLoading } = useReferralStatsV2();
+  const { data: stats, isLoading: isLoadingStats } = useReferralStatsV2();
+  const { data: referrerBalance, isLoading: isLoadingReferrer } =
+    useAvailableBalanceV2("referrer");
+  const { data: referredBalance, isLoading: isLoadingReferred } =
+    useAvailableBalanceV2("referred");
+
+  const isLoading = isLoadingStats || isLoadingReferrer || isLoadingReferred;
 
   if (isLoading) {
     return (
@@ -31,11 +40,17 @@ export function ReferralStatsCards() {
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
       currency: "NGN",
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
   const referrer = stats?.referrerStats;
   const referred = stats?.referredStats;
+
+  // Calculate total withdrawable using authoritative V2 balances
+  const totalWithdrawable =
+    (referrerBalance?.totalAvailable || 0) +
+    (referredBalance?.totalAvailable || 0);
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -96,10 +111,7 @@ export function ReferralStatsCards() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-amber-600">
-            {formatCurrency(
-              (referrer?.pendingReferrerAmount || 0) +
-                (referred?.pendingReferredAmount || 0)
-            )}
+            {formatCurrency(totalWithdrawable)}
           </div>
           <p className="text-muted-foreground text-xs">Claimed rewards ready</p>
         </CardContent>

@@ -377,7 +377,7 @@ export function useAuth(): {
 // ============================================================================
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function useLogin() {
+export function useLogin(expectedRole?: "user" | "admin") {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { setUser, setIsLoading, setIsSessionExpired } = useAuthContext();
@@ -387,10 +387,33 @@ export function useLogin() {
     onSuccess: async (response) => {
       const user = response.data?.user;
 
+      console.log("[AUTH] Login successful", {
+        userId: user?.userId,
+        role: user?.role,
+      });
+
+      // STRICT ROLE ENFORCEMENT
+      if (expectedRole && user?.role && expectedRole !== user.role) {
+        console.warn(
+          `[AUTH] Access Denied: Role mismatch. Expected ${expectedRole}, got ${user.role}`
+        );
+
+        // Immediately logout to clear the invalid session
+        await authService.logout();
+
+        const errorMsg =
+          expectedRole === "admin"
+            ? "Access Denied: You must login via the User Portal."
+            : "Access Denied: Admins must login via the Admin Portal.";
+
+        toast.error(errorMsg);
+        setIsLoading(false);
+        return; // Stop execution here
+      }
+
       toast.success("Login successful!", {
         description: `Welcome back, ${user?.fullName || "user"}! Redirecting to dashboard...`,
       });
-      console.log("[AUTH] Login successful", { userId: user?.userId });
 
       // Update auth context immediately
       setUser(user ?? null);

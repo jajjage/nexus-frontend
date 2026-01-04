@@ -7,6 +7,7 @@ import apiClient from "@/lib/api-client";
 import {
   ChartData,
   DateRangeParams,
+  GmvOverview,
   KeyMetrics,
   TopupOverview,
   TransactionOverview,
@@ -49,6 +50,20 @@ export const adminAnalyticsService = {
   ): Promise<ApiResponse<TransactionOverview>> => {
     const response = await apiClient.get<ApiResponse<TransactionOverview>>(
       `${BASE_PATH}/transactions/overview`,
+      { params }
+    );
+    return response.data;
+  },
+
+  /**
+   * Get GMV (Gross Merchandise Volume) overview
+   * Based on Face Value, not Net Revenue
+   */
+  getGmvOverview: async (
+    params?: DateRangeParams
+  ): Promise<ApiResponse<GmvOverview>> => {
+    const response = await apiClient.get<ApiResponse<GmvOverview>>(
+      `${BASE_PATH}/gmv/overview`,
       { params }
     );
     return response.data;
