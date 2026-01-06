@@ -1,12 +1,13 @@
-import { renderHook, waitFor } from "@testing-library/react";
 import { useProfile, useUpdateProfile, userKeys } from "@/hooks/useUser";
 import { userService } from "@/services/user.service";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
+import { Mocked } from "vitest";
 
 // Mock the service
 vi.mock("@/services/user.service");
-const mockUserService = userService as vi.Mocked<typeof userService>;
+const mockUserService = userService as Mocked<typeof userService>;
 
 // Create a wrapper for React Query
 const createWrapper = () => {

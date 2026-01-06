@@ -1,15 +1,11 @@
-import { render, screen, waitFor } from "@testing-library/react";
 import { UserDashboard } from "@/components/features/dashboard/user-dashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadNotificationCount } from "@/hooks/useNotifications";
-import {
-  useProfile,
-  useUpdateProfile,
-  useSetPin,
-  userKeys,
-} from "@/hooks/useUser";
+import { useSetPin, useUpdateProfile } from "@/hooks/useUser";
 import { useQueryClient } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 import { useRouter } from "next/navigation";
+import { Mock } from "vitest";
 
 // Mock Hooks
 vi.mock("@/hooks/useAuth");
@@ -55,11 +51,11 @@ describe("UserDashboard", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useRouter as vi.Mock).mockReturnValue(mockRouter);
-    (useQueryClient as vi.Mock).mockReturnValue(mockQueryClient);
+    (useRouter as Mock).mockReturnValue(mockRouter);
+    (useQueryClient as Mock).mockReturnValue(mockQueryClient);
 
     // Default happy path mocks
-    (useAuth as vi.Mock).mockReturnValue({
+    (useAuth as Mock).mockReturnValue({
       user: {
         userId: "1",
         fullName: "Test User",
@@ -72,22 +68,22 @@ describe("UserDashboard", () => {
       refetch: vi.fn(),
     });
 
-    (useUnreadNotificationCount as vi.Mock).mockReturnValue({
+    (useUnreadNotificationCount as Mock).mockReturnValue({
       data: { data: { unreadCount: 5 } },
     });
 
-    (useUpdateProfile as vi.Mock).mockReturnValue({
+    (useUpdateProfile as Mock).mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
     });
-    (useSetPin as vi.Mock).mockReturnValue({
+    (useSetPin as Mock).mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
     });
   });
 
   it("redirects to admin dashboard if user is admin", async () => {
-    (useAuth as vi.Mock).mockReturnValue({
+    (useAuth as Mock).mockReturnValue({
       user: { role: "admin" },
       isLoading: false,
     });
@@ -101,7 +97,7 @@ describe("UserDashboard", () => {
   });
 
   it("shows PIN setup modal if user has no PIN", () => {
-    (useAuth as vi.Mock).mockReturnValue({
+    (useAuth as Mock).mockReturnValue({
       user: {
         userId: "1",
         fullName: "User",

@@ -3,7 +3,7 @@ import { useAdminSettlements } from "@/hooks/admin/useAdminSettlements";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
@@ -54,7 +54,7 @@ describe("SettlementListTable", () => {
   });
 
   it("should display settlements list", () => {
-    (useAdminSettlements as vi.Mock).mockReturnValue({
+    (useAdminSettlements as Mock).mockReturnValue({
       data: {
         data: {
           settlements: mockSettlements,
@@ -74,7 +74,7 @@ describe("SettlementListTable", () => {
   });
 
   it("should show loading skeleton", () => {
-    (useAdminSettlements as vi.Mock).mockReturnValue({
+    (useAdminSettlements as Mock).mockReturnValue({
       isLoading: true,
       isError: false,
     });
@@ -85,7 +85,7 @@ describe("SettlementListTable", () => {
   });
 
   it("should show empty state when no settlements", () => {
-    (useAdminSettlements as vi.Mock).mockReturnValue({
+    (useAdminSettlements as Mock).mockReturnValue({
       data: {
         data: {
           settlements: [],
@@ -102,7 +102,7 @@ describe("SettlementListTable", () => {
   });
 
   it("should show error state", () => {
-    (useAdminSettlements as vi.Mock).mockReturnValue({
+    (useAdminSettlements as Mock).mockReturnValue({
       isLoading: false,
       isError: true,
       refetch: vi.fn(),
@@ -114,7 +114,7 @@ describe("SettlementListTable", () => {
   });
 
   it("should display summary totals", () => {
-    (useAdminSettlements as vi.Mock).mockReturnValue({
+    (useAdminSettlements as Mock).mockReturnValue({
       data: {
         data: {
           settlements: mockSettlements,

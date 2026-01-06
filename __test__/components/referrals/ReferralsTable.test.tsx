@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react";
 import { ReferralsTable } from "@/components/features/referrals/referrals-table";
-import { useReferralsList } from "@/hooks/useReferrals";
 import { useAuth } from "@/hooks/useAuth";
+import { useReferralsList } from "@/hooks/useReferrals";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen } from "@testing-library/react";
 import { ReactNode } from "react";
+import { Mock } from "vitest";
 
 // Mock dependencies
 vi.mock("@/hooks/useReferrals", () => ({
@@ -42,11 +43,11 @@ describe("ReferralsTable", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useAuth as vi.Mock).mockReturnValue({ user: { userId: "me" } });
+    (useAuth as Mock).mockReturnValue({ user: { userId: "me" } });
   });
 
   it("should display a list of referrals", () => {
-    (useReferralsList as vi.Mock).mockReturnValue({
+    (useReferralsList as Mock).mockReturnValue({
       data: {
         referrals: mockReferrals,
         pagination: { totalPages: 1, page: 1 },
@@ -63,7 +64,7 @@ describe("ReferralsTable", () => {
   });
 
   it("should show empty message when no referrals exist", () => {
-    (useReferralsList as vi.Mock).mockReturnValue({
+    (useReferralsList as Mock).mockReturnValue({
       data: { referrals: [], pagination: {} },
       isLoading: false,
     });

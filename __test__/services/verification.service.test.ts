@@ -1,12 +1,13 @@
 import apiClient from "@/lib/api-client";
-import { verificationService } from "@/services/verification.service";
 import { topupService } from "@/services/topup.service";
+import { verificationService } from "@/services/verification.service";
+import { Mocked } from "vitest";
 
 vi.mock("@/lib/api-client");
 vi.mock("@/services/topup.service");
 
-const mockApiClient = apiClient as vi.Mocked<typeof apiClient>;
-const mockTopupService = topupService as vi.Mocked<typeof topupService>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
+const mockTopupService = topupService as Mocked<typeof topupService>;
 
 describe("verificationService", () => {
   beforeEach(() => {

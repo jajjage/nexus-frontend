@@ -1,6 +1,7 @@
 import { PinVerificationModal } from "@/components/auth/PinVerificationModal";
 import { useSecurityStore } from "@/store/securityStore";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MockedFunction } from "vitest";
 
 vi.mock("@/store/securityStore");
 vi.mock("sonner", () => ({
@@ -10,7 +11,7 @@ vi.mock("sonner", () => ({
   },
 }));
 
-const mockUseSecurityStore = useSecurityStore as vi.MockedFunction<
+const mockUseSecurityStore = useSecurityStore as unknown as MockedFunction<
   typeof useSecurityStore
 >;
 

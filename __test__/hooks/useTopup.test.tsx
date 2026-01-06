@@ -1,9 +1,10 @@
-import { renderHook, waitFor } from "@testing-library/react";
 import { useTopup } from "@/hooks/useTopup";
 import { topupService } from "@/services/topup.service";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
 import { toast } from "sonner";
+import { Mock } from "vitest";
 
 vi.mock("@/services/topup.service");
 vi.mock("sonner", () => ({
@@ -25,7 +26,7 @@ describe("useTopup Hook", () => {
   });
 
   it("should call initiateTopup and show success toast on success", async () => {
-    (topupService.initiateTopup as vi.Mock).mockResolvedValue({
+    (topupService.initiateTopup as Mock).mockResolvedValue({
       success: true,
       message: "Topup in progress",
     });
@@ -48,7 +49,7 @@ describe("useTopup Hook", () => {
   });
 
   it("should show error toast on failure", async () => {
-    (topupService.initiateTopup as vi.Mock).mockRejectedValue({
+    (topupService.initiateTopup as Mock).mockRejectedValue({
       response: { data: { message: "Invalid PIN" } },
     });
 

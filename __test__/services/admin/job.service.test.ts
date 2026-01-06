@@ -77,14 +77,14 @@ describe("adminJobService", () => {
       mockApiClient.get.mockResolvedValueOnce({
         data: {
           success: true,
-          data: { job: mockJob },
+          data: mockJob,
         },
       });
 
       const result = await adminJobService.getJobById("job-123");
 
       expect(mockApiClient.get).toHaveBeenCalledWith("/admin/jobs/job-123");
-      expect(result.data.job).toEqual(mockJob);
+      expect(result.data).toEqual(mockJob);
     });
   });
 

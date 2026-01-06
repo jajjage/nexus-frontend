@@ -11,6 +11,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
+import { Mock } from "vitest";
 
 /**
  * Mock dependencies
@@ -48,7 +49,7 @@ describe("RegisterForm Component", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useRegister as vi.Mock).mockReturnValue(mockRegisterMutation);
+    (useRegister as Mock).mockReturnValue(mockRegisterMutation);
   });
 
   describe("Rendering and UI", () => {
@@ -159,7 +160,7 @@ describe("RegisterForm Component", () => {
 
   describe("Error Handling", () => {
     it("should show loading state when form is submitting", async () => {
-      (useRegister as vi.Mock).mockReturnValue({
+      (useRegister as Mock).mockReturnValue({
         ...mockRegisterMutation,
         isPending: true,
       });

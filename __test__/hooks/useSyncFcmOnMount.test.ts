@@ -2,6 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSyncFcmOnMount } from "@/hooks/useSyncFcmOnMount";
 import { syncFcmToken } from "@/services/notification.service";
 import { renderHook, waitFor } from "@testing-library/react";
+import { Mock } from "vitest";
 
 /**
  * Mock dependencies
@@ -28,12 +29,12 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (syncFcmToken as vi.Mock).mockResolvedValue(true);
+    (syncFcmToken as Mock).mockResolvedValue(true);
   });
 
   describe("App initialization scenarios", () => {
     it("should sync FCM token on app open when user is authenticated", async () => {
-      (useAuth as vi.Mock).mockReturnValue({
+      (useAuth as Mock).mockReturnValue({
         user: mockUser,
         isLoading: false,
         isAuthenticated: true,
@@ -47,7 +48,7 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
     });
 
     it("should not sync FCM token when no user is authenticated", async () => {
-      (useAuth as vi.Mock).mockReturnValue({
+      (useAuth as Mock).mockReturnValue({
         user: null,
         isLoading: false,
         isAuthenticated: false,
@@ -61,7 +62,7 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
     });
 
     it("should not sync during loading state", async () => {
-      (useAuth as vi.Mock).mockReturnValue({
+      (useAuth as Mock).mockReturnValue({
         user: null,
         isLoading: true,
         isAuthenticated: false,
@@ -75,15 +76,17 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
     });
 
     it("should handle FCM sync errors gracefully", async () => {
-      (useAuth as vi.Mock).mockReturnValue({
+      (useAuth as Mock).mockReturnValue({
         user: mockUser,
         isLoading: false,
         isAuthenticated: true,
       });
 
-      (syncFcmToken as vi.Mock).mockRejectedValue(new Error("FCM sync failed"));
+      (syncFcmToken as Mock).mockRejectedValue(new Error("FCM sync failed"));
 
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation();
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
 
       renderHook(() => useSyncFcmOnMount());
 
@@ -95,7 +98,7 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
     });
 
     it("should sync only once on mount", async () => {
-      (useAuth as vi.Mock).mockReturnValue({
+      (useAuth as Mock).mockReturnValue({
         user: mockUser,
         isLoading: false,
         isAuthenticated: true,
@@ -120,13 +123,13 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
        *
        * This ensures the backend always has the latest token
        */
-      (useAuth as vi.Mock).mockReturnValue({
+      (useAuth as Mock).mockReturnValue({
         user: mockUser,
         isLoading: false,
         isAuthenticated: true,
       });
 
-      (syncFcmToken as vi.Mock).mockResolvedValue(true);
+      (syncFcmToken as Mock).mockResolvedValue(true);
 
       renderHook(() => useSyncFcmOnMount());
 
@@ -150,7 +153,7 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
        *
        * The useSyncFcmOnMount hook running on app initialization ensures this
        */
-      (useAuth as vi.Mock).mockReturnValue({
+      (useAuth as Mock).mockReturnValue({
         user: mockUser,
         isLoading: false,
         isAuthenticated: true,
@@ -167,8 +170,8 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
       vi.clearAllMocks();
 
       // Simulate app restart with Firebase having refreshed the token
-      (syncFcmToken as vi.Mock).mockResolvedValue(true);
-      (useAuth as vi.Mock).mockReturnValue({
+      (syncFcmToken as Mock).mockResolvedValue(true);
+      (useAuth as Mock).mockReturnValue({
         user: mockUser,
         isLoading: false,
         isAuthenticated: true,
@@ -190,7 +193,7 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
        * 3. App opens and gets new token from Firebase
        * 4. useSyncFcmOnMount syncs the new token
        */
-      (useAuth as vi.Mock).mockReturnValue({
+      (useAuth as Mock).mockReturnValue({
         user: mockUser,
         isLoading: false,
         isAuthenticated: true,
@@ -199,7 +202,7 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
       // Clear localStorage to simulate token invalidation
       localStorage.removeItem("last_fcm_token");
 
-      (syncFcmToken as vi.Mock).mockResolvedValue(true);
+      (syncFcmToken as Mock).mockResolvedValue(true);
 
       renderHook(() => useSyncFcmOnMount());
 
@@ -211,7 +214,7 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
 
   describe("Session state scenarios", () => {
     it("should sync token when user becomes authenticated after loading", async () => {
-      (useAuth as vi.Mock).mockReturnValue({
+      (useAuth as Mock).mockReturnValue({
         user: null,
         isLoading: true,
         isAuthenticated: false,
@@ -223,7 +226,7 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
       expect(syncFcmToken).not.toHaveBeenCalled();
 
       // User finishes loading
-      (useAuth as vi.Mock).mockReturnValue({
+      (useAuth as Mock).mockReturnValue({
         user: mockUser,
         isLoading: false,
         isAuthenticated: true,
@@ -239,7 +242,7 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
     it("should not sync when authenticated user becomes suspended", async () => {
       const suspendedUser = { ...mockUser, isSuspended: true };
 
-      (useAuth as vi.Mock).mockReturnValue({
+      (useAuth as Mock).mockReturnValue({
         user: suspendedUser,
         isLoading: false,
         isAuthenticated: false, // isAuthenticated should be false if suspended
@@ -254,18 +257,20 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
 
   describe("Error recovery scenarios", () => {
     it("should retry sync on transient failure", async () => {
-      (useAuth as vi.Mock).mockReturnValue({
+      (useAuth as Mock).mockReturnValue({
         user: mockUser,
         isLoading: false,
         isAuthenticated: true,
       });
 
       // First call fails, second succeeds
-      (syncFcmToken as vi.Mock)
+      (syncFcmToken as Mock)
         .mockRejectedValueOnce(new Error("Network error"))
         .mockResolvedValueOnce(true);
 
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation();
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
 
       renderHook(() => useSyncFcmOnMount());
 
@@ -281,15 +286,17 @@ describe("useSyncFcmOnMount - App Open Scenario", () => {
        * Important: Sync failure should NOT block app usage
        * User should still be able to use the app even if FCM sync fails
        */
-      (useAuth as vi.Mock).mockReturnValue({
+      (useAuth as Mock).mockReturnValue({
         user: mockUser,
         isLoading: false,
         isAuthenticated: true,
       });
 
-      (syncFcmToken as vi.Mock).mockRejectedValue(new Error("FCM unavailable"));
+      (syncFcmToken as Mock).mockRejectedValue(new Error("FCM unavailable"));
 
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation();
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
 
       // This should not throw
       expect(() => {

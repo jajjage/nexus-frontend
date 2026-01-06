@@ -77,7 +77,7 @@ describe("adminSettlementService", () => {
       mockApiClient.get.mockResolvedValueOnce({
         data: {
           success: true,
-          data: { settlement: mockSettlement },
+          data: mockSettlement,
         },
       });
 
@@ -86,7 +86,7 @@ describe("adminSettlementService", () => {
       expect(mockApiClient.get).toHaveBeenCalledWith(
         "/admin/settlements/set-123"
       );
-      expect(result.data.settlement).toEqual(mockSettlement);
+      expect(result.data).toEqual(mockSettlement);
     });
   });
 
@@ -121,7 +121,7 @@ describe("adminSettlementService", () => {
         createData
       );
       expect(result.success).toBe(true);
-      expect(result.data.settlement.netAmount).toBe(49250);
+      expect(result.data?.settlement.netAmount).toBe(49250);
     });
 
     it("should handle createSettlement with rawReport", async () => {

@@ -1,13 +1,13 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
 import {
   useReferralStatsV2,
-  useReferralsList,
   useRequestWithdrawalV2,
 } from "@/hooks/useReferrals";
 import { referralService } from "@/services/referral.service";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
 import { toast } from "sonner";
+import { Mock } from "vitest";
 
 vi.mock("@/services/referral.service");
 vi.mock("sonner", () => ({
@@ -31,7 +31,7 @@ describe("useReferrals Hooks", () => {
   describe("useReferralStats", () => {
     it("should fetch and return stats", async () => {
       const mockStats = { referrerStats: { totalReferralsInvited: 10 } };
-      (referralService.getReferralStatsV2 as vi.Mock).mockResolvedValue({
+      (referralService.getReferralStatsV2 as Mock).mockResolvedValue({
         success: true,
         data: mockStats,
       });
@@ -49,7 +49,7 @@ describe("useReferrals Hooks", () => {
 
   describe("useRequestWithdrawalV2", () => {
     it("should call requestWithdrawalV2 and show toast on success", async () => {
-      (referralService.requestWithdrawalV2 as vi.Mock).mockResolvedValue({
+      (referralService.requestWithdrawalV2 as Mock).mockResolvedValue({
         success: true,
       });
 

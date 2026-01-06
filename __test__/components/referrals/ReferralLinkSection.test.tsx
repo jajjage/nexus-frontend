@@ -1,13 +1,14 @@
-import { render, screen, fireEvent } from "@testing-library/react";
 import { ReferralLinkSection } from "@/components/features/referrals/referral-link-section";
 import {
+  useDeactivateReferralLink,
   useReferralLink,
   useRegenerateReferralCode,
-  useDeactivateReferralLink,
 } from "@/hooks/useReferrals";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { ReactNode } from "react";
 import { toast } from "sonner";
+import { Mock } from "vitest";
 
 // Mock dependencies
 vi.mock("@/hooks/useReferrals", () => ({
@@ -46,16 +47,16 @@ describe("ReferralLinkSection", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useRegenerateReferralCode as vi.Mock).mockReturnValue({
+    (useRegenerateReferralCode as Mock).mockReturnValue({
       mutate: vi.fn(),
     });
-    (useDeactivateReferralLink as vi.Mock).mockReturnValue({
+    (useDeactivateReferralLink as Mock).mockReturnValue({
       mutate: vi.fn(),
     });
   });
 
   it("should display the referral link and code", () => {
-    (useReferralLink as vi.Mock).mockReturnValue({
+    (useReferralLink as Mock).mockReturnValue({
       data: mockLinkData,
       isLoading: false,
     });
@@ -71,7 +72,7 @@ describe("ReferralLinkSection", () => {
   });
 
   it("should copy link to clipboard when copy button is clicked", async () => {
-    (useReferralLink as vi.Mock).mockReturnValue({
+    (useReferralLink as Mock).mockReturnValue({
       data: mockLinkData,
       isLoading: false,
     });

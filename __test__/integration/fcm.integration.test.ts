@@ -9,6 +9,7 @@ import {
   requestAndGetFcmToken,
 } from "@/lib/firebase-client";
 import { syncFcmToken, unlinkFcmToken } from "@/services/notification.service";
+import { Mock } from "vitest";
 
 vi.mock("@/lib/api-client");
 vi.mock("@/lib/firebase-client");
@@ -21,8 +22,8 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    (registerServiceWorker as vi.Mock).mockResolvedValue(undefined);
-    (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+    (registerServiceWorker as Mock).mockResolvedValue(undefined);
+    (apiClient.post as Mock).mockResolvedValue({ status: 200 });
   });
 
   afterEach(() => {
@@ -38,7 +39,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
        * 3. Token synced to backend
        * 4. User linked to device
        */
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userAToken);
+      (requestAndGetFcmToken as Mock).mockResolvedValue(userAToken);
 
       const result = await syncFcmToken("web");
 
@@ -59,7 +60,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
        * 2. FCM token obtained
        * 3. Token synced to link device to this user account
        */
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userAToken);
+      (requestAndGetFcmToken as Mock).mockResolvedValue(userAToken);
 
       const result = await syncFcmToken("web");
 
@@ -78,7 +79,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
        * 3. Token still A (not refreshed)
        * 4. Should skip API call
        */
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userAToken);
+      (requestAndGetFcmToken as Mock).mockResolvedValue(userAToken);
 
       // First login
       await syncFcmToken("web");
@@ -86,8 +87,8 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
 
       // Reset mocks
       vi.clearAllMocks();
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userAToken);
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (requestAndGetFcmToken as Mock).mockResolvedValue(userAToken);
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
 
       // Second login with same token
       const result = await syncFcmToken("web");
@@ -111,7 +112,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       localStorage.setItem("last_fcm_token", userAToken);
 
       // Firebase returns new token after refresh
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(newUserAToken);
+      (requestAndGetFcmToken as Mock).mockResolvedValue(newUserAToken);
 
       const result = await syncFcmToken("web");
 
@@ -134,7 +135,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       // Simulate localStorage cleared but app running
       localStorage.clear();
 
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userAToken);
+      (requestAndGetFcmToken as Mock).mockResolvedValue(userAToken);
 
       const result = await syncFcmToken("web");
 
@@ -157,7 +158,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       localStorage.setItem("last_fcm_token", userAToken);
 
       // Firebase returns new token
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(newUserAToken);
+      (requestAndGetFcmToken as Mock).mockResolvedValue(newUserAToken);
 
       const result = await syncFcmToken("web");
 
@@ -185,7 +186,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       localStorage.setItem("last_fcm_token", userAToken);
 
       // Firebase returns refreshed token
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(newUserAToken);
+      (requestAndGetFcmToken as Mock).mockResolvedValue(newUserAToken);
 
       const result = await syncFcmToken("web");
 
@@ -211,7 +212,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       const tokenC = "token_c";
 
       // First sync
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(tokenA);
+      (requestAndGetFcmToken as Mock).mockResolvedValue(tokenA);
       await syncFcmToken("web");
       expect(apiClient.post).toHaveBeenCalledWith(
         "/notifications/tokens",
@@ -220,8 +221,8 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
 
       // Token refreshes to B
       vi.clearAllMocks();
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(tokenB);
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (requestAndGetFcmToken as Mock).mockResolvedValue(tokenB);
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
       await syncFcmToken("web");
       expect(apiClient.post).toHaveBeenCalledWith(
         "/notifications/tokens",
@@ -230,8 +231,8 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
 
       // Token refreshes to C
       vi.clearAllMocks();
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(tokenC);
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (requestAndGetFcmToken as Mock).mockResolvedValue(tokenC);
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
       await syncFcmToken("web");
       expect(apiClient.post).toHaveBeenCalledWith(
         "/notifications/tokens",
@@ -254,7 +255,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       // User was logged in
       localStorage.setItem("last_fcm_token", userAToken);
 
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
 
       const result = await unlinkFcmToken();
 
@@ -297,8 +298,8 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
        */
 
       // ===== USER A LOGIN =====
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userAToken);
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (requestAndGetFcmToken as Mock).mockResolvedValue(userAToken);
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
 
       // User A registers/logs in
       const registerResult = await syncFcmToken("web");
@@ -314,7 +315,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
 
       // ===== USER A LOGOUT =====
       vi.clearAllMocks();
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
 
       const unlinkResult = await unlinkFcmToken();
       expect(unlinkResult).toBe(true);
@@ -333,8 +334,8 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
 
       // Firebase might still return the same token (it's cached on the device)
       // But our sync function will detect it's a new user context
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userBToken);
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (requestAndGetFcmToken as Mock).mockResolvedValue(userBToken);
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
 
       const userBLoginResult = await syncFcmToken("web");
       expect(userBLoginResult).toBe(true);
@@ -366,8 +367,8 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
        */
 
       // User A
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userAToken);
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (requestAndGetFcmToken as Mock).mockResolvedValue(userAToken);
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
 
       await syncFcmToken("web");
       expect(apiClient.post).toHaveBeenCalledWith(
@@ -377,7 +378,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
 
       // User A logout
       vi.clearAllMocks();
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
       await unlinkFcmToken();
       expect(apiClient.post).toHaveBeenCalledWith(
         "/notifications/tokens/unlink",
@@ -386,8 +387,8 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
 
       // User B - Firebase returns completely different token
       vi.clearAllMocks();
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userBToken);
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (requestAndGetFcmToken as Mock).mockResolvedValue(userBToken);
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
 
       await syncFcmToken("web");
 
@@ -412,8 +413,8 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
        * 4. Token not saved to localStorage
        * 5. Retry on next login
        */
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userAToken);
-      (apiClient.post as vi.Mock).mockRejectedValue(new Error("Network error"));
+      (requestAndGetFcmToken as Mock).mockResolvedValue(userAToken);
+      (apiClient.post as Mock).mockRejectedValue(new Error("Network error"));
 
       const result = await syncFcmToken("web");
 
@@ -432,8 +433,8 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
        * 5. This time it succeeds
        */
       // First attempt fails
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userAToken);
-      (apiClient.post as vi.Mock).mockRejectedValue(new Error("Network error"));
+      (requestAndGetFcmToken as Mock).mockResolvedValue(userAToken);
+      (apiClient.post as Mock).mockRejectedValue(new Error("Network error"));
 
       const firstResult = await syncFcmToken("web");
       expect(firstResult).toBe(false);
@@ -443,8 +444,8 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
       localStorage.clear();
 
       // Second attempt succeeds
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userAToken);
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (requestAndGetFcmToken as Mock).mockResolvedValue(userAToken);
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
 
       const secondResult = await syncFcmToken("web");
 
@@ -466,7 +467,7 @@ describe("FCM Notification Lifecycle - Integration Tests", () => {
        */
       localStorage.setItem("last_fcm_token", userAToken);
 
-      (apiClient.post as vi.Mock).mockRejectedValue(new Error("API error"));
+      (apiClient.post as Mock).mockRejectedValue(new Error("API error"));
 
       const result = await unlinkFcmToken();
 

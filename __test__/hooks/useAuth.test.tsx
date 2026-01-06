@@ -1,11 +1,12 @@
-import { renderHook, waitFor } from "@testing-library/react";
-import { useAuth, useLogin, useLogout } from "@/hooks/useAuth";
 import { AuthProvider } from "@/context/AuthContext";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useAuth, useLogin } from "@/hooks/useAuth";
 import { authService } from "@/services/auth.service";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react";
+import { useRouter } from "next/navigation";
+import { ReactNode } from "react";
+import { toast } from "sonner";
+import { Mock } from "vitest";
 
 // Mock dependencies
 vi.mock("next/navigation", () => ({
@@ -55,7 +56,7 @@ describe("useAuth Hooks", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useRouter as vi.Mock).mockReturnValue(mockRouter);
+    (useRouter as Mock).mockReturnValue(mockRouter);
 
     // Mock localStorage
     Object.defineProperty(window, "localStorage", {
@@ -72,11 +73,11 @@ describe("useAuth Hooks", () => {
     it("should login successfully and redirect", async () => {
       // Setup mock return
       const mockUser = { userId: "123", role: "user" };
-      (authService.login as vi.Mock).mockResolvedValue({
+      (authService.login as Mock).mockResolvedValue({
         data: { user: mockUser },
       });
       // getProfile needs to succeed because login invalidates it
-      (authService.getProfile as vi.Mock).mockResolvedValue(mockUser);
+      (authService.getProfile as Mock).mockResolvedValue(mockUser);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -105,10 +106,10 @@ describe("useAuth Hooks", () => {
     });
 
     it("should fetch user if localStorage has cache", async () => {
-      (window.localStorage.getItem as vi.Mock).mockReturnValue(
+      (window.localStorage.getItem as Mock).mockReturnValue(
         JSON.stringify({ userId: "123" })
       );
-      (authService.getProfile as vi.Mock).mockResolvedValue({
+      (authService.getProfile as Mock).mockResolvedValue({
         userId: "123",
         role: "user",
       });

@@ -10,6 +10,7 @@ import {
   syncFcmToken,
   unlinkFcmToken,
 } from "@/services/notification.service";
+import { Mock } from "vitest";
 
 /**
  * Mock modules
@@ -27,10 +28,10 @@ describe("Notification Service", () => {
     // Clear localStorage
     localStorage.clear();
     // Mock the Firebase calls
-    (requestAndGetFcmToken as vi.Mock).mockResolvedValue(mockToken);
-    (registerServiceWorker as vi.Mock).mockResolvedValue(undefined);
+    (requestAndGetFcmToken as Mock).mockResolvedValue(mockToken);
+    (registerServiceWorker as Mock).mockResolvedValue(undefined);
     // Mock the API client
-    (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+    (apiClient.post as Mock).mockResolvedValue({ status: 200 });
   });
 
   afterEach(() => {
@@ -59,8 +60,8 @@ describe("Notification Service", () => {
 
       // Reset mock to verify it's not called again
       vi.clearAllMocks();
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(mockToken);
-      (registerServiceWorker as vi.Mock).mockResolvedValue(undefined);
+      (requestAndGetFcmToken as Mock).mockResolvedValue(mockToken);
+      (registerServiceWorker as Mock).mockResolvedValue(undefined);
 
       // Second sync with same token
       const result = await syncFcmToken(mockPlatform);
@@ -78,9 +79,9 @@ describe("Notification Service", () => {
       // Reset and setup new token
       vi.clearAllMocks();
       const newToken = "mock_fcm_token_67890";
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(newToken);
-      (registerServiceWorker as vi.Mock).mockResolvedValue(undefined);
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (requestAndGetFcmToken as Mock).mockResolvedValue(newToken);
+      (registerServiceWorker as Mock).mockResolvedValue(undefined);
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
 
       // Second sync with new token
       const result = await syncFcmToken(mockPlatform);
@@ -94,7 +95,7 @@ describe("Notification Service", () => {
     });
 
     it("should return false when no token is available", async () => {
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(null);
+      (requestAndGetFcmToken as Mock).mockResolvedValue(null);
 
       const result = await syncFcmToken(mockPlatform);
 
@@ -103,7 +104,7 @@ describe("Notification Service", () => {
     });
 
     it("should return false when API call fails", async () => {
-      (apiClient.post as vi.Mock).mockRejectedValue(new Error("API Error"));
+      (apiClient.post as Mock).mockRejectedValue(new Error("API Error"));
 
       const result = await syncFcmToken(mockPlatform);
 
@@ -113,7 +114,7 @@ describe("Notification Service", () => {
     });
 
     it("should return false on API error status", async () => {
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 500 });
+      (apiClient.post as Mock).mockResolvedValue({ status: 500 });
 
       const result = await syncFcmToken(mockPlatform);
 
@@ -140,7 +141,7 @@ describe("Notification Service", () => {
       const savedToken = localStorage.getItem("last_fcm_token");
 
       // Then unlink
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
       const result = await unlinkFcmToken();
 
       expect(result).toBe(true);
@@ -169,7 +170,7 @@ describe("Notification Service", () => {
       expect(localStorage.getItem("last_fcm_token")).toBe(mockToken);
 
       // Mock API failure
-      (apiClient.post as vi.Mock).mockRejectedValue(new Error("API Error"));
+      (apiClient.post as Mock).mockRejectedValue(new Error("API Error"));
 
       const result = await unlinkFcmToken();
 
@@ -186,7 +187,7 @@ describe("Notification Service", () => {
 
       // Reset and prepare for unlink test
       vi.clearAllMocks();
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 500 });
+      (apiClient.post as Mock).mockResolvedValue({ status: 500 });
 
       const result = await unlinkFcmToken();
 
@@ -204,7 +205,7 @@ describe("Notification Service", () => {
       );
 
       // User A logs out
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
       await unlinkFcmToken();
 
       // Verify unlink was called
@@ -221,9 +222,9 @@ describe("Notification Service", () => {
       // Now User B uses same device and logs in
       vi.clearAllMocks();
       const userBToken = "user_b_token_99999";
-      (requestAndGetFcmToken as vi.Mock).mockResolvedValue(userBToken);
-      (registerServiceWorker as vi.Mock).mockResolvedValue(undefined);
-      (apiClient.post as vi.Mock).mockResolvedValue({ status: 200 });
+      (requestAndGetFcmToken as Mock).mockResolvedValue(userBToken);
+      (registerServiceWorker as Mock).mockResolvedValue(undefined);
+      (apiClient.post as Mock).mockResolvedValue({ status: 200 });
 
       await syncFcmToken(mockPlatform);
 

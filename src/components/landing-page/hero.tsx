@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Phone, Wifi } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -11,8 +12,9 @@ export function Hero() {
           src="/images/hero-background.png"
           alt="Hero Background"
           fill
-          className="z-0 object-cover"
+          className="z-0 object-cover object-center"
           priority
+          sizes="100vw"
         />
         <div className="absolute inset-0 z-1 bg-black/50" />
         <div className="relative z-10 w-full px-4 sm:px-6">
@@ -26,9 +28,25 @@ export function Hero() {
                 Get the cheapest data plans, top-up any network, pay your
                 KEDCO/DStv bills, and more. Fast, automated, and reliable.
               </p>
-              <Button size="lg" className="px-8 py-6 text-base" asChild>
-                <Link href="/register">Get Started Now</Link>
-              </Button>
+              <div className="flex flex-wrap gap-3">
+                <Button size="lg" className="gap-2 px-6 py-6 text-base" asChild>
+                  <Link href="/buy-data">
+                    <Wifi className="h-5 w-5" />
+                    Buy Data
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="gap-2 px-6 py-6 text-base"
+                  asChild
+                >
+                  <Link href="/buy-airtime">
+                    <Phone className="h-5 w-5" />
+                    Buy Airtime
+                  </Link>
+                </Button>
+              </div>
               <p className="text-sm text-white/80">
                 Join 5,000+ satisfied customers.
               </p>
@@ -47,9 +65,25 @@ export function Hero() {
             Get the cheapest data plans, top-up any network, pay your KEDCO/DStv
             bills, and more. Fast, automated, and reliable.
           </p>
-          <Button size="lg" className="px-8 py-6 text-base" asChild>
-            <Link href="/register">Get Started Now</Link>
-          </Button>
+          <div className="flex flex-wrap gap-4">
+            <Button size="lg" className="gap-2 px-8 py-6 text-base" asChild>
+              <Link href="/buy-data">
+                <Wifi className="h-5 w-5" />
+                Buy Data
+              </Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="gap-2 px-8 py-6 text-base"
+              asChild
+            >
+              <Link href="/buy-airtime">
+                <Phone className="h-5 w-5" />
+                Buy Airtime
+              </Link>
+            </Button>
+          </div>
           <p className="text-muted-foreground text-sm md:text-base">
             Join 5,000+ satisfied customers.
           </p>
@@ -60,7 +94,7 @@ export function Hero() {
             alt="Hero Image"
             width={600}
             height={600}
-            className="h-auto w-full rounded-lg"
+            className="h-auto max-h-[500px] w-full max-w-[500px] rounded-lg object-contain"
             priority
           />
         </div>

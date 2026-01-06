@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { useRouter } from "next/navigation";
 import React, { ReactNode } from "react";
+import { Mock } from "vitest";
 
 /**
  * Mock dependencies
@@ -72,7 +73,7 @@ describe("Auth Hooks - FCM Integration", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useRouter as vi.Mock).mockReturnValue(mockRouter);
+    (useRouter as Mock).mockReturnValue(mockRouter);
 
     // Mock localStorage
     Object.defineProperty(window, "localStorage", {
@@ -87,9 +88,9 @@ describe("Auth Hooks - FCM Integration", () => {
 
   describe("useLogin", () => {
     it("should sync FCM token after successful login", async () => {
-      (authService.login as vi.Mock).mockResolvedValue(mockLoginResponse);
-      (authService.getProfile as vi.Mock).mockResolvedValue(mockUser);
-      (syncFcmToken as vi.Mock).mockResolvedValue(true);
+      (authService.login as Mock).mockResolvedValue(mockLoginResponse);
+      (authService.getProfile as Mock).mockResolvedValue(mockUser);
+      (syncFcmToken as Mock).mockResolvedValue(true);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -109,9 +110,9 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should cache user data after login", async () => {
-      (authService.login as vi.Mock).mockResolvedValue(mockLoginResponse);
-      (authService.getProfile as vi.Mock).mockResolvedValue(mockUser);
-      (syncFcmToken as vi.Mock).mockResolvedValue(true);
+      (authService.login as Mock).mockResolvedValue(mockLoginResponse);
+      (authService.getProfile as Mock).mockResolvedValue(mockUser);
+      (syncFcmToken as Mock).mockResolvedValue(true);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -131,9 +132,9 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should redirect to user dashboard after login", async () => {
-      (authService.login as vi.Mock).mockResolvedValue(mockLoginResponse);
-      (authService.getProfile as vi.Mock).mockResolvedValue(mockUser);
-      (syncFcmToken as vi.Mock).mockResolvedValue(true);
+      (authService.login as Mock).mockResolvedValue(mockLoginResponse);
+      (authService.getProfile as Mock).mockResolvedValue(mockUser);
+      (syncFcmToken as Mock).mockResolvedValue(true);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -161,12 +162,12 @@ describe("Auth Hooks - FCM Integration", () => {
         },
       };
 
-      (authService.login as vi.Mock).mockResolvedValue(adminResponse);
-      (authService.getProfile as vi.Mock).mockResolvedValue({
+      (authService.login as Mock).mockResolvedValue(adminResponse);
+      (authService.getProfile as Mock).mockResolvedValue({
         ...mockUser,
         role: "admin",
       });
-      (syncFcmToken as vi.Mock).mockResolvedValue(true);
+      (syncFcmToken as Mock).mockResolvedValue(true);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -185,9 +186,9 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should not block login if FCM token sync fails", async () => {
-      (authService.login as vi.Mock).mockResolvedValue(mockLoginResponse);
-      (authService.getProfile as vi.Mock).mockResolvedValue(mockUser);
-      (syncFcmToken as vi.Mock).mockRejectedValue(new Error("FCM sync failed"));
+      (authService.login as Mock).mockResolvedValue(mockLoginResponse);
+      (authService.getProfile as Mock).mockResolvedValue(mockUser);
+      (syncFcmToken as Mock).mockRejectedValue(new Error("FCM sync failed"));
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -207,9 +208,9 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should handle login with phone number", async () => {
-      (authService.login as vi.Mock).mockResolvedValue(mockLoginResponse);
-      (authService.getProfile as vi.Mock).mockResolvedValue(mockUser);
-      (syncFcmToken as vi.Mock).mockResolvedValue(true);
+      (authService.login as Mock).mockResolvedValue(mockLoginResponse);
+      (authService.getProfile as Mock).mockResolvedValue(mockUser);
+      (syncFcmToken as Mock).mockResolvedValue(true);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -230,7 +231,7 @@ describe("Auth Hooks - FCM Integration", () => {
 
     it("should handle login error", async () => {
       const loginError = new Error("Invalid credentials");
-      (authService.login as vi.Mock).mockRejectedValue(loginError);
+      (authService.login as Mock).mockRejectedValue(loginError);
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
@@ -262,7 +263,7 @@ describe("Auth Hooks - FCM Integration", () => {
     };
 
     it("should redirect to login after successful registration", async () => {
-      (authService.register as vi.Mock).mockResolvedValue(mockRegisterResponse);
+      (authService.register as Mock).mockResolvedValue(mockRegisterResponse);
 
       const { result } = renderHook(() => useRegister(), {
         wrapper: createWrapper(),
@@ -288,7 +289,7 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should show success message after registration", async () => {
-      (authService.register as vi.Mock).mockResolvedValue(mockRegisterResponse);
+      (authService.register as Mock).mockResolvedValue(mockRegisterResponse);
 
       const { result } = renderHook(() => useRegister(), {
         wrapper: createWrapper(),
@@ -311,8 +312,8 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should NOT sync FCM token during registration (no tokens returned)", async () => {
-      (authService.register as vi.Mock).mockResolvedValue(mockRegisterResponse);
-      (syncFcmToken as vi.Mock).mockResolvedValue(true);
+      (authService.register as Mock).mockResolvedValue(mockRegisterResponse);
+      (syncFcmToken as Mock).mockResolvedValue(true);
 
       const { result } = renderHook(() => useRegister(), {
         wrapper: createWrapper(),
@@ -337,7 +338,7 @@ describe("Auth Hooks - FCM Integration", () => {
 
   describe("useLogout", () => {
     it("should successfully logout", async () => {
-      (authService.logout as vi.Mock).mockResolvedValue({
+      (authService.logout as Mock).mockResolvedValue({
         success: true,
         message: "Logout successful",
       });
@@ -357,7 +358,7 @@ describe("Auth Hooks - FCM Integration", () => {
     });
 
     it("should handle logout error", async () => {
-      (authService.logout as vi.Mock).mockRejectedValue(
+      (authService.logout as Mock).mockRejectedValue(
         new Error("Logout API error")
       );
 

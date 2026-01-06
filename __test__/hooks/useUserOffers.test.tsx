@@ -3,6 +3,7 @@ import { userOfferService } from "@/services/user-offer.service";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
+import { Mock } from "vitest";
 
 vi.mock("@/services/user-offer.service");
 
@@ -39,7 +40,7 @@ describe("useUserOffers Hooks", () => {
         ],
       };
 
-      (userOfferService.getEligibleOffers as vi.Mock).mockResolvedValue({
+      (userOfferService.getEligibleOffers as Mock).mockResolvedValue({
         success: true,
         data: mockOffers,
       });
@@ -58,7 +59,7 @@ describe("useUserOffers Hooks", () => {
     });
 
     it("should return empty Set when no offers are eligible", async () => {
-      (userOfferService.getEligibleOffers as vi.Mock).mockResolvedValue({
+      (userOfferService.getEligibleOffers as Mock).mockResolvedValue({
         success: true,
         data: { offers: [] },
       });
@@ -84,7 +85,7 @@ describe("useUserOffers Hooks", () => {
     });
 
     it("should return empty Set on error", async () => {
-      (userOfferService.getEligibleOffers as vi.Mock).mockRejectedValue(
+      (userOfferService.getEligibleOffers as Mock).mockRejectedValue(
         new Error("Network error")
       );
 
@@ -106,9 +107,7 @@ describe("useUserOffers Hooks", () => {
         data: { valid: true, discountedAmount: 500 },
       };
 
-      (userOfferService.validateOffer as vi.Mock).mockResolvedValue(
-        mockResponse
-      );
+      (userOfferService.validateOffer as Mock).mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => useValidateOffer(), {
         wrapper: createWrapper(),

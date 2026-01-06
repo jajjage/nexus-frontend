@@ -32,8 +32,8 @@ describe("adminOperatorService", () => {
       const result = await adminOperatorService.getOperators();
 
       expect(mockApiClient.get).toHaveBeenCalledWith("/admin/operators");
-      expect(result.data.operators).toHaveLength(2);
-      expect(result.data.operators[0].code).toBe("MTN");
+      expect(result.data?.operators).toHaveLength(2);
+      expect(result.data?.operators[0].code).toBe("MTN");
     });
 
     it("should return empty array when no operators exist", async () => {
@@ -46,7 +46,7 @@ describe("adminOperatorService", () => {
 
       const result = await adminOperatorService.getOperators();
 
-      expect(result.data.operators).toEqual([]);
+      expect(result.data?.operators).toEqual([]);
     });
   });
 
@@ -64,14 +64,14 @@ describe("adminOperatorService", () => {
       mockApiClient.get.mockResolvedValueOnce({
         data: {
           success: true,
-          data: { operator: mockOperator },
+          data: mockOperator,
         },
       });
 
       const result = await adminOperatorService.getOperatorById("op-123");
 
       expect(mockApiClient.get).toHaveBeenCalledWith("/admin/operators/op-123");
-      expect(result.data.operator).toEqual(mockOperator);
+      expect(result.data).toEqual(mockOperator);
     });
   });
 
@@ -104,7 +104,7 @@ describe("adminOperatorService", () => {
         createData
       );
       expect(result.success).toBe(true);
-      expect(result.data.operator.code).toBe("9MOBILE");
+      expect(result.data?.operator.code).toBe("9MOBILE");
     });
   });
 
@@ -138,7 +138,7 @@ describe("adminOperatorService", () => {
         "/admin/operators/op-123",
         updateData
       );
-      expect(result.data.operator.name).toBe("MTN Nigeria Updated");
+      expect(result.data?.operator.name).toBe("MTN Nigeria Updated");
     });
 
     it("should allow partial updates", async () => {

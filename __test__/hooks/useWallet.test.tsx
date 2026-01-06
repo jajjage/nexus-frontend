@@ -1,8 +1,9 @@
-import { renderHook, waitFor } from "@testing-library/react";
 import { useWallet, useWalletBalance } from "@/hooks/useWallet";
 import { walletService } from "@/services/wallet.service";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
+import { Mock } from "vitest";
 
 vi.mock("@/services/wallet.service");
 
@@ -23,7 +24,7 @@ describe("useWallet Hooks", () => {
   describe("useWallet", () => {
     it("should fetch and return wallet data", async () => {
       const mockWallet = { balance: "1000", id: "w1" };
-      (walletService.getWallet as vi.Mock).mockResolvedValue({
+      (walletService.getWallet as Mock).mockResolvedValue({
         success: true,
         data: mockWallet,
       });
@@ -40,7 +41,7 @@ describe("useWallet Hooks", () => {
   describe("useWalletBalance", () => {
     it("should fetch and return balance data", async () => {
       const mockBalance = { balance: "500" };
-      (walletService.getBalance as vi.Mock).mockResolvedValue({
+      (walletService.getBalance as Mock).mockResolvedValue({
         success: true,
         data: mockBalance,
       });

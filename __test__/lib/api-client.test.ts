@@ -1,10 +1,8 @@
-import { toast } from "sonner";
-import axios from "axios";
-import apiClient, {
-  resetAuthClient,
-  setSessionExpiredCallback,
-} from "@/lib/api-client";
+import { resetAuthClient, setSessionExpiredCallback } from "@/lib/api-client";
 import { server } from "@/mocks/server"; // Import MSW server
+import axios from "axios";
+import { toast } from "sonner";
+import { Mock } from "vitest";
 
 // 1. Mock axios fully inside the factory
 // We need to return an object with a "default" key for Vitest
@@ -44,13 +42,13 @@ describe("API Client Logic", () => {
 
   // Type assertion for the mocked axios module
   // Since we mocked 'axios' to return the instance directly as the default export
-  const mockAxios = axios as unknown as vi.Mock & {
+  const mockAxios = axios as unknown as Mock & {
     interceptors: {
-      request: { use: vi.Mock };
-      response: { use: vi.Mock };
+      request: { use: Mock };
+      response: { use: Mock };
     };
-    post: vi.Mock;
-    create: vi.Mock;
+    post: Mock;
+    create: Mock;
   };
 
   // MSW Setup for tests that need it
@@ -74,7 +72,7 @@ describe("API Client Logic", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (toast.error as vi.Mock).mockClear();
+    (toast.error as Mock).mockClear();
     resetAuthClient();
   });
 
