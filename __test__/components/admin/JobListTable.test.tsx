@@ -7,7 +7,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
@@ -55,18 +55,18 @@ describe("JobListTable", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useRetryJob as vi.Mock).mockReturnValue({
+    (useRetryJob as Mock).mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
     });
-    (useDeleteJob as vi.Mock).mockReturnValue({
+    (useDeleteJob as Mock).mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
     });
   });
 
   it("should display jobs list", () => {
-    (useAdminJobs as vi.Mock).mockReturnValue({
+    (useAdminJobs as Mock).mockReturnValue({
       data: {
         data: {
           jobs: mockJobs,
@@ -87,7 +87,7 @@ describe("JobListTable", () => {
   });
 
   it("should show loading skeleton", () => {
-    (useAdminJobs as vi.Mock).mockReturnValue({
+    (useAdminJobs as Mock).mockReturnValue({
       isLoading: true,
       isError: false,
     });
@@ -99,7 +99,7 @@ describe("JobListTable", () => {
   });
 
   it("should show empty state when no jobs", () => {
-    (useAdminJobs as vi.Mock).mockReturnValue({
+    (useAdminJobs as Mock).mockReturnValue({
       data: {
         data: {
           jobs: [],
@@ -117,7 +117,7 @@ describe("JobListTable", () => {
   });
 
   it("should show error state", () => {
-    (useAdminJobs as vi.Mock).mockReturnValue({
+    (useAdminJobs as Mock).mockReturnValue({
       isLoading: false,
       isError: true,
       refetch: vi.fn(),

@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
 import { TransactionHistory } from "@/components/features/dashboard/transaction-history";
 import { useRecentTransactions } from "@/hooks/useWallet";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, Mock, vi } from "vitest";
 
 // Mock the hook
 vi.mock("@/hooks/useWallet", () => ({
@@ -16,7 +17,7 @@ vi.mock("@/components/features/dashboard/transaction-item", () => ({
 
 describe("TransactionHistory", () => {
   it("shows loading spinner when loading", () => {
-    (useRecentTransactions as vi.Mock).mockReturnValue({
+    (useRecentTransactions as Mock).mockReturnValue({
       isLoading: true,
       data: undefined,
     });
@@ -30,7 +31,7 @@ describe("TransactionHistory", () => {
   });
 
   it("shows error message on error", () => {
-    (useRecentTransactions as vi.Mock).mockReturnValue({
+    (useRecentTransactions as Mock).mockReturnValue({
       isLoading: false,
       isError: true,
     });
@@ -42,7 +43,7 @@ describe("TransactionHistory", () => {
   });
 
   it("shows empty state when no transactions", () => {
-    (useRecentTransactions as vi.Mock).mockReturnValue({
+    (useRecentTransactions as Mock).mockReturnValue({
       isLoading: false,
       data: [],
     });
@@ -56,7 +57,7 @@ describe("TransactionHistory", () => {
       { id: "1", title: "Data Purchase" },
       { id: "2", title: "Airtime Topup" },
     ];
-    (useRecentTransactions as vi.Mock).mockReturnValue({
+    (useRecentTransactions as Mock).mockReturnValue({
       isLoading: false,
       data: mockData,
     });
@@ -67,7 +68,7 @@ describe("TransactionHistory", () => {
   });
 
   it("blurs content when isVisible is false", () => {
-    (useRecentTransactions as vi.Mock).mockReturnValue({
+    (useRecentTransactions as Mock).mockReturnValue({
       isLoading: false,
       data: [{ id: "1", title: "Secret" }],
     });

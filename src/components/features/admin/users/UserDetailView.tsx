@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { UserActivityTable } from "../audit/UserActivityTable";
 import { Setup2FAModal } from "./Setup2FAModal";
 
 interface UserDetailViewProps {
@@ -504,6 +505,9 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* User Activity Log */}
+      <UserActivityTable userId={userId} />
 
       {/* Setup 2FA Modal */}
       <Setup2FAModal

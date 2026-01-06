@@ -3,7 +3,7 @@ import { useAdminOperators } from "@/hooks/admin/useAdminOperators";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
@@ -54,7 +54,7 @@ describe("OperatorListTable", () => {
   });
 
   it("should display operators list", () => {
-    (useAdminOperators as vi.Mock).mockReturnValue({
+    (useAdminOperators as Mock).mockReturnValue({
       data: {
         data: {
           operators: mockOperators,
@@ -76,7 +76,7 @@ describe("OperatorListTable", () => {
   });
 
   it("should display country codes", () => {
-    (useAdminOperators as vi.Mock).mockReturnValue({
+    (useAdminOperators as Mock).mockReturnValue({
       data: {
         data: {
           operators: mockOperators,
@@ -95,7 +95,7 @@ describe("OperatorListTable", () => {
   });
 
   it("should display status badges", () => {
-    (useAdminOperators as vi.Mock).mockReturnValue({
+    (useAdminOperators as Mock).mockReturnValue({
       data: {
         data: {
           operators: mockOperators,
@@ -114,7 +114,7 @@ describe("OperatorListTable", () => {
   });
 
   it("should show loading skeleton", () => {
-    (useAdminOperators as vi.Mock).mockReturnValue({
+    (useAdminOperators as Mock).mockReturnValue({
       isLoading: true,
       isError: false,
     });
@@ -125,7 +125,7 @@ describe("OperatorListTable", () => {
   });
 
   it("should show empty state when no operators", () => {
-    (useAdminOperators as vi.Mock).mockReturnValue({
+    (useAdminOperators as Mock).mockReturnValue({
       data: {
         data: {
           operators: [],
@@ -142,7 +142,7 @@ describe("OperatorListTable", () => {
   });
 
   it("should show error state", () => {
-    (useAdminOperators as vi.Mock).mockReturnValue({
+    (useAdminOperators as Mock).mockReturnValue({
       isLoading: false,
       isError: true,
       refetch: vi.fn(),
@@ -154,7 +154,7 @@ describe("OperatorListTable", () => {
   });
 
   it("should display operator count", () => {
-    (useAdminOperators as vi.Mock).mockReturnValue({
+    (useAdminOperators as Mock).mockReturnValue({
       data: {
         data: {
           operators: mockOperators,
