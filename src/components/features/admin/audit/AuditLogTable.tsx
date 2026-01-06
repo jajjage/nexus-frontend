@@ -68,7 +68,7 @@ export function AuditLogTable() {
   ) => {
     setParams((prev) => ({
       ...prev,
-      [key]: value || undefined,
+      [key]: value === "all" ? undefined : value || undefined,
       page: 1,
     }));
   };
@@ -150,7 +150,7 @@ export function AuditLogTable() {
               <SelectValue placeholder="All Actions" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Actions</SelectItem>
+              <SelectItem value="all">All Actions</SelectItem>
               {Object.entries(ACTION_TYPE_LABELS).map(([key, label]) => (
                 <SelectItem key={key} value={key}>
                   {label}

@@ -68,7 +68,7 @@ export function UserActivityTable({ userId }: UserActivityTableProps) {
   ) => {
     setParams((prev) => ({
       ...prev,
-      [key]: value || undefined,
+      [key]: value === "all" ? undefined : value || undefined,
       page: 1,
     }));
   };
@@ -136,7 +136,7 @@ export function UserActivityTable({ userId }: UserActivityTableProps) {
               <SelectValue placeholder="All Activities" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Activities</SelectItem>
+              <SelectItem value="all">All Activities</SelectItem>
               {Object.entries(USER_ACTIVITY_LABELS).map(([key, label]) => (
                 <SelectItem key={key} value={key}>
                   {label}
