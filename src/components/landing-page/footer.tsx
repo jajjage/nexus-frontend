@@ -1,18 +1,18 @@
-import { Facebook, Twitter, Instagram } from "lucide-react";
+import { Facebook, Instagram, Twitter } from "lucide-react";
 import Link from "next/link";
 
 const servicesLinks = [
-  { href: "#services", label: "Buy Data" },
-  { href: "#services", label: "Airtime Top-up" },
-  { href: "#services", label: "Pay KEDCO" },
-  { href: "#services", label: "DStv/GOtv" },
+  { href: "/buy-data", label: "Buy Data" },
+  { href: "/buy-airtime", label: "Buy Airtime" },
+  { href: "/pay-kedco", label: "Pay KEDCO" },
+  { href: "/dstv-gotv", label: "DStv/GOtv" },
 ];
 
 const companyLinks = [
-  { href: "#about", label: "About Us" },
-  { href: "#", label: "Contact Support" },
-  { href: "#", label: "Terms of Service" },
-  { href: "#", label: "Privacy Policy" },
+  { href: "/about", label: "About Us" },
+  { href: "/contact", label: "Contact Support" },
+  { href: "/terms", label: "Terms of Service" },
+  { href: "/privacy", label: "Privacy Policy" },
 ];
 
 export function Footer() {

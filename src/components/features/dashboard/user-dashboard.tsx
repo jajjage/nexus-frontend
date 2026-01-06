@@ -182,12 +182,13 @@ export function UserDashboard() {
 
               {/* Balance Card */}
               <BalanceCard
-                balance={parseFloat(user.balance)}
+                balance={parseFloat(user.balance || "0") || 0}
                 isVisible={isBalanceVisible}
                 setIsVisible={setIsBalanceVisible}
                 accountName={user.fullName}
                 accountNumber={user.accountNumber}
                 providerName={user.providerName}
+                onAccountCreated={refetchUser}
               />
 
               {/* Recent Transactions */}

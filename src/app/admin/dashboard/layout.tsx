@@ -22,6 +22,7 @@ import {
   BellIcon,
   BriefcaseIcon,
   CreditCardIcon,
+  FileTextIcon,
   FingerprintIcon,
   GiftIcon,
   HomeIcon,
@@ -50,6 +51,11 @@ const navItems = [
     title: "Analytics",
     href: "/admin/dashboard/analytics",
     icon: BarChart3Icon,
+  },
+  {
+    title: "Audit Log",
+    href: "/admin/dashboard/audit-log",
+    icon: FileTextIcon,
   },
   {
     title: "Users",
@@ -85,6 +91,11 @@ const navItems = [
     title: "Suppliers",
     href: "/admin/dashboard/suppliers",
     icon: ServerIcon,
+  },
+  {
+    title: "Providers",
+    href: "/admin/dashboard/providers",
+    icon: CreditCardIcon,
   },
   {
     title: "Markups",

@@ -1,6 +1,8 @@
 import apiClient from "@/lib/api-client";
 import { ApiResponse } from "@/types/api.types";
 import {
+  CreateVirtualAccountRequest,
+  CreateVirtualAccountResponse,
   GetPurchasesParams,
   GetSupplierMarkupParams,
   PaginatedSupplierMarkupResponse,
@@ -129,6 +131,22 @@ export const userService = {
    */
   createTopup: async (data: TopupRequest): Promise<TopupResponse> => {
     const response = await apiClient.post<TopupResponse>("/user/topup", data);
+    return response.data;
+  },
+
+  // ============= Virtual Account Methods =============
+
+  /**
+   * Create virtual account for user
+   * BVN must be 11 digits and start with "22"
+   */
+  createVirtualAccount: async (
+    data: CreateVirtualAccountRequest
+  ): Promise<CreateVirtualAccountResponse> => {
+    const response = await apiClient.post<CreateVirtualAccountResponse>(
+      "/user/virtual-account",
+      data
+    );
     return response.data;
   },
 };

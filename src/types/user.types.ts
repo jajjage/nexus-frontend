@@ -141,3 +141,16 @@ export interface TopupResponse {
     reference: string;
   };
 }
+
+// ============= Virtual Account Types =============
+export interface CreateVirtualAccountRequest {
+  bvn: string;
+}
+
+export interface CreateVirtualAccountResponse {
+  success: boolean;
+  message: string;
+  data: {
+    virtualAccountId: string;
+  };
+}

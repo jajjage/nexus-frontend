@@ -2,15 +2,10 @@ import { LoginForm } from "@/components/features/auth/login-form";
 import { useLogin } from "@/hooks/useAuth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
+import { Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * Mock dependencies
@@ -48,7 +43,7 @@ describe("LoginForm Component", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useLogin as vi.Mock).mockReturnValue(mockLoginMutation);
+    (useLogin as Mock).mockReturnValue(mockLoginMutation);
   });
 
   describe("Rendering and UI", () => {
@@ -154,10 +149,13 @@ describe("LoginForm Component", () => {
       await user.click(loginButton);
 
       await waitFor(() => {
-        expect(mockLoginMutation.mutate).toHaveBeenCalledWith({
-          email: "test@example.com",
-          password: "password123",
-        });
+        expect(mockLoginMutation.mutate).toHaveBeenCalledWith(
+          expect.objectContaining({
+            email: "test@example.com",
+            password: "password123",
+          }),
+          expect.anything()
+        );
       });
     });
 
@@ -174,10 +172,13 @@ describe("LoginForm Component", () => {
       await user.click(loginButton);
 
       await waitFor(() => {
-        expect(mockLoginMutation.mutate).toHaveBeenCalledWith({
-          phone: "08012345678",
-          password: "password123",
-        });
+        expect(mockLoginMutation.mutate).toHaveBeenCalledWith(
+          expect.objectContaining({
+            phone: "08012345678",
+            password: "password123",
+          }),
+          expect.anything()
+        );
       });
     });
   });
@@ -218,7 +219,7 @@ describe("LoginForm Component", () => {
   describe("Error Handling", () => {
     it("should display error alert when login fails", async () => {
       const errorMessage = "Invalid credentials";
-      (useLogin as vi.Mock).mockReturnValue({
+      (useLogin as Mock).mockReturnValue({
         ...mockLoginMutation,
         isError: true,
         error: {
@@ -238,7 +239,7 @@ describe("LoginForm Component", () => {
     });
 
     it("should show spinner when login is pending", async () => {
-      (useLogin as vi.Mock).mockReturnValue({
+      (useLogin as Mock).mockReturnValue({
         ...mockLoginMutation,
         isPending: true,
       });

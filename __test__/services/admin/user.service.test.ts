@@ -136,7 +136,7 @@ describe("adminUserService", () => {
   });
 
   describe("disable2FA", () => {
-    it("should call POST /admin/users/:userId/disable-2fa", async () => {
+    it("should call POST /admin/users/:userId/2fa/disable", async () => {
       mockApiClient.post.mockResolvedValueOnce({
         data: { success: true, message: "2FA disabled" },
       });
@@ -144,7 +144,7 @@ describe("adminUserService", () => {
       await adminUserService.disable2FA("user-123");
 
       expect(mockApiClient.post).toHaveBeenCalledWith(
-        "/admin/users/user-123/disable-2fa"
+        "/admin/users/user-123/2fa/disable"
       );
     });
   });

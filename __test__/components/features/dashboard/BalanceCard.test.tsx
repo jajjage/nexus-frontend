@@ -1,12 +1,47 @@
-import { render, screen, fireEvent } from "@testing-library/react";
 import { BalanceCard } from "@/components/features/dashboard/balance-card";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
+import { describe, expect, it, vi } from "vitest";
 
-// Wrapper to handle state
+// Mock the user service
+vi.mock("@/services/user.service", () => ({
+  userService: {
+    createVirtualAccount: vi.fn(),
+  },
+}));
+
+// Create a QueryClient for testing
+const createTestQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+// Wrapper to handle state and QueryClientProvider
 const BalanceCardWrapper = (props: any) => {
   const [isVisible, setIsVisible] = useState(true);
+  const queryClient = createTestQueryClient();
   return (
-    <BalanceCard {...props} isVisible={isVisible} setIsVisible={setIsVisible} />
+    <QueryClientProvider client={queryClient}>
+      <BalanceCard
+        {...props}
+        isVisible={isVisible}
+        setIsVisible={setIsVisible}
+      />
+    </QueryClientProvider>
+  );
+};
+
+// Wrapper with controlled visibility
+const BalanceCardControlled = (props: any) => {
+  const queryClient = createTestQueryClient();
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BalanceCard {...props} />
+    </QueryClientProvider>
   );
 };
 
@@ -28,7 +63,11 @@ describe("BalanceCard", () => {
 
   it("masks balance when hidden", () => {
     render(
-      <BalanceCard {...defaultProps} isVisible={false} setIsVisible={vi.fn()} />
+      <BalanceCardControlled
+        {...defaultProps}
+        isVisible={false}
+        setIsVisible={vi.fn()}
+      />
     );
 
     expect(screen.getByText("••••••••")).toBeInTheDocument();
@@ -50,7 +89,7 @@ describe("BalanceCard", () => {
   it("toggles visibility on eye click", () => {
     const setIsVisibleMock = vi.fn();
     render(
-      <BalanceCard
+      <BalanceCardControlled
         {...defaultProps}
         isVisible={true}
         setIsVisible={setIsVisibleMock}
@@ -62,5 +101,25 @@ describe("BalanceCard", () => {
     fireEvent.click(toggleButton);
 
     expect(setIsVisibleMock).toHaveBeenCalled();
+  });
+
+  it("shows BVN form when no virtual account exists", () => {
+    render(
+      <BalanceCardWrapper
+        balance={5000}
+        accountName={undefined}
+        accountNumber={undefined}
+        providerName={undefined}
+      />
+    );
+
+    // Click Add Money button
+    fireEvent.click(screen.getByText("Add Money"));
+
+    // Should show BVN input form - there are two elements: dialog title and button
+    expect(
+      screen.getAllByText("Create Virtual Account").length
+    ).toBeGreaterThan(0);
+    expect(screen.getByLabelText(/BVN/i)).toBeInTheDocument();
   });
 });

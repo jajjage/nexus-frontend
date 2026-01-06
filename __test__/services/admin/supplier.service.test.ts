@@ -75,7 +75,7 @@ describe("adminSupplierService", () => {
       mockApiClient.get.mockResolvedValueOnce({
         data: {
           success: true,
-          data: { supplier: mockSupplier },
+          data: mockSupplier,
         },
       });
 
