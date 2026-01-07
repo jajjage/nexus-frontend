@@ -13,6 +13,7 @@ const getStatusColor = (status: string) => {
       return "bg-yellow-500 text-yellow-50";
     case "completed":
     case "received":
+    case "success":
       return "bg-green-500 text-green-50";
     case "failed":
       return "bg-red-500 text-red-50";
@@ -141,6 +142,12 @@ export function TransactionItem({ transaction, source }: TransactionItemProps) {
                   </p>
                 </>
               )}
+            </>
+          ) : transaction.relatedType === "incoming_payment" ? (
+            // Incoming payment: Show clean message instead of admin UUID
+            <>
+              <p className="text-sm font-semibold">Incoming Payment</p>
+              <p className="text-muted-foreground text-xs">Wallet top-up</p>
             </>
           ) : (
             <>

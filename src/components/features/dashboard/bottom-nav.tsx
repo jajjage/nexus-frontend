@@ -1,20 +1,13 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import {
-  ArrowUp,
-  CreditCard,
-  Home,
-  PiggyBank,
-  Trophy,
-  User,
-} from "lucide-react";
+import { Home, Trophy, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/dashboard" },
-  { label: "Savings", icon: PiggyBank, href: "/dashboard/savings" },
+  { label: "Referral", icon: Users, href: "/dashboard/referrals" },
   { label: "Rewards", icon: Trophy, href: "/dashboard/rewards" },
   { label: "Profile", icon: User, href: "/dashboard/profile" },
 ];
