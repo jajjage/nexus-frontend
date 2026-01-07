@@ -1,12 +1,12 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { SetupWizard } from "@/components/features/auth/setup-wizard";
 import { Spinner } from "@/components/ui/spinner";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import { Suspense, useEffect } from "react";
 
-export default function SetupPage() {
+function SetupContent() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
@@ -31,5 +31,19 @@ export default function SetupPage() {
         <SetupWizard />
       </div>
     </div>
+  );
+}
+
+export default function SetupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <Spinner className="text-primary size-8" />
+        </div>
+      }
+    >
+      <SetupContent />
+    </Suspense>
   );
 }

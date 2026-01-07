@@ -34,7 +34,24 @@ import { UserInfo } from "./user-info";
 export function UserDashboard() {
   const { user, isLoading, refetch: refetchUser } = useAuth();
   const { data: unreadCountResponse } = useUnreadNotificationCount();
-  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+
+  // Local storage key for balance visibility
+  const BALANCE_VISIBILITY_KEY = "balance_visibility";
+
+  // Initialize balance visibility from local storage (default to true if not set)
+  const [isBalanceVisible, setIsBalanceVisible] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(BALANCE_VISIBILITY_KEY);
+      return stored !== null ? stored === "true" : true;
+    }
+    return true;
+  });
+
+  // Persist balance visibility to local storage
+  useEffect(() => {
+    localStorage.setItem(BALANCE_VISIBILITY_KEY, String(isBalanceVisible));
+  }, [isBalanceVisible]);
+
   const [showPinModal, setShowPinModal] = useState(false);
   const queryClient = useQueryClient();
   const router = useRouter();

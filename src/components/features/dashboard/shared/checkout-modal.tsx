@@ -90,7 +90,9 @@ export function CheckoutModal({
         showCloseButton={false}
       >
         <DialogTitle className="sr-only">
-          {isSuccess ? "Transaction Successful" : "Confirm Purchase"}
+          {isSuccess
+            ? `${product.productType === "data" ? "Data" : "Airtime"} Purchase Successful`
+            : "Confirm Purchase"}
         </DialogTitle>
         <AnimatePresence mode="wait">
           {isSuccess ? (
@@ -116,20 +118,50 @@ export function CheckoutModal({
                 transition={{ delay: 0.2, duration: 0.3 }}
                 className="mb-2 text-2xl font-bold tracking-tight"
               >
-                Transaction Successful
+                {product.productType === "data"
+                  ? "Data Purchase Successful!"
+                  : "Airtime Purchase Successful!"}
               </motion.h2>
               <motion.p
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.3 }}
-                className="text-muted-foreground mb-8"
+                className="text-muted-foreground mb-4"
               >
-                Your data top-up for{" "}
-                <span className="text-foreground font-medium">
-                  {phoneNumber}
-                </span>{" "}
-                is on its way!
+                {product.productType === "data" ? (
+                  <>
+                    <span className="text-foreground font-semibold">
+                      {product.name}
+                    </span>{" "}
+                    has been credited to{" "}
+                    <span className="text-foreground font-medium">
+                      {phoneNumber}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-foreground font-semibold">
+                      ₦{faceValue.toLocaleString("en-NG")}
+                    </span>{" "}
+                    airtime has been sent to{" "}
+                    <span className="text-foreground font-medium">
+                      {phoneNumber}
+                    </span>
+                  </>
+                )}
               </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35, duration: 0.3 }}
+                className="bg-muted/50 mb-6 rounded-lg px-4 py-3"
+              >
+                <p className="text-muted-foreground text-sm">
+                  {product.productType === "data"
+                    ? "Your data bundle is now active and ready to use."
+                    : "Your airtime has been credited instantly."}
+                </p>
+              </motion.div>
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -198,7 +230,11 @@ export function CheckoutModal({
                         <AvatarFallback>N</AvatarFallback>
                       </Avatar>
                     )}
-                    <span>Mobile Data</span>
+                    <span>
+                      {product.productType === "data"
+                        ? "Mobile Data"
+                        : "Airtime Recharge"}
+                    </span>
                   </div>
                 </div>
 

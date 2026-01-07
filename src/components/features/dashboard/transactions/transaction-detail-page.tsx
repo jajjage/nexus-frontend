@@ -385,9 +385,13 @@ export function TransactionDetailPage({
   const transactionIcon = getTransactionIcon(transaction);
   const isIconUrl = typeof transactionIcon === "string";
   const logoUrl = isIconUrl ? transactionIcon : null;
-  const statusConfig = getStatusConfig(
-    transaction.related?.status || "pending"
-  );
+  // For topup_request, use related.status with "pending" default
+  // For incoming_payment and other credit transactions, they're instant so default to "completed"
+  const transactionStatus =
+    transaction.relatedType === "topup_request"
+      ? transaction.related?.status || "pending"
+      : transaction.related?.status || "completed";
+  const statusConfig = getStatusConfig(transactionStatus);
   const StatusIcon = statusConfig.icon;
 
   return (
@@ -465,12 +469,13 @@ export function TransactionDetailPage({
                 Transaction Status
               </p>
               <TransactionTimeline
-                status={transaction.related?.status || "pending"}
+                status={transactionStatus}
                 createdAt={
                   transaction.createdAt instanceof Date
                     ? transaction.createdAt.toISOString()
                     : new Date(transaction.createdAt).toISOString()
                 }
+                transactionType={transaction.relatedType}
               />
             </div>
 

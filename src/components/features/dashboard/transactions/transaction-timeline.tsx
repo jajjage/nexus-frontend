@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 
 interface TimelineStep {
   status: string;
@@ -14,44 +14,121 @@ interface TransactionTimelineProps {
   status: string;
   createdAt: string;
   completedAt?: string;
+  transactionType?: string;
   className?: string;
 }
+
+// Get timeline steps based on transaction type
+const getStepsForType = (
+  transactionType: string | undefined,
+  createdAt: string,
+  completedAt?: string
+): TimelineStep[] => {
+  // Incoming payment - simple 2-step flow
+  if (transactionType === "incoming_payment") {
+    return [
+      {
+        status: "received",
+        label: "Payment Received",
+        description: "Bank transfer received successfully.",
+        timestamp: createdAt,
+      },
+      {
+        status: "completed",
+        label: "Wallet Credited",
+        description: "Funds added to your wallet.",
+        timestamp: completedAt,
+      },
+    ];
+  }
+
+  // Referral withdrawal - simple 2-step flow
+  if (transactionType === "referral_withdrawal") {
+    return [
+      {
+        status: "pending",
+        label: "Withdrawal Initiated",
+        description: "Referral bonus withdrawal requested.",
+        timestamp: createdAt,
+      },
+      {
+        status: "completed",
+        label: "Funds Credited",
+        description: "Bonus added to your wallet.",
+        timestamp: completedAt,
+      },
+    ];
+  }
+
+  // Topup request - 3-step flow with provider processing
+  if (transactionType === "topup_request") {
+    return [
+      {
+        status: "pending",
+        label: "Transaction Initiated",
+        description: "We've received your request.",
+        timestamp: createdAt,
+      },
+      {
+        status: "processing",
+        label: "Processing",
+        description: "Working with provider to complete your top-up.",
+      },
+      {
+        status: "completed",
+        label: "Completed",
+        description: "Transaction successful!",
+        timestamp: completedAt,
+      },
+    ];
+  }
+
+  // Default - simple 2-step flow for generic transactions
+  return [
+    {
+      status: "pending",
+      label: "Transaction Initiated",
+      description: "Transaction has been initiated.",
+      timestamp: createdAt,
+    },
+    {
+      status: "completed",
+      label: "Completed",
+      description: "Transaction completed successfully.",
+      timestamp: completedAt,
+    },
+  ];
+};
 
 export function TransactionTimeline({
   status,
   createdAt,
   completedAt,
+  transactionType,
   className,
 }: TransactionTimelineProps) {
   const currentStatus = status.toLowerCase();
-
-  const steps: TimelineStep[] = [
-    {
-      status: "pending",
-      label: "Transaction Initiated",
-      description: "We've received your request.",
-      timestamp: createdAt,
-    },
-    {
-      status: "processing",
-      label: "Processing",
-      description: "Working with provider to complete your top-up.",
-    },
-    {
-      status: "completed",
-      label: "Completed",
-      description: "Transaction successful!",
-      timestamp: completedAt,
-    },
-  ];
+  const steps = getStepsForType(transactionType, createdAt, completedAt);
 
   const getStepState = (stepStatus: string, index: number) => {
+    // Handle failed/cancelled states
     if (currentStatus === "failed" && index >= 1) return "failed";
     if (currentStatus === "cancelled" && index >= 1) return "failed";
 
-    if (currentStatus === "completed" || currentStatus === "received")
+    // Handle completed/received - all steps are done
+    if (currentStatus === "completed" || currentStatus === "received") {
       return "completed";
+    }
 
+    // For 2-step timelines (incoming_payment, referral_withdrawal, default)
+    if (steps.length === 2) {
+      if (currentStatus === "pending") {
+        return index === 0 ? "completed" : "active";
+      }
+      return index === 0 ? "completed" : "upcoming";
+    }
+
+    // For 3-step timelines (topup_request)
     if (currentStatus === "pending") {
       return index === 0 ? "completed" : index === 1 ? "active" : "upcoming";
     }
@@ -120,9 +197,7 @@ export function TransactionTimeline({
                     state === "active" ? "text-primary" : "text-slate-900"
                   )}
                 >
-                  {currentStatus === "failed" && index === 2
-                    ? "Failed"
-                    : step.label}
+                  {currentStatus === "failed" && isLast ? "Failed" : step.label}
                 </h4>
                 {step.timestamp && (
                   <span className="rounded bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
@@ -131,7 +206,7 @@ export function TransactionTimeline({
                 )}
               </div>
               <p className="text-xs text-slate-500">
-                {currentStatus === "failed" && index === 2
+                {currentStatus === "failed" && isLast
                   ? "Something went wrong with this transaction."
                   : step.description}
               </p>

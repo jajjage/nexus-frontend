@@ -1,24 +1,16 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { useLogout } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import {
-  CreditCard,
-  Home,
-  LogOut,
-  PiggyBank,
-  Settings,
-  Trophy,
-  User,
-} from "lucide-react";
+import { Home, LogOut, Trophy, User, Users } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useLogout } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/dashboard" },
-  { label: "Savings", icon: PiggyBank, href: "/dashboard/savings" },
+  { label: "Referral", icon: Users, href: "/dashboard/referral" },
   { label: "Rewards", icon: Trophy, href: "/dashboard/rewards" },
   { label: "Profile", icon: User, href: "/dashboard/profile" },
 ];

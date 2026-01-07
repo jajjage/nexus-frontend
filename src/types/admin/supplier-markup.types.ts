@@ -6,6 +6,7 @@
 // ============= Supplier Markup Entity =============
 
 export interface SupplierMarkup {
+  markup(markup: any): unknown;
   id: string;
   supplierId: string;
   supplierName?: string;

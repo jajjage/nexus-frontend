@@ -1,4 +1,25 @@
 import { SupplierMarkupListTable } from "@/components/features/admin/supplier-markups/SupplierMarkupListTable";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Suspense } from "react";
+
+// Loading skeleton for supplier markups table
+function SupplierMarkupTableSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-8 w-48" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 /**
  * Admin Supplier Markups List Page
@@ -15,7 +36,9 @@ export default function AdminSupplierMarkupsPage() {
           Manage markup percentages for supplier products.
         </p>
       </div>
-      <SupplierMarkupListTable />
+      <Suspense fallback={<SupplierMarkupTableSkeleton />}>
+        <SupplierMarkupListTable />
+      </Suspense>
     </div>
   );
 }
