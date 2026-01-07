@@ -30,7 +30,7 @@ const getStepsForType = (
       {
         status: "received",
         label: "Payment Received",
-        description: "Bank transfer received successfully.",
+        description: "Payment received successfully.",
         timestamp: createdAt,
       },
       {
@@ -115,8 +115,12 @@ export function TransactionTimeline({
     if (currentStatus === "failed" && index >= 1) return "failed";
     if (currentStatus === "cancelled" && index >= 1) return "failed";
 
-    // Handle completed/received - all steps are done
-    if (currentStatus === "completed" || currentStatus === "received") {
+    // Handle completed/received/success - all steps are done
+    if (
+      currentStatus === "completed" ||
+      currentStatus === "received" ||
+      currentStatus === "success"
+    ) {
       return "completed";
     }
 

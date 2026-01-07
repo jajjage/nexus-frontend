@@ -10,6 +10,7 @@ import {
   AlertCircle,
   ArrowDown,
   ArrowLeft,
+  ArrowUp,
   CheckCircle2,
   Clock,
   Copy,
@@ -34,6 +35,7 @@ const getStatusConfig = (status: string) => {
   switch (statusLower) {
     case "completed":
     case "received":
+    case "success":
       return {
         icon: CheckCircle2,
         color: "text-green-600",
@@ -111,7 +113,7 @@ const getTransactionIcon = (transaction: Transaction) => {
     if (transaction.relatedType === "incoming_payment") {
       return (
         <div className="flex flex-col items-center justify-center text-green-600">
-          <span className="text-xs font-bold">IN</span>
+          <ArrowUp className="size-8 text-green-600" />
         </div>
       );
     }
@@ -177,6 +179,11 @@ const getTransactionDescription = (transaction: Transaction): string => {
       `getTransactionDescription: ${type.charAt(0).toUpperCase() + type.slice(1)} to ${operator} - ${phone}`
     );
     return `${type.charAt(0).toUpperCase() + type.slice(1)} to ${operator} - ${phone}`;
+  }
+
+  // For incoming payments, show a clean message instead of admin UUID
+  if (!isDebit && transaction.relatedType === "incoming_payment") {
+    return "Wallet top-up";
   }
 
   console.log(transaction.note || transaction.method || "Transaction");
