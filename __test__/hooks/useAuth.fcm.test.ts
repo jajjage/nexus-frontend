@@ -84,6 +84,12 @@ describe("Auth Hooks - FCM Integration", () => {
       },
       writable: true,
     });
+
+    // Mock window.location.href for redirect tests
+    Object.defineProperty(window, "location", {
+      value: { href: "" },
+      writable: true,
+    });
   });
 
   describe("useLogin", () => {
@@ -149,8 +155,8 @@ describe("Auth Hooks - FCM Integration", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      // Verify redirect
-      expect(mockRouter.push).toHaveBeenCalledWith("/setup");
+      // Verify redirect - we use window.location.href for production-reliable redirects
+      expect(window.location.href).toBe("/setup");
     });
 
     it("should redirect to admin dashboard for admin role", async () => {
@@ -182,7 +188,8 @@ describe("Auth Hooks - FCM Integration", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      expect(mockRouter.push).toHaveBeenCalledWith("/admin/dashboard");
+      // Verify redirect - we use window.location.href for production-reliable redirects
+      expect(window.location.href).toBe("/admin/dashboard");
     });
 
     it("should not block login if FCM token sync fails", async () => {
@@ -282,10 +289,8 @@ describe("Auth Hooks - FCM Integration", () => {
         timeout: 3000,
       });
 
-      // After registration, user should be redirected to login
-      expect(mockRouter.push).toHaveBeenCalledWith(
-        expect.stringContaining("/login")
-      );
+      // After registration, user should be redirected to login via window.location.href
+      expect(window.location.href).toBe("/login");
     });
 
     it("should show success message after registration", async () => {

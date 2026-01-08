@@ -67,6 +67,12 @@ describe("useAuth Hooks", () => {
       },
       writable: true,
     });
+
+    // Mock window.location.href for redirect tests
+    Object.defineProperty(window, "location", {
+      value: { href: "" },
+      writable: true,
+    });
   });
 
   describe("useLogin", () => {
@@ -91,7 +97,8 @@ describe("useAuth Hooks", () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(toast.success).toHaveBeenCalled();
-      expect(mockRouter.push).toHaveBeenCalledWith("/setup");
+      // We use window.location.href for production-reliable redirects
+      expect(window.location.href).toBe("/setup");
     });
   });
 
