@@ -54,6 +54,7 @@ jobs:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
     needs: test
+    environment: Nexus  # Use Nexus environment variables
 
     permissions:
       contents: read
@@ -74,6 +75,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Debug - Check environment variables
+        run: |
+          echo "=== Environment Variables Debug ==="
+          echo "NEXT_PUBLIC_API_URL is set: ${{ vars.NEXT_PUBLIC_API_URL != '' }}"
+          echo "NEXT_PUBLIC_API_URL value: ${{ vars.NEXT_PUBLIC_API_URL }}"
+          echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID is set: ${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID != '' }}"
+          echo "==================================="
 
       - name: Extract metadata for Docker
         id: meta

@@ -25,7 +25,7 @@ import { toast } from "sonner";
  */
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://localhost:8000/api/v1";
+  process.env.NEXT_PUBLIC_API_URL || "https://localhost:3000/api/v1";
 
 // ============================================================================
 // COOKIE UTILITIES
