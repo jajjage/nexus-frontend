@@ -31,19 +31,17 @@ export default function proxy(request: NextRequest) {
   const response = NextResponse.next();
   const { pathname } = request.nextUrl;
 
-  const hasAuth =
-    request.cookies.get("accessToken") || request.cookies.get("refreshToken");
+  // NOTE: In cross-domain setups (frontend on domain A, API on domain B),
+  // cookies set by the API are NOT visible to Next.js middleware.
+  // The cookies are tied to the API domain, not the frontend domain.
+  // Therefore, we cannot check for auth cookies here.
+  //
+  // Client-side auth handling in useAuth.ts already protects routes:
+  // - useCurrentUserQuery validates session with API
+  // - Redirects to /login if session is invalid
+  // - This approach works correctly for both same-domain and cross-domain setups
 
-  const isProtectedPath = PROTECTED_PATHS.some(
-    (path: string) => pathname.startsWith(path) && !hasAuth
-  );
-
-  if (isProtectedPath && !hasAuth) {
-    return NextResponse.redirect(
-      new URL("/login?reason=session-expired", request.url)
-    );
-  }
-
+  // For now, let all requests through and let client-side handle auth
   return response;
 }
 
