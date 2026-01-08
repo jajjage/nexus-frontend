@@ -433,13 +433,16 @@ export function useLogin(expectedRole?: "user" | "admin") {
       // 1. Admin -> /admin/dashboard
       // 2. User missing PIN -> /setup (Onboarding)
       // 3. User with PIN -> /dashboard
+      // Use window.location.href for reliable redirect in production
       if (user?.role === "admin") {
-        router.push("/admin/dashboard");
+        console.log("[AUTH] Redirecting admin to dashboard");
+        window.location.href = "/admin/dashboard";
       } else if (!user?.hasPin) {
         console.log("[AUTH] User missing PIN - redirecting to setup");
-        router.push("/setup");
+        window.location.href = "/setup";
       } else {
-        router.push("/dashboard");
+        console.log("[AUTH] Redirecting user to dashboard");
+        window.location.href = "/dashboard";
       }
     },
 
@@ -545,7 +548,7 @@ export function useRegister() {
       // Registration does NOT set auth cookies, so do NOT set user context or redirect to dashboard
       // Instead, redirect to login and show a success message
       toast.success("Registration successful! Please log in.");
-      router.push("/login");
+      window.location.href = "/login";
     },
 
     onError: (error: AxiosError<any>) => {
@@ -588,13 +591,13 @@ export function useVerifyEmail() {
       // Invalidate current user to refresh verified status
       queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
       // Redirect to referrals as requested
-      router.push("/dashboard/referrals");
+      window.location.href = "/dashboard/referrals";
     },
     onError: (error: AxiosError<any>) => {
       const errorMsg =
         error.response?.data?.message || "Email verification failed.";
       toast.error(errorMsg);
-      router.push("/login");
+      window.location.href = "/login";
     },
   });
 }

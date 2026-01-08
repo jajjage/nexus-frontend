@@ -15,7 +15,7 @@ import { useSetPin } from "@/hooks/useUser";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -91,9 +91,9 @@ export function SetPinForm({ onSuccess }: SetPinFormProps) {
           if (onSuccess) {
             onSuccess();
           } else if (returnUrl) {
-            router.push(returnUrl);
+            window.location.href = returnUrl;
           } else {
-            router.push("/dashboard/profile");
+            window.location.href = "/dashboard/profile";
           }
         },
         onError: (error: any) => {

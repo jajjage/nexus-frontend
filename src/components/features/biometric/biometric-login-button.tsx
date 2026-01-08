@@ -37,8 +37,8 @@ export function BiometricLoginButton({
 
         // Manually refetch profile to be safe and update context
         // Or just redirect and let the protected route logic handle it
-        router.push("/dashboard");
         toast.success("Welcome back!");
+        window.location.href = "/dashboard";
       },
     });
   };
