@@ -13,12 +13,14 @@ export const biometricKeys = {
 
 /**
  * Hook to list biometric enrollments
+ * @param enabled - If false, query won't run (prevent fetching when not authenticated)
  */
-export function useBiometricEnrollments() {
+export function useBiometricEnrollments(enabled: boolean = true) {
   return useQuery({
     queryKey: biometricKeys.enrollments(),
     queryFn: biometricService.listEnrollments,
     retry: 1,
+    enabled, // Only fetch when enabled
   });
 }
 

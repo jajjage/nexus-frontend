@@ -76,6 +76,7 @@ export function TwoFactorForm({
               onChange={setCode}
               onComplete={handleComplete}
               disabled={isPending}
+              autoFocus
             >
               <InputOTPGroup>
                 <InputOTPSlot index={0} />

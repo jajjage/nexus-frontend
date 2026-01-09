@@ -107,7 +107,7 @@ describe("RegisterForm Component", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/Phone number must be between 11 and 14 digits/i)
+          screen.getByText(/Phone number must be between 10 and 14 digits/i)
         ).toBeInTheDocument();
       });
     });

@@ -1,6 +1,7 @@
 "use client";
 
 import { BottomNav } from "@/components/features/dashboard/bottom-nav";
+import { BecomeResellerModal } from "@/components/features/reseller/BecomeResellerModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,16 +12,22 @@ import {
   HelpCircle,
   LogOut,
   Shield,
+  Sparkles,
   User,
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
   const router = useRouter();
+  const [showResellerModal, setShowResellerModal] = useState(false);
+
+  // Show "Become a Reseller" banner only for regular users (not resellers)
+  const showResellerPromo = user?.role === "user";
 
   if (!user) return null;
 
@@ -132,6 +139,34 @@ export default function ProfilePage() {
           </div>
         ))}
 
+        {/* Become a Reseller Promo - Only for regular users */}
+        {showResellerPromo && (
+          <div className="space-y-3">
+            <h2 className="text-muted-foreground px-1 text-sm font-medium">
+              Upgrade
+            </h2>
+            <Card
+              className="cursor-pointer overflow-hidden border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 shadow-sm transition-all hover:shadow-md dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/30"
+              onClick={() => setShowResellerModal(true)}
+            >
+              <CardContent className="flex items-center gap-4 p-4">
+                <div className="flex size-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/50">
+                  <Sparkles className="size-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-amber-900 dark:text-amber-100">
+                    Become a Reseller
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Get wholesale rates & API access
+                  </p>
+                </div>
+                <ChevronRight className="size-5 text-amber-500" />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Logout Button */}
         <div className="mt-4">
           <Button
@@ -150,6 +185,12 @@ export default function ProfilePage() {
       </div>
 
       <BottomNav />
+
+      {/* Become a Reseller Modal */}
+      <BecomeResellerModal
+        open={showResellerModal}
+        onOpenChange={setShowResellerModal}
+      />
     </div>
   );
 }

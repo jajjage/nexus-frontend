@@ -29,10 +29,15 @@ const registerSchema = z
     phoneNumber: z
       .string()
       .min(1, "Phone number is required")
-      .transform((val) => val.replace(/\D/g, ""))
-      .refine((val) => val.length >= 11 && val.length <= 14, {
-        message: "Phone number must be between 11 and 14 digits",
-      }),
+      .refine(
+        (val) => {
+          const digitsOnly = val.replace(/\D/g, "");
+          return digitsOnly.length >= 10 && digitsOnly.length <= 14;
+        },
+        {
+          message: "Phone number must be between 10 and 14 digits",
+        }
+      ),
     referralCode: z.string().optional(),
     password: z
       .string()
@@ -109,10 +114,13 @@ export function RegisterForm() {
       }
     }
 
+    // Normalize phone number (strip non-digits)
+    const normalizedPhone = rest.phoneNumber.replace(/\D/g, "");
+
     const dataToSend = {
       email: rest.email,
       password: rest.password,
-      phoneNumber: rest.phoneNumber,
+      phoneNumber: normalizedPhone,
       fullName: rest.fullName,
       referralCode: rest.referralCode,
     };

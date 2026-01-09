@@ -186,3 +186,69 @@ export function validateBatchSize(
   }
   return null;
 }
+
+// ============= Upgrade Request Hook =============
+
+const UPGRADE_REQUEST_KEY = "reseller_upgrade_request";
+
+/**
+ * Hook to check and manage reseller upgrade request status
+ * Tracks if user has already submitted an upgrade request
+ */
+export function useResellerUpgradeStatus() {
+  const getStatus = (): { pending: boolean; submittedAt: string | null } => {
+    if (typeof window === "undefined") {
+      return { pending: false, submittedAt: null };
+    }
+
+    const data = localStorage.getItem(UPGRADE_REQUEST_KEY);
+    if (!data) {
+      return { pending: false, submittedAt: null };
+    }
+
+    try {
+      const parsed = JSON.parse(data);
+      return { pending: true, submittedAt: parsed.submittedAt };
+    } catch {
+      return { pending: false, submittedAt: null };
+    }
+  };
+
+  const markAsPending = () => {
+    localStorage.setItem(
+      UPGRADE_REQUEST_KEY,
+      JSON.stringify({ submittedAt: new Date().toISOString() })
+    );
+  };
+
+  const clearPending = () => {
+    localStorage.removeItem(UPGRADE_REQUEST_KEY);
+  };
+
+  return { getStatus, markAsPending, clearPending };
+}
+
+/**
+ * Request upgrade to reseller status
+ * For regular users (role=user) to apply for reseller account
+ * Automatically marks request as pending on success
+ */
+export function useRequestResellerUpgrade() {
+  const { markAsPending } = useResellerUpgradeStatus();
+
+  return useMutation({
+    mutationFn: (message: string) => resellerService.requestUpgrade(message),
+    onSuccess: () => {
+      // Mark as pending so user can't submit again
+      markAsPending();
+      toast.success("Application submitted!", {
+        description: "We will review your request and contact you shortly.",
+      });
+    },
+    onError: (error: AxiosError<any>) => {
+      const message =
+        error.response?.data?.message || "Failed to submit request";
+      toast.error(message);
+    },
+  });
+}

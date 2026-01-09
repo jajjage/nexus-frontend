@@ -1,11 +1,11 @@
 "use client";
 
+import { ResendVerificationModal } from "@/components/auth/ResendVerificationModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useReferralStatsV2 } from "@/hooks/useReferrals";
 import { AlertTriangle, ChevronRight, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ResendVerificationModal } from "@/components/auth/ResendVerificationModal";
 
 export function VerificationBanner() {
   const { user, isAuthenticated } = useAuth();
@@ -15,16 +15,29 @@ export function VerificationBanner() {
   const { data: stats } = useReferralStatsV2();
 
   useEffect(() => {
-    // Check if dismissed in this session
-    const dismissed = sessionStorage.getItem("verification_banner_dismissed");
-    if (!dismissed) {
-      setIsVisible(true);
+    // Check if dismissed within the last 7 days (stored in localStorage)
+    const dismissedAt = localStorage.getItem(
+      "verification_banner_dismissed_at"
+    );
+    if (dismissedAt) {
+      const dismissedTime = parseInt(dismissedAt, 10);
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+      // If dismissed less than 7 days ago, keep it hidden
+      if (Date.now() - dismissedTime < sevenDaysMs) {
+        setIsVisible(false);
+        return;
+      }
     }
+    setIsVisible(true);
   }, []);
 
   const handleDismiss = () => {
     setIsVisible(false);
-    sessionStorage.setItem("verification_banner_dismissed", "true");
+    // Store dismiss timestamp so it persists across app restarts
+    localStorage.setItem(
+      "verification_banner_dismissed_at",
+      Date.now().toString()
+    );
   };
 
   if (!isAuthenticated || !user || !isVisible) return null;

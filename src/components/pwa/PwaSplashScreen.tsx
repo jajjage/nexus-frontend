@@ -44,8 +44,8 @@ export function PwaSplashScreen({ children }: { children: React.ReactNode }) {
     setIsPwa(getIsPwa());
     setIsDarkMode(getInitialTheme());
 
-    // Minimum splash display time for PWA (500ms)
-    const minTime = getIsPwa() ? 500 : 0;
+    // Minimum splash display time for PWA (1.5 seconds for polished loading feel)
+    const minTime = getIsPwa() ? 1500 : 0;
     const startTime = Date.now();
 
     // Wait for document to be ready
@@ -75,8 +75,10 @@ export function PwaSplashScreen({ children }: { children: React.ReactNode }) {
   const bgColor = isDarkMode ? "bg-zinc-950" : "bg-white";
   const textColor = isDarkMode ? "text-white" : "text-zinc-900";
   const mutedColor = isDarkMode ? "text-zinc-400" : "text-zinc-500";
-  const spinnerBg = isDarkMode ? "border-amber-500/20" : "border-amber-600/20";
-  const spinnerFg = isDarkMode ? "border-t-amber-500" : "border-t-amber-600";
+  const spinnerBorder = isDarkMode ? "border-zinc-700" : "border-zinc-200";
+  const spinnerAccent = isDarkMode
+    ? "border-t-amber-500"
+    : "border-t-amber-600";
   const logoSrc = isDarkMode
     ? "/images/splash-icon-dark.png"
     : "/images/splash-icon-light.png";
@@ -85,7 +87,7 @@ export function PwaSplashScreen({ children }: { children: React.ReactNode }) {
     <div
       className={`fixed inset-0 z-50 flex flex-col items-center justify-center ${bgColor} ${textColor}`}
     >
-      {/* Logo - animated pulse */}
+      {/* Logo with subtle scale animation */}
       <div className="animate-pulse">
         <Image
           src={logoSrc}
@@ -96,10 +98,21 @@ export function PwaSplashScreen({ children }: { children: React.ReactNode }) {
         />
       </div>
 
+      {/* Brand name */}
+      <h1 className="mt-4 text-xl font-semibold tracking-tight">Nexus Data</h1>
+
       {/* Tagline */}
-      <p className={`mt-6 text-sm ${mutedColor}`}>
+      <p className={`mt-2 text-sm ${mutedColor}`}>
         Your Gateway to Seamless Data
       </p>
+
+      {/* Loading spinner */}
+      <div className="mt-8 flex flex-col items-center gap-3">
+        <div
+          className={`h-8 w-8 animate-spin rounded-full border-2 ${spinnerBorder} ${spinnerAccent}`}
+        />
+        <p className={`text-xs ${mutedColor}`}>Loading...</p>
+      </div>
     </div>
   );
 }

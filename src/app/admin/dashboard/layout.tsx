@@ -32,7 +32,6 @@ import {
   PercentIcon,
   RadioIcon,
   ServerIcon,
-  SettingsIcon,
   ShieldCheckIcon,
   ShieldIcon,
   UsersIcon,
@@ -127,11 +126,11 @@ const navItems = [
     href: "/admin/dashboard/roles",
     icon: ShieldIcon,
   },
-  {
-    title: "Settings",
-    href: "/admin/dashboard/settings",
-    icon: SettingsIcon,
-  },
+  // {
+  //   title: "Settings",
+  //   href: "/admin/dashboard/settings",
+  //   icon: SettingsIcon,
+  // },
 ];
 
 export default function AdminDashboardLayout({

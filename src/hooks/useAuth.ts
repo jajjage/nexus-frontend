@@ -7,6 +7,7 @@ import {
   setSessionExpiredCallback,
 } from "@/lib/api-client";
 import { authService } from "@/services/auth.service";
+import { credentialManager } from "@/services/credential-manager.service";
 import { User } from "@/types/api.types";
 import { RegisterRequest } from "@/types/auth.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -393,22 +394,28 @@ export function useLogin(expectedRole?: "user" | "admin") {
       });
 
       // STRICT ROLE ENFORCEMENT
-      if (expectedRole && user?.role && expectedRole !== user.role) {
-        console.warn(
-          `[AUTH] Access Denied: Role mismatch. Expected ${expectedRole}, got ${user.role}`
-        );
+      if (expectedRole && user?.role) {
+        // Allow "reseller" to login as "user" (they share the same dashboard)
+        const isResellerLogin =
+          expectedRole === "user" && user.role === "reseller";
 
-        // Immediately logout to clear the invalid session
-        await authService.logout();
+        if (expectedRole !== user.role && !isResellerLogin) {
+          console.warn(
+            `[AUTH] Access Denied: Role mismatch. Expected ${expectedRole}, got ${user.role}`
+          );
 
-        const errorMsg =
-          expectedRole === "admin"
-            ? "Access Denied: You must login via the User Portal."
-            : "Access Denied: Admins must login via the Admin Portal.";
+          // Immediately logout to clear the invalid session
+          await authService.logout();
 
-        toast.error(errorMsg);
-        setIsLoading(false);
-        return; // Stop execution here
+          const errorMsg =
+            expectedRole === "admin"
+              ? "Access Denied: You must login via the User Portal."
+              : "Access Denied: Admins must login via the Admin Portal.";
+
+          toast.error(errorMsg);
+          setIsLoading(false);
+          return; // Stop execution here
+        }
       }
 
       toast.success("Login successful!", {
@@ -472,15 +479,17 @@ let isLoggingOut = false;
 export function useLogout() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { markSessionAsExpired } = useAuthContext();
+  const { user, markSessionAsExpired } = useAuthContext();
   const [_, startTransition] = useTransition();
 
-  // Determine the appropriate login page based on current route
+  // Determine the appropriate login page based on USER ROLE (not route)
+  // This is important for PWA/standalone mode where route may not be reliable
   const getLoginUrl = () => {
-    if (typeof window !== "undefined") {
-      const isAdminRoute = window.location.pathname.startsWith("/admin");
-      return isAdminRoute ? "/admin/login" : "/login";
+    // Admin and staff users should redirect to admin login
+    if (user?.role === "admin" || user?.role === "staff") {
+      return "/admin/login";
     }
+    // User and reseller redirect to standard login
     return "/login";
   };
 
@@ -503,6 +512,9 @@ export function useLogout() {
     },
     onSuccess: () => {
       console.log("[AUTH] Logout successful");
+
+      // Prevent browser from auto-filling credentials after explicit logout
+      credentialManager.preventSilentAccess();
 
       // Clear all state immediately (don't wait for transition)
       markSessionAsExpired();

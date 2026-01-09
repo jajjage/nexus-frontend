@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useLogin } from "@/hooks/useAuth";
+import { credentialManager } from "@/services/credential-manager.service";
 import { LoginRequest } from "@/types/auth.types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AxiosError } from "axios";
@@ -117,6 +118,35 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
     }, 100);
   }, [searchParams, setValue, trigger]);
 
+  // Attempt to get stored credentials with biometric unlock
+  useEffect(() => {
+    const checkStoredCredentials = async () => {
+      try {
+        const stored = await credentialManager.getCredentials("optional");
+        if (stored) {
+          console.log(
+            "[LoginForm] Retrieved stored credentials for:",
+            stored.id
+          );
+          setValue("credentials", stored.id);
+          setValue("password", stored.password);
+          // Trigger validation
+          setTimeout(() => trigger(), 100);
+        }
+      } catch (err) {
+        // Silently fail - this is an optional enhancement
+        console.log("[LoginForm] No stored credentials available");
+      }
+    };
+
+    // Only check if form is empty (no URL params filled it)
+    const hasUrlParams =
+      searchParams.get("email") || searchParams.get("fromRegister");
+    if (!hasUrlParams) {
+      checkStoredCredentials();
+    }
+  }, [setValue, trigger, searchParams]);
+
   const onSubmit = async (data: LoginFormValues) => {
     const { credentials, password } = data;
     const isEmail = credentials.includes("@");
@@ -133,9 +163,21 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
     console.log("[DEBUG] Login Payload:", payload); // Added debug log
 
     loginMutation.mutate(payload, {
+      onSuccess: async () => {
+        // Store credentials for browser's native autofill with biometric
+        try {
+          await credentialManager.storeCredentials(
+            credentials,
+            password,
+            credentials // name is the same as id
+          );
+        } catch (err) {
+          // Silently fail - credential storage is optional enhancement
+          console.log("[LoginForm] Credential storage skipped", err);
+        }
+      },
       onError: (error: AxiosError<any>) => {
         // Check if the error response indicates 2FA is required
-        //  console.log("reponse 2fa", responseData?.require2fa);
         const responseData = error.response?.data;
         console.log("reponse 2fa", responseData?.message, responseData?.error);
         if (

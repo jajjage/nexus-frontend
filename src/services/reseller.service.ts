@@ -68,4 +68,21 @@ export const resellerService = {
     );
     return response.data;
   },
+
+  // ============= Upgrade Request =============
+
+  /**
+   * Request upgrade to reseller status
+   * For regular users (role=user) to apply for reseller account
+   * @param message - User's business pitch/reason for upgrade
+   */
+  requestUpgrade: async (
+    message: string
+  ): Promise<ApiResponse<{ message: string }>> => {
+    const response = await apiClient.post<ApiResponse<{ message: string }>>(
+      "/reseller/request-upgrade",
+      { message }
+    );
+    return response.data;
+  },
 };
