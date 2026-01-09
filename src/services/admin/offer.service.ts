@@ -62,6 +62,7 @@ const mapToApiRequest = (data: any): any => {
   if (data.eligibilityLogic) mapped.eligibility_logic = data.eligibilityLogic;
   if (data.startsAt) mapped.starts_at = data.startsAt;
   if (data.endsAt) mapped.ends_at = data.endsAt;
+  if (data.allowedRoles) mapped.allowed_roles = data.allowedRoles;
 
   // Remove camelCase keys if they interfere (though usually extra keys are ignored, better to be clean if needed,
   // but strictly speaking only mapped keys matter if backend ignores others.
@@ -75,6 +76,7 @@ const mapToApiRequest = (data: any): any => {
   delete mapped.eligibilityLogic;
   delete mapped.startsAt;
   delete mapped.endsAt;
+  delete mapped.allowedRoles;
 
   return mapped;
 };

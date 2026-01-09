@@ -16,6 +16,10 @@ export const auditKeys = {
   logs: () => [...auditKeys.all, "logs"] as const,
   logList: (params: AuditLogQueryParams) =>
     [...auditKeys.logs(), params] as const,
+  recentLogs: (minutes: number) =>
+    [...auditKeys.all, "recent", minutes] as const,
+  statistics: () => [...auditKeys.all, "statistics"] as const,
+  systemHealth: () => [...auditKeys.all, "system-health"] as const,
   userActions: (userId: string) =>
     [...auditKeys.all, "user-actions", userId] as const,
   userActivity: (userId: string, params: UserActivityQueryParams) =>
@@ -30,6 +34,40 @@ export function useAuditLogs(params: AuditLogQueryParams = {}) {
     queryKey: auditKeys.logList(params),
     queryFn: () => adminAuditService.getAuditLogs(params),
     select: (response) => response.data,
+  });
+}
+
+/**
+ * Hook to fetch recent audit log entries
+ */
+export function useRecentAuditLogs(minutes: number = 60) {
+  return useQuery({
+    queryKey: auditKeys.recentLogs(minutes),
+    queryFn: () => adminAuditService.getRecentAuditLogs(minutes),
+    select: (response) => response.data,
+  });
+}
+
+/**
+ * Hook to fetch audit log statistics
+ */
+export function useAuditLogStatistics() {
+  return useQuery({
+    queryKey: auditKeys.statistics(),
+    queryFn: () => adminAuditService.getAuditLogStatistics(),
+    select: (response) => response.data,
+  });
+}
+
+/**
+ * Hook to fetch system health status
+ */
+export function useSystemHealth() {
+  return useQuery({
+    queryKey: auditKeys.systemHealth(),
+    queryFn: () => adminAuditService.getSystemHealth(),
+    select: (response) => response.data,
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
   });
 }
 

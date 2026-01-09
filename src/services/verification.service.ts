@@ -125,7 +125,7 @@ export const verificationService = {
       return result;
     } catch (err: any) {
       const message =
-        err.response?.data?.data?.message || "Biometric verification failed";
+        err.response?.data?.message || "Biometric verification failed";
       console.error("[Verification] Biometric transaction error", { message });
       console.error("[ERROR FROM SERVER]: ", err);
 

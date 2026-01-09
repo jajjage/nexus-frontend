@@ -25,7 +25,15 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAdminRoles, useAssignRole } from "@/hooks/admin/useAdminRoles";
 import {
   useAdminUser,
   useAdminUserSessions,
@@ -72,6 +80,8 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
   const disable2FAMutation = useDisable2FA();
   const updateUserMutation = useUpdateUser();
   const revokeSessionsMutation = useRevokeUserSessions();
+  const { data: rolesData, isLoading: isRolesLoading } = useAdminRoles();
+  const assignRoleMutation = useAssignRole();
 
   const [creditAmount, setCreditAmount] = useState("");
   const [debitAmount, setDebitAmount] = useState("");
@@ -360,6 +370,34 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
               </AlertDialog>
             )}
 
+            {/* Role Assignment */}
+            <div className="space-y-2 border-t pt-4">
+              <Label className="text-muted-foreground">Assign Role</Label>
+              <div className="flex gap-2">
+                <Select
+                  disabled={isRolesLoading || assignRoleMutation.isPending}
+                  onValueChange={(roleId) => {
+                    assignRoleMutation.mutate({ userId, roleId });
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select new role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rolesData?.data?.roles?.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Current:{" "}
+                <span className="font-medium capitalize">{user.role}</span>
+              </p>
+            </div>
+
             {/* 2FA Actions */}
             <div className="space-y-2">
               {/* 2FA Status */}
@@ -373,40 +411,44 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
               </div>
 
               {/* Setup or Disable 2FA */}
-              {user.twoFactorEnabled ? (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" className="w-full">
-                      Disable 2FA
+              {user.role === "admin" && (
+                <>
+                  {user.twoFactorEnabled ? (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" className="w-full">
+                          Disable 2FA
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Disable 2FA?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will disable two-factor authentication for{" "}
+                            {user.fullName}. They will need to set it up again.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => disable2FAMutation.mutate(userId)}
+                          >
+                            Disable 2FA
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setIs2FAModalOpen(true)}
+                    >
+                      <KeyRound className="mr-2 h-4 w-4" />
+                      Setup 2FA
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Disable 2FA?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will disable two-factor authentication for{" "}
-                        {user.fullName}. They will need to set it up again.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => disable2FAMutation.mutate(userId)}
-                      >
-                        Disable 2FA
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setIs2FAModalOpen(true)}
-                >
-                  <KeyRound className="mr-2 h-4 w-4" />
-                  Setup 2FA
-                </Button>
+                  )}
+                </>
               )}
             </div>
           </CardContent>
@@ -469,16 +511,21 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
                 {sessions.map((session: any) => (
                   <div
                     key={session.id}
-                    className="flex items-center justify-between rounded-lg border p-3"
+                    className={`flex items-center justify-between rounded-lg border p-3 ${
+                      session.isCurrent ? "border-primary/50 bg-primary/5" : ""
+                    }`}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="truncate text-sm font-medium">
-                          {session.userAgent?.device ||
-                            session.deviceInfo ||
-                            "Unknown Device"}
+                          {session.userAgent?.os || "Unknown OS"}
                         </p>
-                        {session.userAgent?.type && (
+                        {session.isCurrent && (
+                          <Badge variant="default" className="text-xs">
+                            Current Device
+                          </Badge>
+                        )}
+                        {!session.isCurrent && session.userAgent?.type && (
                           <Badge variant="outline" className="text-xs">
                             {session.userAgent.type}
                           </Badge>
@@ -486,7 +533,7 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
                       </div>
                       <p className="text-muted-foreground mt-1 text-xs">
                         {session.userAgent?.browser || "Unknown Browser"} •{" "}
-                        {session.userAgent?.os || "Unknown OS"}
+                        {session.userAgent?.device || "Unknown Device"}
                       </p>
                       <p className="text-muted-foreground text-xs">
                         IP: {session.ip || session.ipAddress || "Unknown"} •

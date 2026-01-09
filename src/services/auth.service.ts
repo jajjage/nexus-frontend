@@ -100,11 +100,15 @@ export const authService = {
   },
 
   // Resend verification email
-  resendVerification: async (email: string): Promise<ApiResponse> => {
+  resendVerification: async (
+    email: string,
+    returnUrl?: string
+  ): Promise<ApiResponse> => {
     const response = await apiClient.post<ApiResponse>(
       "/auth/resend-verification",
       {
         email,
+        returnUrl, // Backend will include this in the verification email link
       }
     );
     return response.data;

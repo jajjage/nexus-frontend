@@ -30,9 +30,11 @@ const adminUserKeys = {
  * Fetch paginated list of users
  */
 export function useAdminUsers(params?: AdminUserQueryParams) {
+  const { page = 1, limit = 10, search, role } = params || {};
+
   return useQuery({
-    queryKey: adminUserKeys.list(params),
-    queryFn: () => adminUserService.getUsers(params),
+    queryKey: adminUserKeys.list({ page, limit, search, role }),
+    queryFn: () => adminUserService.getUsers({ page, limit, search, role }),
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
@@ -72,7 +74,20 @@ export function useCreateUser() {
       queryClient.invalidateQueries({ queryKey: adminUserKeys.all });
     },
     onError: (error: AxiosError<any>) => {
-      toast.error(error.response?.data?.message || "Failed to create user");
+      const serverError = error.response?.data;
+      let errorMessage = serverError?.message || "Failed to create user";
+
+      // If there are specific field errors, append them
+      if (serverError?.errors && typeof serverError.errors === "object") {
+        const fieldErrors = Object.entries(serverError.errors)
+          .map(([field, msg]) => `${field}: ${msg}`)
+          .join(", ");
+        if (fieldErrors) {
+          errorMessage += ` (${fieldErrors})`;
+        }
+      }
+
+      toast.error(errorMessage);
     },
   });
 }
@@ -202,6 +217,25 @@ export function useSetup2FA() {
     mutationFn: (userId: string) => adminUserService.setup2FA(userId),
     onError: (error: AxiosError<any>) => {
       toast.error(error.response?.data?.message || "Failed to setup 2FA");
+    },
+  });
+}
+
+/**
+ * Verify 2FA mutation (Admin-initiated)
+ */
+export function useVerify2FA() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, code }: { userId: string; code: string }) =>
+      adminUserService.verify2FA(userId, code),
+    onSuccess: (response, { userId }) => {
+      toast.success(response.message || "2FA enabled successfully");
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.detail(userId) });
+    },
+    onError: (error: AxiosError<any>) => {
+      toast.error(error.response?.data?.message || "Invalid OTP code");
     },
   });
 }

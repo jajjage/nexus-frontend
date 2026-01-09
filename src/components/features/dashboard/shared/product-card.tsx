@@ -27,7 +27,16 @@ export function ProductCard({
     // For Data
     const mb = p.dataMb;
     if (mb) {
-      return mb >= 1000 ? `${mb / 1000} GB` : `${mb} MB`;
+      if (mb >= 1000) {
+        const gb = mb / 1000;
+        // Round to clean values if close to whole number
+        const roundedGb =
+          Math.abs(gb - Math.round(gb)) < 0.05
+            ? Math.round(gb)
+            : parseFloat(gb.toFixed(1));
+        return `${roundedGb} GB`;
+      }
+      return `${mb} MB`;
     }
     // Fallback regex for data
     const match = p.name.match(/(\d+(\.\d+)?)\s?(GB|MB|TB)/i);
@@ -83,22 +92,25 @@ export function ProductCard({
 
     if (isGuest) {
       return {
-        text: "Login to Claim",
-        className: "bg-blue-100 text-blue-600 dark:bg-blue-900/20",
+        text: "🔓 Login to Claim",
+        className:
+          "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md",
       };
     }
 
     if (isEligibleForOffer) {
       return {
-        text: product.activeOffer?.title || "Special Deal",
-        className: "bg-green-100 text-green-600 dark:bg-green-900/20",
+        text: `🎉 ${product.activeOffer?.title || "Special Deal"}`,
+        className:
+          "bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-md animate-pulse",
       };
     }
 
-    // Ineligible user - show grayed badge
+    // Ineligible user - show subtle badge
     return {
       text: product.activeOffer?.title || "Limited Offer",
-      className: "bg-gray-100 text-gray-500 dark:bg-gray-800/50",
+      className:
+        "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300",
     };
   };
 
@@ -114,13 +126,13 @@ export function ProductCard({
       className="border-muted-foreground/20 hover:border-primary/50 relative flex cursor-pointer flex-col items-center justify-between overflow-hidden p-3 text-center shadow-sm transition-all hover:shadow-md"
       onClick={onClick}
     >
-      {/* Badges Container */}
-      <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+      {/* Badges Container - Top left to avoid overlap with centered content */}
+      <div className="absolute top-1.5 left-1.5 flex max-w-[50%] flex-col items-start gap-0.5">
         {/* Offer Badge */}
         {offerBadge && (
           <Badge
             variant="secondary"
-            className={`h-5 px-1.5 text-[10px] font-bold ${offerBadge.className}`}
+            className={`h-4 truncate px-1.5 text-[9px] font-semibold ${offerBadge.className}`}
           >
             {offerBadge.text}
           </Badge>
@@ -129,15 +141,15 @@ export function ProductCard({
         {discountPercentage > 0 && (
           <Badge
             variant="secondary"
-            className="h-5 bg-green-100 px-1.5 text-[10px] font-bold text-green-600 dark:bg-green-900/20"
+            className="h-4 bg-gradient-to-r from-orange-400 to-red-500 px-1.5 text-[9px] font-bold text-white shadow-sm"
           >
-            -{discountPercentage}% Off
+            -{discountPercentage}% OFF
           </Badge>
         )}
       </div>
 
       {/* Main Display (Volume or Airtime Amount) */}
-      <div className="mt-6 mb-1">
+      <div className="mt-8 mb-1">
         <h3 className="text-foreground text-2xl font-bold">
           {mainDisplayText}
         </h3>

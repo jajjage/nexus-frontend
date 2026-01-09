@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { useCreateOffer } from "@/hooks/admin/useAdminOffers";
 import { adminOfferService } from "@/services/admin/offer.service";
+import { adminRoleService } from "@/services/admin/role.service";
 import {
   DiscountType,
   EligibilityLogic,
@@ -73,6 +74,7 @@ export function CreateOfferWizard({
   const [applyTo, setApplyTo] = useState<OfferApplyTo>("all");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [selectedSupplierIds, setSelectedSupplierIds] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
   const [allowAll, setAllowAll] = useState(true);
   const [eligibilityLogic, setEligibilityLogic] =
@@ -90,6 +92,11 @@ export function CreateOfferWizard({
     queryKey: ["admin", "products", "list"],
     queryFn: () => adminOfferService.getProducts(),
     enabled: applyTo === "operator_product",
+  });
+
+  const { data: rolesData } = useQuery({
+    queryKey: ["admin", "roles", "list"],
+    queryFn: () => adminRoleService.getRoles(),
   });
 
   const createMutation = useCreateOffer();
@@ -118,6 +125,7 @@ export function CreateOfferWizard({
           applyTo === "operator_product" ? selectedProductIds : undefined,
         supplierIds:
           applyTo === "supplier_product" ? selectedSupplierIds : undefined,
+        allowedRoles: selectedRoles.length > 0 ? selectedRoles : undefined,
         allowAll,
         eligibilityLogic,
         rules: !allowAll ? rules : undefined,
@@ -440,6 +448,56 @@ export function CreateOfferWizard({
                   </p>
                 </div>
               )}
+
+              {/* Role Targeting */}
+              <div className="space-y-2 border-t pt-4">
+                <Label>Target Specific Roles (Optional)</Label>
+                <div className="text-muted-foreground mb-2 text-xs">
+                  Select roles to restrict this offer to specific user groups
+                  (e.g. Resellers). Leave empty for all users.
+                </div>
+                <ScrollArea className="h-32 rounded-md border p-2">
+                  <div className="space-y-2">
+                    {rolesData?.data?.roles?.map((role: any) => (
+                      <div
+                        key={role.id}
+                        className="hover:bg-muted/50 flex cursor-pointer items-center space-x-2 rounded p-1"
+                        onClick={() => {
+                          const checked = selectedRoles.includes(role.name); // Using role name as per RESELLER.md
+                          setSelectedRoles((prev) =>
+                            !checked
+                              ? [...prev, role.name]
+                              : prev.filter((r) => r !== role.name)
+                          );
+                        }}
+                      >
+                        <Checkbox
+                          id={`role-${role.id}`}
+                          checked={selectedRoles.includes(role.name)}
+                          onCheckedChange={() => {}} // Handled by parent
+                          className="pointer-events-none"
+                        />
+                        <label
+                          htmlFor={`role-${role.id}`}
+                          className="w-full cursor-pointer py-1 text-sm leading-none capitalize"
+                        >
+                          {role.name}
+                        </label>
+                      </div>
+                    ))}
+                    {!rolesData?.data?.roles?.length && (
+                      <p className="text-muted-foreground p-2 text-sm">
+                        Loading roles...
+                      </p>
+                    )}
+                  </div>
+                </ScrollArea>
+                {selectedRoles.length > 0 && (
+                  <p className="text-muted-foreground text-right text-xs">
+                    Restricted to: {selectedRoles.join(", ")}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 

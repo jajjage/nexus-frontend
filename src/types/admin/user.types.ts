@@ -10,12 +10,13 @@ export interface CreateUserRequest {
   password: string;
   phoneNumber: string;
   fullName: string;
-  role: "admin" | "staff" | "user";
+  role: "admin" | "staff" | "user" | "reseller";
 }
 
 export interface UpdateUserRequest {
   fullName?: string;
   phoneNumber?: string;
+  twoFactorEnabled?: boolean;
 }
 
 export interface WalletTransactionRequest {
@@ -53,12 +54,25 @@ export interface PaginationInfo {
   hasPrevPage: boolean;
 }
 
+export interface UserAgent {
+  type: string;
+  browser: string;
+  os: string;
+  device: string;
+  parsed?: {
+    os?: { name: string; version: string };
+    browser?: { name: string; version: string };
+  };
+}
+
 export interface UserSession {
   id: string;
-  deviceInfo?: string;
+  userAgent: UserAgent;
   ipAddress?: string;
   createdAt: string;
   lastActiveAt?: string;
+  expiresAt?: string;
+  isCurrent?: boolean;
 }
 
 export interface UserSessionsResponse {

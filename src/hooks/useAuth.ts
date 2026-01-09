@@ -475,6 +475,15 @@ export function useLogout() {
   const { markSessionAsExpired } = useAuthContext();
   const [_, startTransition] = useTransition();
 
+  // Determine the appropriate login page based on current route
+  const getLoginUrl = () => {
+    if (typeof window !== "undefined") {
+      const isAdminRoute = window.location.pathname.startsWith("/admin");
+      return isAdminRoute ? "/admin/login" : "/login";
+    }
+    return "/login";
+  };
+
   return useMutation({
     mutationFn: async () => {
       // Prevent concurrent logout attempts
@@ -499,16 +508,18 @@ export function useLogout() {
       markSessionAsExpired();
       queryClient.clear();
 
+      const loginUrl = getLoginUrl();
+
       // Use startTransition to prefetch the login page while clearing state
       startTransition(() => {
         // Prefetch the login page to prevent blank page flash
-        router.prefetch("/login");
+        router.prefetch(loginUrl);
       });
 
       // Redirect immediately without waiting for transitions
       // This prevents the blank page by navigating instantly
       if (typeof window !== "undefined") {
-        window.location.href = "/login";
+        window.location.href = loginUrl;
       }
     },
 
@@ -523,7 +534,7 @@ export function useLogout() {
       queryClient.clear();
 
       if (typeof window !== "undefined") {
-        window.location.href = "/login";
+        window.location.href = getLoginUrl();
       }
     },
   });
@@ -568,7 +579,19 @@ export function useRegister() {
 
 export function useResendVerification() {
   return useMutation({
-    mutationFn: (email: string) => authService.resendVerification(email),
+    mutationFn: ({
+      email,
+      returnUrl,
+    }: {
+      email: string;
+      returnUrl?: string;
+    }) => {
+      // If no returnUrl provided, use current page path
+      const url =
+        returnUrl ||
+        (typeof window !== "undefined" ? window.location.pathname : undefined);
+      return authService.resendVerification(email, url);
+    },
     onSuccess: (data) => {
       toast.success(data.message || "Verification email sent successfully!");
     },
@@ -581,8 +604,16 @@ export function useResendVerification() {
 }
 
 export function useVerifyEmail() {
-  const router = useRouter();
   const queryClient = useQueryClient();
+
+  // Get returnUrl from URL params if available
+  const getReturnUrl = () => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("returnUrl") || "/dashboard";
+    }
+    return "/dashboard";
+  };
 
   return useMutation({
     mutationFn: (token: string) => authService.verifyEmail(token),
@@ -590,8 +621,8 @@ export function useVerifyEmail() {
       toast.success(data.message || "Email verified successfully!");
       // Invalidate current user to refresh verified status
       queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
-      // Redirect to referrals as requested
-      window.location.href = "/dashboard/referrals";
+      // Redirect to the original page or dashboard
+      window.location.href = getReturnUrl();
     },
     onError: (error: AxiosError<any>) => {
       const errorMsg =

@@ -7,6 +7,9 @@ import apiClient from "@/lib/api-client";
 import {
   AuditLogListResponse,
   AuditLogQueryParams,
+  AuditLogStatistics,
+  RecentAuditEntriesResponse,
+  SystemHealth,
   UserActionsResponse,
   UserActivityQueryParams,
   UserActivityResponse,
@@ -26,6 +29,41 @@ export const adminAuditService = {
     const response = await apiClient.get<ApiResponse<AuditLogListResponse>>(
       `${BASE_PATH}/audit-log`,
       { params }
+    );
+    return response.data;
+  },
+
+  /**
+   * Get recent audit log entries
+   * GET /api/v1/admin/analytics/audit-log/recent
+   */
+  getRecentAuditLogs: async (
+    minutes: number = 60
+  ): Promise<ApiResponse<RecentAuditEntriesResponse>> => {
+    const response = await apiClient.get<
+      ApiResponse<RecentAuditEntriesResponse>
+    >(`${BASE_PATH}/audit-log/recent`, { params: { minutes } });
+    return response.data;
+  },
+
+  /**
+   * Get audit log statistics
+   * GET /api/v1/admin/analytics/audit-log/statistics
+   */
+  getAuditLogStatistics: async (): Promise<ApiResponse<AuditLogStatistics>> => {
+    const response = await apiClient.get<ApiResponse<AuditLogStatistics>>(
+      `${BASE_PATH}/audit-log/statistics`
+    );
+    return response.data;
+  },
+
+  /**
+   * Get system health status
+   * GET /api/v1/admin/analytics/system/health
+   */
+  getSystemHealth: async (): Promise<ApiResponse<SystemHealth>> => {
+    const response = await apiClient.get<ApiResponse<SystemHealth>>(
+      `${BASE_PATH}/system/health`
     );
     return response.data;
   },

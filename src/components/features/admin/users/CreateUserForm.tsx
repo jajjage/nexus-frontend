@@ -26,18 +26,24 @@ import {
 } from "@/components/ui/select";
 import { useCreateUser } from "@/hooks/admin/useAdminUsers";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 const createUserSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  fullName: z.string().min(2, "Name must be at least 2 characters"),
-  phoneNumber: z.string().min(10, "Phone number must be valid"),
-  role: z.enum(["admin", "staff", "user"]),
+  email: z.string().email("Please enter a valid email address"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  phoneNumber: z.string().min(10, "Phone number must be at least 10 digits"),
+  role: z.enum(["admin", "staff", "user", "reseller"]),
 });
 
 type CreateUserFormValues = z.infer<typeof createUserSchema>;
@@ -45,6 +51,7 @@ type CreateUserFormValues = z.infer<typeof createUserSchema>;
 export function CreateUserForm() {
   const router = useRouter();
   const createUserMutation = useCreateUser();
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<CreateUserFormValues>({
     resolver: zodResolver(createUserSchema),
@@ -143,11 +150,26 @@ export function CreateUserForm() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="********"
-                          {...field}
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Enter a strong password"
+                            {...field}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-0 right-0 h-full px-3 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="text-muted-foreground h-4 w-4" />
+                            ) : (
+                              <Eye className="text-muted-foreground h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -170,9 +192,10 @@ export function CreateUserForm() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
-                          <SelectItem value="staff">Staff</SelectItem>
                           <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="staff">Staff</SelectItem>
+                          <SelectItem value="reseller">Reseller</SelectItem>
+                          <SelectItem value="user">User</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

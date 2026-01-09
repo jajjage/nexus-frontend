@@ -22,29 +22,40 @@ import { useMemo, useState } from "react";
 export function UserListTable() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
   const limit = 10;
 
   const { data, isLoading, isError, refetch } = useAdminUsers({
     page,
     limit,
+    role: roleFilter === "all" ? undefined : roleFilter,
   });
 
   const allUsers = data?.data?.users || [];
   const pagination = data?.data?.pagination;
 
-  // Client-side filtering for search
+  // Client-side filtering for search and role (as a fallback or refinement)
   const users = useMemo(() => {
+    let filtered = allUsers;
+
+    // Filter by role if backend isn't doing it strict enough or client-side switch is preferred
+    if (roleFilter !== "all") {
+      filtered = filtered.filter(
+        (user) => user.role.toLowerCase() === roleFilter.toLowerCase()
+      );
+    }
+
     if (!searchInput.trim()) {
-      return allUsers;
+      return filtered;
     }
     const searchLower = searchInput.toLowerCase();
-    return allUsers.filter(
+    return filtered.filter(
       (user) =>
         user.fullName?.toLowerCase().includes(searchLower) ||
         user.email?.toLowerCase().includes(searchLower) ||
         user.phoneNumber?.toLowerCase().includes(searchLower)
     );
-  }, [allUsers, searchInput]);
+  }, [allUsers, searchInput, roleFilter]);
 
   if (isLoading) {
     return (
@@ -76,6 +87,14 @@ export function UserListTable() {
     );
   }
 
+  const tabs = [
+    { id: "all", label: "All Users" },
+    { id: "admin", label: "Admins" },
+    { id: "staff", label: "Staff" },
+    { id: "reseller", label: "Resellers" },
+    { id: "user", label: "Users" },
+  ];
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -88,9 +107,26 @@ export function UserListTable() {
         </Button>
       </CardHeader>
       <CardContent>
-        {/* Search */}
-        <div className="mb-4 flex items-center gap-2">
-          <div className="relative max-w-sm flex-1">
+        {/* Filters */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
+            {tabs.map((tab) => (
+              <Button
+                key={tab.id}
+                variant={roleFilter === tab.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setRoleFilter(tab.id);
+                  setPage(1); // Reset to first page on filter change
+                }}
+                className="whitespace-nowrap"
+              >
+                {tab.label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="relative w-full max-w-xs">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               placeholder="Search users..."
@@ -117,7 +153,9 @@ export function UserListTable() {
               {users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-8 text-center">
-                    {searchInput ? "No matching users found" : "No users found"}
+                    {searchInput
+                      ? "No matching users found"
+                      : "No users found in this category"}
                   </TableCell>
                 </TableRow>
               ) : (

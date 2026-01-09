@@ -136,3 +136,44 @@ export function getUserActivityLabel(actionType: string): string {
     actionType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
   );
 }
+
+// ============= Recent Audit Entries Types =============
+
+export interface RecentAuditEntriesResponse {
+  entries: AuditLogEntry[];
+}
+
+// ============= Audit Statistics Types =============
+
+export interface TopAdmin {
+  adminId: string;
+  adminEmail: string;
+  actionCount: number;
+}
+
+export interface TopTargetUser {
+  userId: string;
+  userEmail: string;
+  actionCount: number;
+}
+
+export interface AuditLogStatistics {
+  totalActions: number;
+  actionsByType: Record<string, number>;
+  topAdmins: TopAdmin[];
+  topTargetUsers: TopTargetUser[];
+}
+
+// ============= System Health Types =============
+
+export interface HealthCheck {
+  value: number;
+  unit: string;
+  status: "ok" | "warning" | "error";
+}
+
+export interface SystemHealth {
+  status: "healthy" | "degraded" | "unhealthy";
+  checks: Record<string, HealthCheck>;
+  recentAlerts: any[];
+}

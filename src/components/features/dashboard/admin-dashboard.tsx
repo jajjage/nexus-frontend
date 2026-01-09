@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  AuditStatisticsCard,
+  RecentActivityCard,
+  SystemHealthCard,
+} from "@/components/features/admin/analytics";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   useDashboardStats,
   useFailedJobs,
@@ -74,13 +80,16 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Welcome back, {user.fullName}
-        </h1>
-        <p className="text-muted-foreground">
-          Here&apos;s an overview of your admin dashboard.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Welcome back, {user.fullName}
+          </h1>
+          <p className="text-muted-foreground">
+            Here&apos;s an overview of your admin dashboard.
+          </p>
+        </div>
+        <ThemeToggle />
       </div>
 
       {/* Stats Grid */}
@@ -119,6 +128,13 @@ export function AdminDashboard() {
           icon={<AlertTriangle className="text-muted-foreground h-4 w-4" />}
           variant={failedJobs.length > 0 ? "warning" : "default"}
         />
+      </div>
+
+      {/* System & Audit Overview */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <SystemHealthCard />
+        <AuditStatisticsCard />
+        <RecentActivityCard minutes={60} />
       </div>
 
       {/* Two Column Layout */}

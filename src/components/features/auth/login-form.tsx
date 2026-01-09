@@ -130,6 +130,8 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
     setPendingCredentials(payload);
     setTwoFactorError(undefined);
 
+    console.log("[DEBUG] Login Payload:", payload); // Added debug log
+
     loginMutation.mutate(payload, {
       onError: (error: AxiosError<any>) => {
         // Check if the error response indicates 2FA is required
@@ -238,7 +240,11 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="grid gap-4"
+          autoComplete="on"
+        >
           {showError && loginMutation.error?.response?.data?.message && (
             <Alert variant="destructive">
               <AlertDescription>
@@ -249,10 +255,11 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
           <div className="grid gap-2">
             <Label htmlFor="credentials">Email or Phone Number</Label>
             <Input
+              {...credentialsRegister}
               id="credentials"
               type="text"
+              autoComplete="username"
               placeholder="m@example.com or 08012345678"
-              {...credentialsRegister}
             />
             {errors.credentials && (
               <p className="text-sm text-red-500">
@@ -272,11 +279,13 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
             </div>
             <div className="relative">
               <Input
+                {...passwordRegister}
                 id="password"
+                name="password"
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 placeholder="••••••••"
                 className="pr-10"
-                {...passwordRegister}
               />
               <button
                 type="button"

@@ -1,8 +1,6 @@
 "use client";
 
-import { useAuth, useResendVerification } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Mail, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +10,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useState, useEffect } from "react";
+import { useAuth, useResendVerification } from "@/hooks/useAuth";
+import { Loader2, Mail } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface ResendVerificationModalProps {
   open: boolean;
@@ -42,11 +42,15 @@ export function ResendVerificationModal({
 
   const handleResend = () => {
     if (!email) return;
-    resendEmail(email, {
-      onSuccess: () => {
-        onOpenChange(false);
-      },
-    });
+    // Pass email as object, returnUrl will be auto-captured (current page path)
+    resendEmail(
+      { email },
+      {
+        onSuccess: () => {
+          onOpenChange(false);
+        },
+      }
+    );
   };
 
   return (

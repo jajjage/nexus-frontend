@@ -41,11 +41,11 @@ describe("ProductCard Component", () => {
 
       render(<ProductCard product={product} />);
 
-      expect(screen.getByText("1.024 GB")).toBeInTheDocument();
+      expect(screen.getByText("1 GB")).toBeInTheDocument();
       expect(screen.getByText("30 Days")).toBeInTheDocument();
       // No offer badge should be present
-      expect(screen.queryByText("Login to Claim")).not.toBeInTheDocument();
-      expect(screen.queryByText("Special Deal")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Login to Claim/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Special Deal/)).not.toBeInTheDocument();
     });
 
     it("should call onClick when clicked", () => {
@@ -55,9 +55,7 @@ describe("ProductCard Component", () => {
       render(<ProductCard product={product} onClick={handleClick} />);
 
       // Find the card container and click it
-      const card = screen
-        .getByText("1.024 GB")
-        .closest("div[data-slot='card']");
+      const card = screen.getByText("1 GB").closest("div[data-slot='card']");
       if (card) {
         fireEvent.click(card);
         expect(handleClick).toHaveBeenCalled();
@@ -79,7 +77,7 @@ describe("ProductCard Component", () => {
 
       render(<ProductCard product={product} isGuest={true} />);
 
-      expect(screen.getByText("Login to Claim")).toBeInTheDocument();
+      expect(screen.getByText(/Login to Claim/)).toBeInTheDocument();
     });
 
     it("should show discounted price for guest users with offer", () => {
@@ -120,7 +118,7 @@ describe("ProductCard Component", () => {
         />
       );
 
-      expect(screen.getByText("Flash Sale")).toBeInTheDocument();
+      expect(screen.getByText(/Flash Sale/)).toBeInTheDocument();
     });
 
     it("should show discounted price with strikethrough original for eligible users", () => {

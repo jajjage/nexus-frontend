@@ -140,90 +140,69 @@ export function BiometricVerificationModal({
     const checkSupport = async () => {
       try {
         const supported = await WebAuthnService.isWebAuthnSupported();
-
         setSupportedChecked(true);
-
         setIsBiometricSupported(supported);
 
         if (supported) {
           // Mark this as auto-retry on first load
-
           setIsAutoRetry(true);
 
           // Auto-start biometric verification if supported
-
+          // Small delay to ensure modal is ready
           setTimeout(() => {
             verifyBiometric(undefined, {
               onSuccess: (verificationToken: string | undefined) => {
                 if (verificationToken) {
                   onSuccess(verificationToken);
-
-                  // Don't close here if isVerifying will handle it
-
-                  // But at this point isVerifying is likely false until parent updates
-
-                  // We rely on parent NOT setting open=false immediately
                 }
               },
-
               onError: (error: any) => {
-                // Check if it's a counter validation error (don't auto-fallback)
+                // If auto-start failed (e.g. browser blocked it), allow manual retry
+                console.log(
+                  "[BiometricVerificationModal] Auto-retry failed",
+                  error
+                );
+                setIsAutoRetry(false);
 
+                // If it was a block/cancel, show message but don't transition
+                if (
+                  error.name === "NotAllowedError" ||
+                  error.message.includes("cancelled") ||
+                  error.message.includes("not allowed")
+                ) {
+                  // Just stop loading, user can click button
+                  return;
+                }
+
+                // For other errors, we might want to transition or show error
                 if (
                   error.message &&
                   error.message.toLowerCase().includes("security check")
                 ) {
-                  // User can retry biometric
-
-                  setIsAutoRetry(false);
-
                   return;
                 }
 
-                // Auto-retry failed - transition immediately
-
-                console.log(
-                  "[BiometricVerificationModal] Auto-retry failed, transitioning to PIN",
-
-                  error
-                );
-
-                setIsAutoRetry(false);
-
+                // Generic error on auto-start -> fallback to PIN after delay
                 setIsTransitioning(true);
-
                 transitionToNextModal();
               },
             });
           }, 300);
         } else {
           // WebAuthn not supported - transition immediately without showing error
-
           setIsAutoRetry(false);
-
           console.log(
             "[BiometricVerificationModal] WebAuthn not supported, transitioning to PIN"
           );
-
-          // Transition immediately - no error display
-
           setIsTransitioning(true);
-
           transitionToNextModal();
         }
       } catch (err) {
         setSupportedChecked(true);
-
         setIsBiometricSupported(false);
-
         setIsAutoRetry(false);
-
         console.log("[BiometricVerificationModal] WebAuthn check failed", err);
-
-        // Transition immediately without error display
-
         setIsTransitioning(true);
-
         transitionToNextModal();
       }
     };
@@ -243,39 +222,46 @@ export function BiometricVerificationModal({
 
   const handleBiometricVerification = () => {
     resetMutation();
-
     setIsAutoRetry(false);
-
     setErrorMessage("");
 
     verifyBiometric(undefined, {
       onSuccess: (verificationToken: string | undefined) => {
         if (verificationToken) {
           onSuccess(verificationToken);
-
           // Don't close immediately, wait for parent
         }
       },
-
       onError: (error: any) => {
         // Check if it's a counter validation error (don't auto-fallback)
-
         if (
           error.message &&
           error.message.toLowerCase().includes("security check")
         ) {
           // User can retry biometric
+          return;
+        }
 
+        // Special handling for NotAllowedError or cancellation
+        // Don't auto-fallback, let user try again manually or switch to PIN
+        if (
+          error.name === "NotAllowedError" ||
+          error.message.includes("cancelled") ||
+          error.message.includes("not allowed")
+        ) {
+          console.log(
+            "[BiometricVerificationModal] User cancelled or browser blocked",
+            error
+          );
+          setErrorMessage("Verification cancelled or timed out. Tap to retry.");
+          // Do NOT auto-transition. Let user click button again.
           return;
         }
 
         // Other errors - show error briefly then transition to PIN
-
         setErrorMessage(error?.message || "Verification failed");
-
         setTimeout(() => {
           setIsTransitioning(true);
-
           transitionToNextModal();
         }, 2000);
       },

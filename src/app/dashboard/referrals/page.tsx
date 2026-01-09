@@ -1,5 +1,6 @@
 "use client";
 
+import { BottomNav } from "@/components/features/dashboard/bottom-nav";
 import { ReferralActionCard } from "@/components/features/referrals/referral-action-card";
 import { ReferralLinkSection } from "@/components/features/referrals/referral-link-section";
 import { ReferralStatsCards } from "@/components/features/referrals/referral-stats-cards";
@@ -58,6 +59,8 @@ export default function ReferralsPage() {
       <ReferralLinkSection />
 
       <ReferralsTable />
+
+      <BottomNav />
     </div>
   );
 }

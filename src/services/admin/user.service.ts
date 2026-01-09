@@ -129,6 +129,20 @@ export const adminUserService = {
   },
 
   /**
+   * Verify 2FA OTP and enable 2FA for a user
+   */
+  verify2FA: async (
+    userId: string,
+    code: string
+  ): Promise<ApiResponse<{ enabled: boolean }>> => {
+    const response = await apiClient.post<ApiResponse<{ enabled: boolean }>>(
+      `${BASE_PATH}/${userId}/2fa/verify`,
+      { code }
+    );
+    return response.data;
+  },
+
+  /**
    * Disable 2FA for a user
    */
   disable2FA: async (userId: string): Promise<ApiResponse> => {

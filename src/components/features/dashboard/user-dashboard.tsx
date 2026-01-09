@@ -3,6 +3,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadNotificationCount } from "@/hooks/useNotifications";
 import { Bell, Gift, Signal } from "lucide-react";
@@ -169,6 +170,7 @@ export function UserDashboard() {
                 <Button variant="ghost" size="icon">
                   <Signal className="size-5" />
                 </Button>
+                <ThemeToggle />
                 <Button
                   variant="ghost"
                   size="icon"

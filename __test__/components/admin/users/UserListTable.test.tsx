@@ -151,6 +151,8 @@ describe("UserListTable", () => {
 
     render(<UserListTable />, { wrapper: createWrapper() });
 
-    expect(screen.getByText("No users found")).toBeInTheDocument();
+    expect(
+      screen.getByText("No users found in this category")
+    ).toBeInTheDocument();
   });
 });

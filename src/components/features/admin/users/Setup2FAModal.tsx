@@ -11,9 +11,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSetup2FA } from "@/hooks/admin/useAdminUsers";
+import {
+  useSetup2FA,
+  useUpdateUser,
+  useVerify2FA,
+} from "@/hooks/admin/useAdminUsers";
 import { AdminSetup2FAResponse } from "@/types/admin/user.types";
-import { Check, Copy, KeyRound, QrCode, Shield } from "lucide-react";
+import { Check, Copy, KeyRound, Loader2, QrCode, Shield } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -25,7 +29,7 @@ interface Setup2FAModalProps {
   onSuccess?: () => void;
 }
 
-type Step = "initial" | "qrcode" | "backup";
+type Step = "initial" | "qrcode" | "verify" | "backup";
 
 export function Setup2FAModal({
   isOpen,
@@ -38,8 +42,11 @@ export function Setup2FAModal({
   const [data, setData] = useState<AdminSetup2FAResponse | null>(null);
   const [copiedSecret, setCopiedSecret] = useState(false);
   const [copiedBackup, setCopiedBackup] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
 
   const setup2FAMutation = useSetup2FA();
+  const verify2FAMutation = useVerify2FA();
+  const updateUserMutation = useUpdateUser();
 
   const handleStartSetup = () => {
     setup2FAMutation.mutate(userId, {
@@ -48,6 +55,35 @@ export function Setup2FAModal({
         setStep("qrcode");
       },
     });
+  };
+
+  const handleVerifyOtp = () => {
+    if (otpCode.length !== 6) {
+      toast.error("Please enter a 6-digit code");
+      return;
+    }
+
+    verify2FAMutation.mutate(
+      { userId, code: otpCode },
+      {
+        onSuccess: () => {
+          setStep("backup");
+        },
+      }
+    );
+  };
+
+  const handleForceEnable = () => {
+    // Bypass verification and force update the user record
+    updateUserMutation.mutate(
+      { userId, data: { twoFactorEnabled: true } },
+      {
+        onSuccess: () => {
+          setStep("backup");
+          toast.success("2FA Force Enabled (Verification Skipped)");
+        },
+      }
+    );
   };
 
   const handleCopySecret = async () => {
@@ -73,6 +109,7 @@ export function Setup2FAModal({
     setData(null);
     setCopiedSecret(false);
     setCopiedBackup(false);
+    setOtpCode("");
     onSuccess?.();
     onClose();
   };
@@ -82,6 +119,7 @@ export function Setup2FAModal({
     if (step === "initial" || step === "backup") {
       setStep("initial");
       setData(null);
+      setOtpCode("");
       onClose();
     }
   };
@@ -117,7 +155,7 @@ export function Setup2FAModal({
               >
                 {setup2FAMutation.isPending ? (
                   <>
-                    <span className="mr-2 animate-spin">⏳</span>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Generating...
                   </>
                 ) : (
@@ -183,24 +221,109 @@ export function Setup2FAModal({
                 </div>
               </div>
 
-              <Button onClick={() => setStep("backup")} className="w-full">
-                Next: View Backup Codes
+              <Button onClick={() => setStep("verify")} className="w-full">
+                Next: Verify OTP Code
               </Button>
             </div>
           </>
         )}
 
-        {/* Step 3: Backup Codes Display */}
+        {/* Step 3: OTP Verification */}
+        {step === "verify" && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-blue-500" />
+                Verify OTP Code
+              </DialogTitle>
+              <DialogDescription>
+                Enter the 6-digit code from the authenticator app to confirm 2FA
+                setup is working.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-4 pt-4">
+              <div className="space-y-2">
+                <Label>Enter OTP from Authenticator App</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={otpCode}
+                  onChange={(e) =>
+                    setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
+                  className="text-center font-mono text-2xl tracking-widest"
+                />
+              </div>
+
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+                <strong>Note:</strong> This step confirms the authenticator app
+                is set up correctly before enabling 2FA.
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setStep("qrcode")}
+                  className="flex-1"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleVerifyOtp}
+                  disabled={otpCode.length !== 6 || verify2FAMutation.isPending}
+                  className="flex-1"
+                >
+                  {verify2FAMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify & Enable 2FA"
+                  )}
+                </Button>
+              </div>
+
+              {/* Force Enable Option */}
+              <div className="mt-4 border-t pt-2">
+                <p className="text-muted-foreground mb-2 text-xs">
+                  Can&apos;t get the code? You can force enable 2FA if you are
+                  sure the user has the secret.
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleForceEnable}
+                  disabled={updateUserMutation.isPending}
+                  className="w-full text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+                >
+                  {updateUserMutation.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Shield className="mr-2 h-4 w-4" />
+                  )}
+                  Force Enable (Skip Verification)
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Step 4: Backup Codes Display */}
         {step === "backup" && (
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-green-500" />
-                Backup Codes
+                2FA Enabled - Backup Codes
               </DialogTitle>
               <DialogDescription>
-                These codes can be used if the user loses access to their
-                authenticator app. Each code can only be used once.
+                2FA has been enabled successfully! These codes can be used if
+                the user loses access to their authenticator app. Each code can
+                only be used once.
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-4 pt-4">

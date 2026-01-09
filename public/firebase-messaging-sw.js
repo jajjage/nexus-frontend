@@ -102,8 +102,8 @@ self.addEventListener("push", (event) => {
 
     const notificationOptions = {
       body: notificationBody,
-      icon: payload.notification?.image || "/images/notification-icon.png",
-      badge: "/images/notification-badge.png",
+      icon: payload.notification?.image || "/images/android-icon.png",
+      badge: "/images/ios-tinted.png",
       tag: notificationId || "notification",
       requireInteraction: false,
       data: {

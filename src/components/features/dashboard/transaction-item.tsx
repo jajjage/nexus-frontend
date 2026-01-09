@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Transaction } from "@/types/wallet.types";
-import { ArrowDown, ArrowUp, Landmark, Phone, Wifi } from "lucide-react";
+import { ArrowDown, ArrowUp, Phone, Wifi } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 // Helper to determine status badge color
@@ -60,14 +60,10 @@ const getTransactionIcon = (transaction: Transaction) => {
       // Default to phone icon for airtime
       return <Phone className="size-5 text-blue-600" />;
     }
-    // Default debit icon
+    // Admin debit or outgoing_payment - use arrow up (money going out)
     return <ArrowUp className="size-5 text-red-600" />;
   } else {
-    // isCredit
-    if (transaction.relatedType === "incoming_payment") {
-      return <Landmark className="size-5 text-green-600" />;
-    }
-    // Default credit icon
+    // isCredit - incoming_payment or other credits - use arrow down (money coming in)
     return <ArrowDown className="size-5 text-green-600" />;
   }
 };
@@ -144,10 +140,16 @@ export function TransactionItem({ transaction, source }: TransactionItemProps) {
               )}
             </>
           ) : transaction.relatedType === "incoming_payment" ? (
-            // Incoming payment: Show clean message instead of admin UUID
+            // Incoming payment (admin credit): Show clean message instead of admin UUID
             <>
               <p className="text-sm font-semibold">Incoming Payment</p>
               <p className="text-muted-foreground text-xs">Wallet top-up</p>
+            </>
+          ) : transaction.relatedType === "outgoing_payment" ? (
+            // Outgoing payment (admin debit): Show clean message instead of admin UUID
+            <>
+              <p className="text-sm font-semibold">Wallet Debit</p>
+              <p className="text-muted-foreground text-xs">Admin deduction</p>
             </>
           ) : (
             <>

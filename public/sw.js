@@ -1,10 +1,29 @@
-const CACHE_NAME = "nexus-data-cache-v1";
+const CACHE_NAME = "nexus-data-cache-v3";
+
+// Pages and assets to pre-cache for instant PWA startup
+const PRECACHE_URLS = [
+  "/",
+  "/dashboard",
+  "/login",
+  "/images/logo.svg",
+  "/images/logo-192.png",
+  "/images/logo-512.png",
+];
 
 // Minimal service worker to satisfy installability checks and provide basic offline support
 self.addEventListener("install", (event) => {
-  console.log("[SW] Install event");
+  console.log("[SW] Install event - Pre-caching critical assets");
   // Force the waiting service worker to become the active service worker
   self.skipWaiting();
+
+  // Pre-cache critical pages for instant startup
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(PRECACHE_URLS).catch((err) => {
+        console.log("[SW] Pre-cache failed (non-critical):", err);
+      });
+    })
+  );
 });
 
 self.addEventListener("activate", (event) => {

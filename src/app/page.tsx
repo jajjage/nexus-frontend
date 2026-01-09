@@ -1,3 +1,6 @@
+"use client";
+
+import { AuthAwareRedirect } from "@/components/auth/AuthAwareRedirect";
 import { BetterTogether } from "@/components/landing-page/better-together";
 import { FAQ } from "@/components/landing-page/faq";
 import { Footer } from "@/components/landing-page/footer";
@@ -10,7 +13,7 @@ import { HomeNotificationBanner } from "@/components/notification/home-notificat
 
 export default function Home() {
   return (
-    <>
+    <AuthAwareRedirect>
       <Header />
       <Hero />
       <HomeNotificationBanner />
@@ -24,6 +27,6 @@ export default function Home() {
         </div>
       </main>
       <Footer />
-    </>
+    </AuthAwareRedirect>
   );
 }

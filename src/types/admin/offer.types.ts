@@ -165,6 +165,7 @@ export interface CreateOfferRequest {
   // Associations
   productIds?: string[];
   supplierIds?: string[];
+  allowedRoles?: string[];
   // Rules
   rules?: OfferRule[];
 }

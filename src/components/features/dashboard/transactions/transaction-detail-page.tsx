@@ -186,6 +186,11 @@ const getTransactionDescription = (transaction: Transaction): string => {
     return "Wallet top-up";
   }
 
+  // For outgoing payments (admin debit), show a clean message instead of admin UUID
+  if (isDebit && transaction.relatedType === "outgoing_payment") {
+    return "Admin deduction";
+  }
+
   console.log(transaction.note || transaction.method || "Transaction");
   return transaction.note || transaction.method || "Transaction";
 };
@@ -194,6 +199,10 @@ const getTransactionDescription = (transaction: Transaction): string => {
 const getTransactionDetailTypeLabel = (transaction: Transaction): string => {
   if (transaction.relatedType === "incoming_payment") {
     return "Incoming Transfer";
+  }
+
+  if (transaction.relatedType === "outgoing_payment") {
+    return "Wallet Debit";
   }
 
   // Handle referral transactions which might be categorized under 'system' or similar

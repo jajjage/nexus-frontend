@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/images/favicon-1.svg",
-    apple: "/images/logo.svg",
+    apple: "/images/ios-light.png",
   },
   other: {
     "mobile-web-app-capable": "yes",
@@ -55,8 +55,71 @@ export default function RootLayout({
           content="black-translucent"
         />
         <meta name="apple-mobile-web-app-title" content="Nexus Data" />
+        {/* Inline splash screen styles for instant PWA cold start feedback */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+            #pwa-splash {
+              position: fixed;
+              inset: 0;
+              z-index: 9999;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              background: #fff;
+              color: #000;
+            }
+            @media (prefers-color-scheme: dark) {
+              #pwa-splash {
+                background: #000;
+                color: #fff;
+              }
+            }
+            #pwa-splash.hidden { display: none; }
+            #pwa-splash img { width: 100px; height: 100px; animation: pulse 2s infinite; }
+            #pwa-splash h1 {
+              font-size: 1.5rem;
+              margin-top: 1rem;
+              font-weight: bold;
+              color: inherit;
+            }
+            #pwa-splash .spinner {
+              width: 32px; height: 32px; margin-top: 1.5rem;
+              border: 3px solid rgba(128,128,128,0.2);
+              border-top-color: currentColor;
+              border-radius: 50%;
+              animation: spin 1s linear infinite;
+            }
+            @keyframes spin { to { transform: rotate(360deg); } }
+            @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+          `,
+          }}
+        />
       </head>
       <body className="antialiased">
+        {/* PWA Splash Screen - Shows immediately, hidden when app loads */}
+        <div id="pwa-splash">
+          <img src="/images/splash-icon-light.png" alt="Nexus Data" />
+          <h1>Nexus Data</h1>
+          <div className="spinner" />
+        </div>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+            // Hide splash when DOM is ready
+            if (document.readyState === 'complete') {
+              document.getElementById('pwa-splash')?.classList.add('hidden');
+            } else {
+              window.addEventListener('load', function() {
+                setTimeout(function() {
+                  document.getElementById('pwa-splash')?.classList.add('hidden');
+                }, 300);
+              });
+            }
+          `,
+          }}
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
