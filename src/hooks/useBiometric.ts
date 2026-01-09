@@ -4,11 +4,13 @@ import { WebAuthnService } from "@/services/webauthn.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-// Query keys
+// Query keys - base key used in functions to avoid self-reference issues with Turbopack
+const BIOMETRIC_BASE_KEY = ["biometric"] as const;
+
 export const biometricKeys = {
-  all: ["biometric"] as const,
-  enrollments: () => [...biometricKeys.all, "enrollments"] as const,
-  auditLogs: () => [...biometricKeys.all, "audit-logs"] as const,
+  all: BIOMETRIC_BASE_KEY,
+  enrollments: () => [...BIOMETRIC_BASE_KEY, "enrollments"] as const,
+  auditLogs: () => [...BIOMETRIC_BASE_KEY, "audit-logs"] as const,
 };
 
 /**
