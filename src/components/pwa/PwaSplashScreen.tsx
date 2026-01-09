@@ -33,6 +33,9 @@ function getIsPwa(): boolean {
  * PWA Splash Screen - Shows immediately when app opens
  * Provides visual feedback while the app is loading
  * Adapts to system theme preference (light/dark mode)
+ *
+ * IMPORTANT: Uses inline styles for background to ensure immediate application
+ * before CSS classes are processed.
  */
 export function PwaSplashScreen({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -71,48 +74,101 @@ export function PwaSplashScreen({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Dynamic colors based on detected theme
-  const bgColor = isDarkMode ? "bg-zinc-950" : "bg-white";
-  const textColor = isDarkMode ? "text-white" : "text-zinc-900";
-  const mutedColor = isDarkMode ? "text-zinc-400" : "text-zinc-500";
-  const spinnerBorder = isDarkMode ? "border-zinc-700" : "border-zinc-200";
-  const spinnerAccent = isDarkMode
-    ? "border-t-amber-500"
-    : "border-t-amber-600";
+  // Use inline styles for IMMEDIATE theme application
+  // This prevents flash where CSS classes haven't loaded yet
+  const containerStyle: React.CSSProperties = {
+    position: "fixed",
+    inset: 0,
+    zIndex: 9999,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    // CRITICAL: Inline background color ensures no flash
+    backgroundColor: isDarkMode ? "#09090b" : "#ffffff", // zinc-950 / white
+    color: isDarkMode ? "#ffffff" : "#18181b", // white / zinc-900
+  };
+
+  const mutedColor = isDarkMode ? "#a1a1aa" : "#71717a"; // zinc-400 / zinc-500
+  const spinnerStyle: React.CSSProperties = {
+    width: 32,
+    height: 32,
+    borderRadius: "50%",
+    border: `2px solid ${isDarkMode ? "#3f3f46" : "#e4e4e7"}`, // zinc-700 / zinc-200
+    borderTopColor: isDarkMode ? "#f59e0b" : "#d97706", // amber-500 / amber-600
+    animation: "spin 1s linear infinite",
+  };
+
+  // Use the same logo for both themes - just ensure it's visible
+  // The icon should be designed to work on both backgrounds
   const logoSrc = isDarkMode
     ? "/images/splash-icon-dark.png"
     : "/images/splash-icon-light.png";
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center ${bgColor} ${textColor}`}
-    >
-      {/* Logo with subtle scale animation */}
-      <div className="animate-pulse">
-        <Image
-          src={logoSrc}
-          alt="Nexus Data"
-          width={120}
-          height={120}
-          priority
-        />
-      </div>
+    <>
+      {/* Inject keyframes for spinner animation */}
+      <style jsx global>{`
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
 
-      {/* Brand name */}
-      <h1 className="mt-4 text-xl font-semibold tracking-tight">Nexus Data</h1>
+      <div style={containerStyle}>
+        {/* Logo with subtle scale animation */}
+        <div style={{ animation: "pulse 2s ease-in-out infinite" }}>
+          <Image
+            src={logoSrc}
+            alt="Nexus Data"
+            width={120}
+            height={120}
+            priority
+            style={{ objectFit: "contain" }}
+          />
+        </div>
 
-      {/* Tagline */}
-      <p className={`mt-2 text-sm ${mutedColor}`}>
-        Your Gateway to Seamless Data
-      </p>
+        {/* Brand name */}
+        <h1
+          style={{
+            marginTop: 16,
+            fontSize: 20,
+            fontWeight: 600,
+            letterSpacing: "-0.025em",
+          }}
+        >
+          Nexus Data
+        </h1>
 
-      {/* Loading spinner */}
-      <div className="mt-8 flex flex-col items-center gap-3">
+        {/* Tagline */}
+        <p
+          style={{
+            marginTop: 8,
+            fontSize: 14,
+            color: mutedColor,
+          }}
+        >
+          Your Gateway to Seamless Data
+        </p>
+
+        {/* Loading spinner */}
         <div
-          className={`h-8 w-8 animate-spin rounded-full border-2 ${spinnerBorder} ${spinnerAccent}`}
-        />
-        <p className={`text-xs ${mutedColor}`}>Loading...</p>
+          style={{
+            marginTop: 32,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <div style={spinnerStyle} />
+          <p style={{ fontSize: 12, color: mutedColor }}>Loading...</p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

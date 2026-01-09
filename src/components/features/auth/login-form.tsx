@@ -44,6 +44,10 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
   const [pendingCredentials, setPendingCredentials] =
     useState<LoginRequest | null>(null);
   const [twoFactorError, setTwoFactorError] = useState<string | undefined>();
+  const [autoSubmitCredentials, setAutoSubmitCredentials] = useState<{
+    credentials: string;
+    password: string;
+  } | null>(null);
 
   const searchParams = useSearchParams();
   const loginMutation = useLogin(role);
@@ -130,8 +134,18 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
           );
           setValue("credentials", stored.id);
           setValue("password", stored.password);
-          // Trigger validation
-          setTimeout(() => trigger(), 100);
+
+          // Trigger validation first
+          const isValid = await trigger();
+
+          // Set auto-submit credentials if valid - another useEffect will handle submit
+          if (isValid) {
+            console.log("[LoginForm] Credentials valid, queueing auto-submit");
+            setAutoSubmitCredentials({
+              credentials: stored.id,
+              password: stored.password,
+            });
+          }
         }
       } catch (err) {
         // Silently fail - this is an optional enhancement
@@ -147,6 +161,42 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
     }
   }, [setValue, trigger, searchParams]);
 
+  // Handle auto-submit after biometric authentication fills credentials
+  useEffect(() => {
+    if (autoSubmitCredentials) {
+      console.log("[LoginForm] Auto-submitting after biometric auth");
+
+      // Build payload
+      const { credentials, password } = autoSubmitCredentials;
+      const isEmail = credentials.includes("@");
+      const payload: LoginRequest = {
+        password,
+        ...(isEmail ? { email: credentials } : { phone: credentials }),
+      };
+
+      // Store for 2FA retry
+      setPendingCredentials(payload);
+      setTwoFactorError(undefined);
+
+      // Submit login
+      loginMutation.mutate(payload, {
+        onSuccess: async () => {
+          try {
+            await credentialManager.storeCredentials(
+              credentials,
+              password,
+              credentials
+            );
+          } catch {
+            // Silent fail
+          }
+        },
+      });
+
+      // Clear auto-submit state
+      setAutoSubmitCredentials(null);
+    }
+  }, [autoSubmitCredentials, loginMutation]);
   const onSubmit = async (data: LoginFormValues) => {
     const { credentials, password } = data;
     const isEmail = credentials.includes("@");

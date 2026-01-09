@@ -169,37 +169,90 @@ export function DataPlans() {
     }
   };
 
-  // Filter products based on selection
+  // Filter products based on selection with deduplication
   const filteredProducts = useMemo(() => {
     if (!selectedNetwork) return [];
 
-    return products.filter((product: Product) => {
+    // First filter by network and product type
+    const networkProducts = products.filter((product: Product) => {
       if (product.productType !== "data") return false;
-
       if (product.operator?.name !== selectedNetwork) return false;
+      return true;
+    });
 
-      const validity = product.validityDays; // Don't default to 30, use actual value
+    // Apply category filter
+    const categoryFiltered = networkProducts.filter((product: Product) => {
+      const validity = product.validityDays;
       const name = product.name.toLowerCase();
 
       switch (selectedCategory) {
         case "Daily":
-          return !!validity && validity <= 1;
+          // Products valid for 1 day or less
+          return validity !== undefined && validity !== null && validity <= 1;
+
         case "Weekly":
-          return !!validity && validity > 1 && validity <= 7;
+          // Products valid for 2-7 days (exclusive - not daily, not monthly)
+          return (
+            validity !== undefined &&
+            validity !== null &&
+            validity > 1 &&
+            validity <= 7
+          );
+
         case "Monthly":
-          return !!validity && validity > 7 && validity <= 45; // Extended to 45 to cover slightly longer months
+          // Products valid for 8-45 days (exclusive - not weekly)
+          return (
+            validity !== undefined &&
+            validity !== null &&
+            validity > 7 &&
+            validity <= 45
+          );
+
         case "XtraValue":
           return name.includes("xtra") || name.includes("extra");
+
         case "Roaming":
           return name.includes("roam") || name.includes("intl");
+
         case "Other":
-          // Show if no validity, or very long validity, or doesn't fit mostly
-          return !validity || validity > 45;
+          // Products with no validity set, or validity > 45 days
+          return validity === undefined || validity === null || validity > 45;
+
         case "HOT":
         default:
-          return true;
+          // HOT: Show featured products - those with best discounts/offers
+          // Instead of showing ALL products, show top deals sorted by discount
+          const hasDiscount =
+            product.activeOffer ||
+            (product.supplierOffers?.[0]?.supplierPrice &&
+              parseFloat(product.supplierOffers[0].supplierPrice) <
+                parseFloat(product.denomAmount || "0"));
+          return hasDiscount;
       }
     });
+
+    // CRITICAL: Deduplicate by product ID to prevent duplicates
+    const seen = new Set<string>();
+    const deduplicated = categoryFiltered.filter((product) => {
+      if (seen.has(product.id)) {
+        return false;
+      }
+      seen.add(product.id);
+      return true;
+    });
+
+    // For HOT tab, sort by discount value and limit
+    if (selectedCategory === "HOT") {
+      return deduplicated
+        .sort((a, b) => {
+          const aDiscount = a.activeOffer?.discountValue || 0;
+          const bDiscount = b.activeOffer?.discountValue || 0;
+          return bDiscount - aDiscount;
+        })
+        .slice(0, 12); // Show top 12 hot deals
+    }
+
+    return deduplicated;
   }, [products, selectedNetwork, selectedCategory]);
 
   // Handle Plan Click

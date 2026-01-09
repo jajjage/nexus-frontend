@@ -482,16 +482,12 @@ export function useLogout() {
   const { user, markSessionAsExpired } = useAuthContext();
   const [_, startTransition] = useTransition();
 
-  // Determine the appropriate login page based on USER ROLE (not route)
-  // This is important for PWA/standalone mode where route may not be reliable
-  const getLoginUrl = () => {
-    // Admin and staff users should redirect to admin login
-    if (user?.role === "admin" || user?.role === "staff") {
-      return "/admin/login";
-    }
-    // User and reseller redirect to standard login
-    return "/login";
-  };
+  // Determine the login URL IMMEDIATELY based on current user role
+  // CRITICAL: Store this BEFORE mutation runs, because user becomes null during logout
+  const loginUrl =
+    user?.role === "admin" || user?.role === "staff"
+      ? "/admin/login"
+      : "/login";
 
   return useMutation({
     mutationFn: async () => {
@@ -511,7 +507,7 @@ export function useLogout() {
       }
     },
     onSuccess: () => {
-      console.log("[AUTH] Logout successful");
+      console.log("[AUTH] Logout successful - redirecting to:", loginUrl);
 
       // Prevent browser from auto-filling credentials after explicit logout
       credentialManager.preventSilentAccess();
@@ -519,8 +515,6 @@ export function useLogout() {
       // Clear all state immediately (don't wait for transition)
       markSessionAsExpired();
       queryClient.clear();
-
-      const loginUrl = getLoginUrl();
 
       // Use startTransition to prefetch the login page while clearing state
       startTransition(() => {
@@ -546,7 +540,7 @@ export function useLogout() {
       queryClient.clear();
 
       if (typeof window !== "undefined") {
-        window.location.href = getLoginUrl();
+        window.location.href = loginUrl;
       }
     },
   });
