@@ -105,16 +105,14 @@ describe("Admin Supplier Hooks", () => {
       success: true,
       message: "Supplier fetched",
       data: {
-        supplier: {
-          id: "sup-123",
-          name: "Test Supplier",
-          slug: "test-supplier",
-          apiBase: "https://api.test.com",
-          apiKey: "sk_***",
-          priorityInt: 1,
-          isActive: true,
-          createdAt: "2024-01-01T00:00:00Z",
-        },
+        id: "sup-123",
+        name: "Test Supplier",
+        slug: "test-supplier",
+        apiBase: "https://api.test.com",
+        apiKey: "sk_***",
+        priorityInt: 1,
+        isActive: true,
+        createdAt: "2024-01-01T00:00:00Z",
       },
     };
 

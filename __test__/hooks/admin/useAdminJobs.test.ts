@@ -132,17 +132,15 @@ describe("Admin Job Hooks", () => {
       success: true,
       message: "Job fetched",
       data: {
-        job: {
-          id: "job-123",
-          type: "notification",
-          status: "completed" as const,
-          payload: { userId: "user-1", message: "Hello" },
-          result: { delivered: true },
-          attempts: 1,
-          maxAttempts: 3,
-          createdAt: "2024-01-01T00:00:00Z",
-          completedAt: "2024-01-01T00:00:05Z",
-        },
+        id: "job-123",
+        type: "notification",
+        status: "completed" as const,
+        payload: { userId: "user-1", message: "Hello" },
+        result: { delivered: true },
+        attempts: 1,
+        maxAttempts: 3,
+        createdAt: "2024-01-01T00:00:00Z",
+        completedAt: "2024-01-01T00:00:05Z",
       },
     };
 

@@ -134,16 +134,15 @@ describe("Admin Settlement Hooks", () => {
       success: true,
       message: "Settlement fetched",
       data: {
-        settlement: {
-          id: "set-123",
-          providerId: "provider-1",
-          settlementDate: "2024-01-15",
-          amount: 100000,
-          fees: 1500,
-          netAmount: 98500,
-          reference: "SET-001",
-          rawReport: { transactionCount: 50 },
-        },
+        id: "set-123",
+        providerId: "provider-1",
+        settlementDate: "2024-01-15",
+        amount: 100000,
+        fees: 1500,
+        netAmount: 98500,
+        reference: "SET-001",
+        rawReport: { transactionCount: 50 },
+        createdAt: "2024-01-15T10:00:00Z",
       },
     };
 
@@ -195,6 +194,7 @@ describe("Admin Settlement Hooks", () => {
             id: "set-new",
             ...createData,
             netAmount: 73875,
+            createdAt: "2024-01-25T10:00:00Z",
           },
         },
       });

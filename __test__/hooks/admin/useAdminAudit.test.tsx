@@ -16,7 +16,7 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-const mockAdminAuditService = adminAuditService as {
+const mockAdminAuditService = adminAuditService as unknown as {
   getAuditLogs: Mock;
   exportAuditLogs: Mock;
   getUserActions: Mock;

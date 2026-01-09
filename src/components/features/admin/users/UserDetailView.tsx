@@ -35,6 +35,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminRoles, useAssignRole } from "@/hooks/admin/useAdminRoles";
 import {
+  useAdmin2FAStatus,
   useAdminUser,
   useAdminUserSessions,
   useCreditWallet,
@@ -71,6 +72,8 @@ interface UserDetailViewProps {
 export function UserDetailView({ userId }: UserDetailViewProps) {
   const queryClient = useQueryClient();
   const { data, isLoading, isError } = useAdminUser(userId);
+  const { data: twoFactorStatus, isLoading: is2FAStatusLoading } =
+    useAdmin2FAStatus(userId);
   const { data: sessionsData, isLoading: isSessionsLoading } =
     useAdminUserSessions(userId);
   const suspendMutation = useSuspendUser();
@@ -403,52 +406,54 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
               {/* 2FA Status */}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">2FA Status</span>
-                <Badge
-                  variant={user.twoFactorEnabled ? "default" : "secondary"}
-                >
-                  {user.twoFactorEnabled ? "Enabled" : "Disabled"}
-                </Badge>
+                {is2FAStatusLoading ? (
+                  <Skeleton className="h-5 w-16" />
+                ) : (
+                  <Badge
+                    variant={
+                      twoFactorStatus?.data?.enabled ? "default" : "secondary"
+                    }
+                  >
+                    {twoFactorStatus?.data?.enabled ? "Enabled" : "Disabled"}
+                  </Badge>
+                )}
               </div>
 
               {/* Setup or Disable 2FA */}
-              {user.role === "admin" && (
-                <>
-                  {user.twoFactorEnabled ? (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" className="w-full">
-                          Disable 2FA
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Disable 2FA?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will disable two-factor authentication for{" "}
-                            {user.fullName}. They will need to set it up again.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => disable2FAMutation.mutate(userId)}
-                          >
-                            Disable 2FA
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => setIs2FAModalOpen(true)}
-                    >
-                      <KeyRound className="mr-2 h-4 w-4" />
-                      Setup 2FA
+              {twoFactorStatus?.data?.enabled ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      Disable 2FA
                     </Button>
-                  )}
-                </>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Disable 2FA?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will disable two-factor authentication for{" "}
+                        {user.fullName}. They will need to set it up again.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => disable2FAMutation.mutate(userId)}
+                      >
+                        Disable 2FA
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setIs2FAModalOpen(true)}
+                >
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  Enable 2FA
+                </Button>
               )}
             </div>
           </CardContent>

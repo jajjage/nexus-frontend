@@ -1,9 +1,19 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useLogout } from "@/hooks/useAuth";
+import { Separator } from "@/components/ui/separator";
+import { useAuth, useLogout } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Trophy, User, Users } from "lucide-react";
+import {
+  FileUp,
+  Home,
+  Key,
+  LogOut,
+  Store,
+  Trophy,
+  User,
+  Users,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,9 +25,18 @@ const navItems = [
   { label: "Profile", icon: User, href: "/dashboard/profile" },
 ];
 
+const resellerItems = [
+  { label: "Reseller Hub", icon: Store, href: "/dashboard/reseller" },
+  { label: "Bulk Topup", icon: FileUp, href: "/dashboard/reseller/bulk-topup" },
+  { label: "API Keys", icon: Key, href: "/dashboard/reseller/api-keys" },
+];
+
 export function DesktopSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
+  const { user } = useAuth();
   const logoutMutation = useLogout();
+
+  const isReseller = user?.role === "reseller";
 
   return (
     <div
@@ -54,6 +73,31 @@ export function DesktopSidebar({ className }: { className?: string }) {
             <span>{item.label}</span>
           </Link>
         ))}
+
+        {/* Reseller Section - Only visible to resellers */}
+        {isReseller && (
+          <>
+            <Separator className="my-2" />
+            <span className="text-muted-foreground px-3 text-xs font-medium tracking-wider uppercase">
+              Reseller Tools
+            </span>
+            {resellerItems.map((item) => (
+              <Link
+                href={item.href}
+                key={item.label}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors",
+                  pathname === item.href || pathname.startsWith(item.href + "/")
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <item.icon className="size-5" />
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </>
+        )}
       </nav>
 
       <div className="mt-auto flex flex-col gap-2">

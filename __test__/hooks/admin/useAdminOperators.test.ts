@@ -110,15 +110,13 @@ describe("Admin Operator Hooks", () => {
       success: true,
       message: "Operator fetched",
       data: {
-        operator: {
-          id: "op-123",
-          code: "9MOBILE",
-          name: "9Mobile Nigeria",
-          isoCountry: "NG",
-          isActive: true,
-          createdAt: "2024-01-01T00:00:00Z",
-          updatedAt: "2024-01-15T00:00:00Z",
-        },
+        id: "op-123",
+        code: "9MOBILE",
+        name: "9Mobile Nigeria",
+        isoCountry: "NG",
+        isActive: true,
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-15T00:00:00Z",
       },
     };
 

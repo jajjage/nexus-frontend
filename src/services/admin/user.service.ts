@@ -153,6 +153,31 @@ export const adminUserService = {
   },
 
   /**
+   * Force-enable 2FA for a user (Admin creates credentials for user)
+   * Returns QR code, secret, and backup codes that admin can give to user
+   */
+  enable2FA: async (
+    userId: string
+  ): Promise<ApiResponse<AdminSetup2FAResponse>> => {
+    const response = await apiClient.post<ApiResponse<AdminSetup2FAResponse>>(
+      `${BASE_PATH}/${userId}/2fa/enable`
+    );
+    return response.data;
+  },
+
+  /**
+   * Get 2FA status for a user
+   */
+  get2FAStatus: async (
+    userId: string
+  ): Promise<ApiResponse<{ enabled: boolean; roleRequires2FA?: boolean }>> => {
+    const response = await apiClient.get<
+      ApiResponse<{ enabled: boolean; roleRequires2FA?: boolean }>
+    >(`${BASE_PATH}/${userId}/2fa/status`);
+    return response.data;
+  },
+
+  /**
    * Get user sessions
    */
   getUserSessions: async (

@@ -62,7 +62,7 @@ describe("adminSupplierMarkupService", () => {
       mockApiClient.get.mockResolvedValueOnce({
         data: {
           success: true,
-          data: { markup: mockMarkup },
+          data: mockMarkup,
         },
       });
 
@@ -72,7 +72,7 @@ describe("adminSupplierMarkupService", () => {
       expect(mockApiClient.get).toHaveBeenCalledWith(
         "/admin/supplier-markups/markup-123"
       );
-      expect(result.data!.markup).toEqual(mockMarkup);
+      expect(result.data).toEqual(mockMarkup);
     });
   });
 

@@ -259,6 +259,36 @@ export function useDisable2FA() {
 }
 
 /**
+ * Force-enable 2FA mutation (Admin creates credentials for user)
+ * Returns QR code, secret, and backup codes to share with user
+ */
+export function useEnable2FA() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => adminUserService.enable2FA(userId),
+    onSuccess: (response, userId) => {
+      toast.success(response.message || "2FA enabled for user");
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.detail(userId) });
+    },
+    onError: (error: AxiosError<any>) => {
+      toast.error(error.response?.data?.message || "Failed to enable 2FA");
+    },
+  });
+}
+
+/**
+ * Fetch 2FA status for a user
+ */
+export function useAdmin2FAStatus(userId: string) {
+  return useQuery({
+    queryKey: [...adminUserKeys.detail(userId), "2fa-status"],
+    queryFn: () => adminUserService.get2FAStatus(userId),
+    enabled: !!userId,
+  });
+}
+
+/**
  * Revoke sessions mutation
  */
 export function useRevokeUserSessions() {

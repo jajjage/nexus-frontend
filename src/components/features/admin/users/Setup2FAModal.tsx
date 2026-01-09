@@ -11,13 +11,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  useSetup2FA,
-  useUpdateUser,
-  useVerify2FA,
-} from "@/hooks/admin/useAdminUsers";
+import { useEnable2FA } from "@/hooks/admin/useAdminUsers";
 import { AdminSetup2FAResponse } from "@/types/admin/user.types";
-import { Check, Copy, KeyRound, Loader2, QrCode, Shield } from "lucide-react";
+import { Check, Copy, KeyRound, Loader2, Shield } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -29,7 +25,7 @@ interface Setup2FAModalProps {
   onSuccess?: () => void;
 }
 
-type Step = "initial" | "qrcode" | "verify" | "backup";
+type Step = "initial" | "credentials";
 
 export function Setup2FAModal({
   isOpen,
@@ -42,48 +38,16 @@ export function Setup2FAModal({
   const [data, setData] = useState<AdminSetup2FAResponse | null>(null);
   const [copiedSecret, setCopiedSecret] = useState(false);
   const [copiedBackup, setCopiedBackup] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
 
-  const setup2FAMutation = useSetup2FA();
-  const verify2FAMutation = useVerify2FA();
-  const updateUserMutation = useUpdateUser();
+  const enable2FAMutation = useEnable2FA();
 
-  const handleStartSetup = () => {
-    setup2FAMutation.mutate(userId, {
+  const handleEnable2FA = () => {
+    enable2FAMutation.mutate(userId, {
       onSuccess: (response) => {
         setData(response.data ?? null);
-        setStep("qrcode");
+        setStep("credentials");
       },
     });
-  };
-
-  const handleVerifyOtp = () => {
-    if (otpCode.length !== 6) {
-      toast.error("Please enter a 6-digit code");
-      return;
-    }
-
-    verify2FAMutation.mutate(
-      { userId, code: otpCode },
-      {
-        onSuccess: () => {
-          setStep("backup");
-        },
-      }
-    );
-  };
-
-  const handleForceEnable = () => {
-    // Bypass verification and force update the user record
-    updateUserMutation.mutate(
-      { userId, data: { twoFactorEnabled: true } },
-      {
-        onSuccess: () => {
-          setStep("backup");
-          toast.success("2FA Force Enabled (Verification Skipped)");
-        },
-      }
-    );
   };
 
   const handleCopySecret = async () => {
@@ -109,59 +73,57 @@ export function Setup2FAModal({
     setData(null);
     setCopiedSecret(false);
     setCopiedBackup(false);
-    setOtpCode("");
     onSuccess?.();
     onClose();
   };
 
   const handleClose = () => {
-    // Only allow closing on initial step or after viewing backup codes
-    if (step === "initial" || step === "backup") {
-      setStep("initial");
-      setData(null);
-      setOtpCode("");
-      onClose();
-    }
+    // Allow closing from any step - reset state
+    setStep("initial");
+    setData(null);
+    setCopiedSecret(false);
+    setCopiedBackup(false);
+    onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        {/* Step 1: Initial - Start Setup */}
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+        {/* Step 1: Initial - Enable 2FA */}
         {step === "initial" && (
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-blue-500" />
-                Setup 2FA for User
+                Enable 2FA for User
               </DialogTitle>
               <DialogDescription>
-                This will generate a new 2FA secret and backup codes for{" "}
-                <span className="text-foreground font-medium">{userName}</span>.
-                The user will need to scan the QR code with their authenticator
-                app.
+                This will enable 2FA for{" "}
+                <span className="text-foreground font-medium">{userName}</span>{" "}
+                and generate their credentials. You can then share the QR code,
+                secret, and backup codes with them.
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-4 pt-4">
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-                <strong>Important:</strong> After setup, make sure the user
-                saves their backup codes securely. They won&apos;t be shown
-                again.
+                <strong>Important:</strong> After enabling, make sure to share
+                the credentials with the user securely. The backup codes
+                won&apos;t be shown again.
               </div>
               <Button
-                onClick={handleStartSetup}
-                disabled={setup2FAMutation.isPending}
+                onClick={handleEnable2FA}
+                disabled={enable2FAMutation.isPending}
                 className="w-full"
               >
-                {setup2FAMutation.isPending ? (
+                {enable2FAMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                    Enabling 2FA...
                   </>
                 ) : (
                   <>
                     <KeyRound className="mr-2 h-4 w-4" />
-                    Generate 2FA Credentials
+                    Enable 2FA & Generate Credentials
                   </>
                 )}
               </Button>
@@ -169,37 +131,42 @@ export function Setup2FAModal({
           </>
         )}
 
-        {/* Step 2: QR Code Display */}
-        {step === "qrcode" && (
+        {/* Step 2: Show Credentials (QR Code, Secret, Backup Codes) */}
+        {step === "credentials" && (
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <QrCode className="h-5 w-5 text-blue-500" />
-                Scan QR Code
+                <Shield className="h-5 w-5 text-green-500" />
+                2FA Enabled Successfully
               </DialogTitle>
               <DialogDescription>
-                Have the user scan this QR code with Google Authenticator,
-                Authy, or another TOTP app.
+                Share these credentials with the user. They need to scan the QR
+                code or enter the secret in their authenticator app.
               </DialogDescription>
             </DialogHeader>
-            <div className="flex flex-col items-center gap-4 pt-4">
+            <div className="flex flex-col gap-4 pt-4">
               {/* QR Code */}
-              {data?.qrCode ? (
-                <div className="rounded-lg border bg-white p-4">
-                  <img
-                    src={data.qrCode}
-                    alt="2FA QR Code"
-                    className="h-48 w-48"
-                  />
-                </div>
-              ) : (
-                <Skeleton className="h-56 w-56" />
-              )}
+              <div className="flex flex-col items-center gap-2">
+                <Label className="text-muted-foreground text-xs">
+                  QR Code for Authenticator App
+                </Label>
+                {data?.qrCode ? (
+                  <div className="rounded-lg border bg-white p-3">
+                    <img
+                      src={data.qrCode}
+                      alt="2FA QR Code"
+                      className="h-40 w-40"
+                    />
+                  </div>
+                ) : (
+                  <Skeleton className="h-44 w-44" />
+                )}
+              </div>
 
               {/* Manual Entry Secret */}
-              <div className="w-full space-y-2">
+              <div className="space-y-2">
                 <Label className="text-muted-foreground text-xs">
-                  Manual Entry Code
+                  Manual Entry Secret
                 </Label>
                 <div className="flex gap-2">
                   <Input
@@ -221,150 +188,50 @@ export function Setup2FAModal({
                 </div>
               </div>
 
-              <Button onClick={() => setStep("verify")} className="w-full">
-                Next: Verify OTP Code
-              </Button>
-            </div>
-          </>
-        )}
-
-        {/* Step 3: OTP Verification */}
-        {step === "verify" && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-blue-500" />
-                Verify OTP Code
-              </DialogTitle>
-              <DialogDescription>
-                Enter the 6-digit code from the authenticator app to confirm 2FA
-                setup is working.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex flex-col gap-4 pt-4">
+              {/* Backup Codes */}
               <div className="space-y-2">
-                <Label>Enter OTP from Authenticator App</Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  placeholder="000000"
-                  value={otpCode}
-                  onChange={(e) =>
-                    setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
-                  }
-                  className="text-center font-mono text-2xl tracking-widest"
-                />
-              </div>
-
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
-                <strong>Note:</strong> This step confirms the authenticator app
-                is set up correctly before enabling 2FA.
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep("qrcode")}
-                  className="flex-1"
-                >
-                  Back
-                </Button>
-                <Button
-                  onClick={handleVerifyOtp}
-                  disabled={otpCode.length !== 6 || verify2FAMutation.isPending}
-                  className="flex-1"
-                >
-                  {verify2FAMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    "Verify & Enable 2FA"
-                  )}
-                </Button>
-              </div>
-
-              {/* Force Enable Option */}
-              <div className="mt-4 border-t pt-2">
-                <p className="text-muted-foreground mb-2 text-xs">
-                  Can&apos;t get the code? You can force enable 2FA if you are
-                  sure the user has the secret.
-                </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleForceEnable}
-                  disabled={updateUserMutation.isPending}
-                  className="w-full text-amber-600 hover:bg-amber-50 hover:text-amber-700"
-                >
-                  {updateUserMutation.isPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Shield className="mr-2 h-4 w-4" />
-                  )}
-                  Force Enable (Skip Verification)
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Step 4: Backup Codes Display */}
-        {step === "backup" && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-green-500" />
-                2FA Enabled - Backup Codes
-              </DialogTitle>
-              <DialogDescription>
-                2FA has been enabled successfully! These codes can be used if
-                the user loses access to their authenticator app. Each code can
-                only be used once.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex flex-col gap-4 pt-4">
-              {/* Backup Codes Grid */}
-              <div className="grid grid-cols-2 gap-2">
-                {data?.backupCodes.map((code, index) => (
-                  <div
-                    key={index}
-                    className="bg-muted rounded-md px-3 py-2 text-center font-mono text-sm"
+                <div className="flex items-center justify-between">
+                  <Label className="text-muted-foreground text-xs">
+                    Backup Codes (one-time use)
+                  </Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCopyBackupCodes}
+                    className="h-6 px-2 text-xs"
                   >
-                    {code}
-                  </div>
-                ))}
+                    {copiedBackup ? (
+                      <>
+                        <Check className="mr-1 h-3 w-3 text-green-500" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="mr-1 h-3 w-3" />
+                        Copy All
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {data?.backupCodes.map((code, index) => (
+                    <div
+                      key={index}
+                      className="bg-muted rounded-md px-3 py-1.5 text-center font-mono text-xs"
+                    >
+                      {code}
+                    </div>
+                  ))}
+                </div>
               </div>
-
-              {/* Copy All Button */}
-              <Button
-                variant="outline"
-                onClick={handleCopyBackupCodes}
-                className="w-full"
-              >
-                {copiedBackup ? (
-                  <>
-                    <Check className="mr-2 h-4 w-4 text-green-500" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="mr-2 h-4 w-4" />
-                    Copy All Codes
-                  </>
-                )}
-              </Button>
 
               <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
-                <strong>Warning:</strong> These codes will NOT be shown again.
-                Make sure the user has saved them securely before closing.
+                <strong>Warning:</strong> These credentials will NOT be shown
+                again. Make sure the user has saved them before closing.
               </div>
 
               <Button onClick={handleDone} className="w-full">
-                Done
+                Done - I&apos;ve Shared the Credentials
               </Button>
             </div>
           </>
