@@ -102,17 +102,18 @@ export function RegisterForm() {
   const onSubmit = async (data: RegisterFormValues) => {
     const { confirmPassword, ...rest } = data;
 
+    // TODO: Re-enable when referrals feature is ready
     // Validate referral code if provided
-    if (rest.referralCode) {
-      try {
-        await validateCode(rest.referralCode);
-      } catch (error: any) {
-        setError("referralCode", {
-          message: error.response?.data?.message || "Invalid referral code",
-        });
-        return;
-      }
-    }
+    // if (rest.referralCode) {
+    //   try {
+    //     await validateCode(rest.referralCode);
+    //   } catch (error: any) {
+    //     setError("referralCode", {
+    //       message: error.response?.data?.message || "Invalid referral code",
+    //     });
+    //     return;
+    //   }
+    // }
 
     // Normalize phone number (strip non-digits)
     const normalizedPhone = rest.phoneNumber.replace(/\D/g, "");
@@ -122,7 +123,7 @@ export function RegisterForm() {
       password: rest.password,
       phoneNumber: normalizedPhone,
       fullName: rest.fullName,
-      referralCode: rest.referralCode,
+      // referralCode: rest.referralCode, // Disabled - referrals Coming Soon
     };
 
     // Store password in sessionStorage temporarily for auto-fill on login page
@@ -175,6 +176,7 @@ export function RegisterForm() {
               </p>
             )}
           </div>
+          {/* TODO: Re-enable when referrals feature is ready
           <div className="grid gap-2">
             <Label htmlFor="referralCode">Referral Code (Optional)</Label>
             <Input
@@ -188,6 +190,7 @@ export function RegisterForm() {
               </p>
             )}
           </div>
+          */}
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">

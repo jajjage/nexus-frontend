@@ -22,6 +22,18 @@ export interface ActiveOffer {
   discountValue: number;
 }
 
+/**
+ * Product Category - Used to group products (e.g., "SME Data", "Gifting")
+ */
+export interface ProductCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  priority?: number;
+  isActive?: boolean;
+}
+
 export interface Product {
   id: string;
   operatorId: string;
@@ -39,6 +51,9 @@ export interface Product {
   createdAt: string;
   operator: Operator;
   supplierOffers: SupplierOffer[];
+  // Category
+  category?: ProductCategory;
+  categoryId?: string;
   // Offer fields
   discountedPrice?: number;
   activeOffer?: ActiveOffer;

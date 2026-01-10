@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useAdminCategories } from "@/hooks/admin/useAdminCategories";
 import { useAdminOperators } from "@/hooks/admin/useAdminOperators";
 import { useCreateProduct } from "@/hooks/admin/useAdminProducts";
 import { useAdminSuppliers } from "@/hooks/admin/useAdminSuppliers";
@@ -32,12 +33,14 @@ export function CreateProductForm() {
   const createMutation = useCreateProduct();
   const { data: operatorsData } = useAdminOperators();
   const { data: suppliersData } = useAdminSuppliers();
+  const { data: categoriesData } = useAdminCategories();
 
   // Basic product fields
   const [operatorId, setOperatorId] = useState("");
   const [productCode, setProductCode] = useState("");
   const [name, setName] = useState("");
   const [productType, setProductType] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [denomAmount, setDenomAmount] = useState(0);
   const [dataMb, setDataMb] = useState<number | undefined>();
   const [validityDays, setValidityDays] = useState<number | undefined>();
@@ -58,6 +61,7 @@ export function CreateProductForm() {
 
   const operators = operatorsData?.data?.operators || [];
   const suppliers = suppliersData?.data?.suppliers || [];
+  const categories = categoriesData || [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +95,7 @@ export function CreateProductForm() {
             ? parseFloat(cashbackPercentage)
             : undefined,
         metadata: parsedMetadata,
+        categoryId: categoryId || undefined,
         // Include supplier mapping if enabled
         ...(includeMapping && supplierId
           ? {
@@ -186,6 +191,22 @@ export function CreateProductForm() {
                   placeholder="e.g., data, airtime, bundle"
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -321,11 +342,11 @@ export function CreateProductForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Supplier Product Code</Label>
+                  <Label>Supplier Product Plan ID</Label>
                   <Input
                     value={supplierProductCode}
                     onChange={(e) => setSupplierProductCode(e.target.value)}
-                    placeholder="e.g., SUPPLIER_PROD_123"
+                    placeholder="e.g., 123"
                     className="font-mono"
                   />
                 </div>

@@ -10,7 +10,7 @@
   "background_color": "#ffffff",
   "icons": [
     {
-      "src": "/images/android-icon.png",
+      "src": "/images/adaptive-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
@@ -43,7 +43,7 @@
       "url": "/dashboard/notifications?source=shortcut",
       "icons": [
         {
-          "src": "/images/android-icon.png",
+          "src": "/images/adaptive-icon.png",
           "sizes": "512x512",
           "type": "image/png"
         }
@@ -56,7 +56,7 @@
       "url": "/dashboard?source=shortcut",
       "icons": [
         {
-          "src": "/images/android-icon.png",
+          "src": "/images/adaptive-icon.png",
           "sizes": "512x512",
           "type": "image/png"
         }

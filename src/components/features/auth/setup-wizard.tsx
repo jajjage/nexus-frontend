@@ -51,13 +51,14 @@ export function SetupWizard() {
   const { mutate: setUserPasscode, isPending: isPasscodePending } =
     useSetPasscode();
 
-  // Check PWA mode
+  // Check PWA mode (still used for soft lock feature)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const isPwa =
         window.matchMedia("(display-mode: standalone)").matches ||
         (window.navigator as any).standalone === true;
       setIsPwaMode(isPwa);
+      console.log("[SetupWizard] PWA mode detected:", isPwa);
     }
   }, []);
 
@@ -65,15 +66,21 @@ export function SetupWizard() {
     if (isAuthLoading) return;
 
     const checkStatus = async () => {
+      console.log("[SetupWizard] Checking status:", {
+        hasPin: user?.hasPin,
+        hasPasscode: user?.hasPasscode,
+        isPwaMode,
+      });
+
       // 1. Check PIN status first
       if (!user?.hasPin) {
         setStep("pin");
         return;
       }
 
-      // 2. Check if PWA and passcode not yet set/skipped
-      const passcodeStatus = localStorage.getItem(PASSCODE_PROMPT_KEY);
-      if (isPwaMode && !passcodeStatus) {
+      // 2. Check if passcode not yet set (for ALL users, not just PWA)
+      if (!user?.hasPasscode) {
+        console.log("[SetupWizard] Need passcode setup");
         setStep("passcode");
         return;
       }
@@ -100,9 +107,8 @@ export function SetupWizard() {
   // Handle PIN Success - Move to next step
   const handlePinSuccess = () => {
     setTimeout(async () => {
-      // Check if PWA mode and passcode not yet set
-      const passcodeStatus = localStorage.getItem(PASSCODE_PROMPT_KEY);
-      if (isPwaMode && !passcodeStatus) {
+      // Check if passcode not yet set (for ALL users)
+      if (!user?.hasPasscode) {
         setStep("passcode");
         return;
       }
@@ -336,14 +342,11 @@ export function SetupWizard() {
             )}
           </Button>
 
-          <Button
-            variant="ghost"
-            onClick={handlePasscodeSkip}
-            disabled={isPasscodePending}
-            className="w-full"
-          >
-            Skip for now
-          </Button>
+          {/* Note: Passcode is REQUIRED for PWA users - no skip button */}
+          <p className="text-muted-foreground text-center text-xs">
+            Passcode is required to secure your app. You can change it later in
+            Settings.
+          </p>
         </CardContent>
       </Card>
     );

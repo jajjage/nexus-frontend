@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useLogout } from "@/hooks/useAuth";
+import { useResellerUpgradeStatus } from "@/hooks/useReseller";
 import {
   ChevronRight,
   HelpCircle,
@@ -25,6 +26,11 @@ export default function ProfilePage() {
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
   const router = useRouter();
   const [showResellerModal, setShowResellerModal] = useState(false);
+  const { getStatus: getUpgradeStatus } = useResellerUpgradeStatus();
+
+  // Check for pending reseller upgrade request
+  const upgradeStatus = getUpgradeStatus();
+  const hasPendingRequest = upgradeStatus.pending;
 
   // Show "Become a Reseller" banner only for regular users (not resellers)
   const showResellerPromo = user?.role === "user";
@@ -145,25 +151,46 @@ export default function ProfilePage() {
             <h2 className="text-muted-foreground px-1 text-sm font-medium">
               Upgrade
             </h2>
-            <Card
-              className="cursor-pointer overflow-hidden border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 shadow-sm transition-all hover:shadow-md dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/30"
-              onClick={() => setShowResellerModal(true)}
-            >
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className="flex size-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/50">
-                  <Sparkles className="size-5 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-amber-900 dark:text-amber-100">
-                    Become a Reseller
-                  </p>
-                  <p className="text-xs text-amber-700 dark:text-amber-300">
-                    Get wholesale rates & API access
-                  </p>
-                </div>
-                <ChevronRight className="size-5 text-amber-500" />
-              </CardContent>
-            </Card>
+            {hasPendingRequest ? (
+              // Show pending status - same as dashboard
+              <Card className="overflow-hidden border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 shadow-sm dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/30">
+                <CardContent className="flex items-center gap-4 p-4">
+                  <div className="flex size-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/50">
+                    <Sparkles className="size-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-amber-900 dark:text-amber-100">
+                      Request Pending
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      Your reseller application is being reviewed. We{"'"}ll
+                      contact you within 24-48 hours.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              // Show become reseller option
+              <Card
+                className="cursor-pointer overflow-hidden border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 shadow-sm transition-all hover:shadow-md dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/30"
+                onClick={() => setShowResellerModal(true)}
+              >
+                <CardContent className="flex items-center gap-4 p-4">
+                  <div className="flex size-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/50">
+                    <Sparkles className="size-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-amber-900 dark:text-amber-100">
+                      Become a Reseller
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      Get wholesale rates & API access
+                    </p>
+                  </div>
+                  <ChevronRight className="size-5 text-amber-500" />
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 

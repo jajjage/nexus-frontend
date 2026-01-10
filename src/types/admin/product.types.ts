@@ -66,6 +66,8 @@ export interface CreateProductRequest {
   // Cashback fields
   hasCashback?: boolean;
   cashbackPercentage?: number;
+  // Category
+  categoryId?: string;
   // Optional supplier mapping fields (creates mapping if provided)
   supplierId?: string;
   supplierProductCode?: string;
@@ -87,6 +89,8 @@ export interface UpdateProductRequest {
   hasCashback?: boolean;
   cashbackPercentage?: number;
   metadata?: Record<string, unknown>;
+  // Category
+  categoryId?: string;
 }
 
 export interface MapProductToSupplierRequest {

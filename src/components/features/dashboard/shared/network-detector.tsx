@@ -18,7 +18,7 @@ import {
 import { detectNetworkProvider } from "@/lib/network-utils";
 import { RecentNumber } from "@/types/api.types";
 import { Contact2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface NetworkDetectorProps {
   phoneNumber: string;
@@ -64,6 +64,15 @@ export function NetworkDetector({
       onNetworkDetected(network);
     }
   };
+
+  // Auto-open dropdown when phone number is cleared AND we have recent numbers
+  useEffect(() => {
+    if (phoneNumber === "" && recentNumbers.length > 0) {
+      // Small delay to prevent flicker
+      const timer = setTimeout(() => setOpen(true), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [phoneNumber, recentNumbers.length]);
 
   return (
     <div className="relative w-full">

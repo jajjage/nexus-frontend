@@ -11,7 +11,7 @@ import { Mock } from "vitest";
 
 vi.mock("@/services/referral.service");
 vi.mock("sonner", () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
 const createWrapper = () => {
@@ -23,7 +23,12 @@ const createWrapper = () => {
   );
 };
 
-describe("useReferrals Hooks", () => {
+/**
+ * NOTE: Referrals feature is temporarily disabled (Coming Soon)
+ * All hooks have enabled: false and mutations reject immediately
+ * Tests are skipped until feature is re-enabled
+ */
+describe.skip("useReferrals Hooks (FEATURE DISABLED)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

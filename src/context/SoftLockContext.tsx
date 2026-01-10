@@ -139,9 +139,9 @@ export function SoftLockProvider({ children }: SoftLockProviderProps) {
     };
   }, [isPwa, isEnabled, isAuthenticated, lock]);
 
-  // Auto-enable soft lock if user has passcode/biometric set up
+  // Auto-enable soft lock if user has app passcode set up
   useEffect(() => {
-    if (isAuthenticated && user?.hasPin && isPwa) {
+    if (isAuthenticated && user?.hasPasscode && isPwa) {
       // Check if user hasn't explicitly set a preference
       try {
         const preference = localStorage.getItem(SOFT_LOCK_ENABLED_KEY);
@@ -153,7 +153,7 @@ export function SoftLockProvider({ children }: SoftLockProviderProps) {
         // Ignore
       }
     }
-  }, [isAuthenticated, user?.hasPin, isPwa, setEnabled]);
+  }, [isAuthenticated, user?.hasPasscode, isPwa, setEnabled]);
 
   return (
     <SoftLockContext.Provider

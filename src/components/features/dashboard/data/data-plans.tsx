@@ -6,6 +6,7 @@ import { PinSetupModal } from "@/components/features/security/pin-setup-modal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
+import { useCategories } from "@/hooks/useCategories";
 import { useProducts } from "@/hooks/useProducts";
 import { useSupplierMarkupMap } from "@/hooks/useSupplierMarkup";
 import { useTopup } from "@/hooks/useTopup";
@@ -35,8 +36,12 @@ export function DataPlans() {
     useUpdateProfile();
 
   const [selectedNetwork, setSelectedNetwork] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState("HOT");
+  const [selectedCategory, setSelectedCategory] = useState("all"); // Default to "all"
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  // Fetch categories from API
+  const { data: categories = [], isLoading: isCategoriesLoading } =
+    useCategories();
 
   // New State for Input & Detection
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -180,56 +185,13 @@ export function DataPlans() {
       return true;
     });
 
-    // Apply category filter
-    const categoryFiltered = networkProducts.filter((product: Product) => {
-      const validity = product.validityDays;
-      const name = product.name.toLowerCase();
-
-      switch (selectedCategory) {
-        case "Daily":
-          // Products valid for 1 day or less
-          return validity !== undefined && validity !== null && validity <= 1;
-
-        case "Weekly":
-          // Products valid for 2-7 days (exclusive - not daily, not monthly)
-          return (
-            validity !== undefined &&
-            validity !== null &&
-            validity > 1 &&
-            validity <= 7
+    // Apply category filter using category.slug
+    const categoryFiltered =
+      selectedCategory === "all"
+        ? networkProducts
+        : networkProducts.filter(
+            (product: Product) => product.category?.slug === selectedCategory
           );
-
-        case "Monthly":
-          // Products valid for 8-45 days (exclusive - not weekly)
-          return (
-            validity !== undefined &&
-            validity !== null &&
-            validity > 7 &&
-            validity <= 45
-          );
-
-        case "XtraValue":
-          return name.includes("xtra") || name.includes("extra");
-
-        case "Roaming":
-          return name.includes("roam") || name.includes("intl");
-
-        case "Other":
-          // Products with no validity set, or validity > 45 days
-          return validity === undefined || validity === null || validity > 45;
-
-        case "HOT":
-        default:
-          // HOT: Show featured products - those with best discounts/offers
-          // Instead of showing ALL products, show top deals sorted by discount
-          const hasDiscount =
-            product.activeOffer ||
-            (product.supplierOffers?.[0]?.supplierPrice &&
-              parseFloat(product.supplierOffers[0].supplierPrice) <
-                parseFloat(product.denomAmount || "0"));
-          return hasDiscount;
-      }
-    });
 
     // CRITICAL: Deduplicate by product ID to prevent duplicates
     const seen = new Set<string>();
@@ -240,17 +202,6 @@ export function DataPlans() {
       seen.add(product.id);
       return true;
     });
-
-    // For HOT tab, sort by discount value and limit
-    if (selectedCategory === "HOT") {
-      return deduplicated
-        .sort((a, b) => {
-          const aDiscount = a.activeOffer?.discountValue || 0;
-          const bDiscount = b.activeOffer?.discountValue || 0;
-          return bDiscount - aDiscount;
-        })
-        .slice(0, 12); // Show top 12 hot deals
-    }
 
     return deduplicated;
   }, [products, selectedNetwork, selectedCategory]);
@@ -534,8 +485,10 @@ export function DataPlans() {
 
       {/* Category Tabs */}
       <CategoryTabs
+        categories={categories}
         selectedCategory={selectedCategory}
         onSelect={setSelectedCategory}
+        isLoading={isCategoriesLoading}
       />
 
       {/* Data Grid */}

@@ -168,25 +168,27 @@ export const biometricService = {
    * - Soft-lock unlock
    * - Session revalidation
    * - Transaction verification fallback
+   *
+   * IMPORTANT: Throws on failure so React Query onError callback is triggered
    */
   verifyPasscode: async (data: {
     passcode: string;
     intent?: "unlock" | "revalidate" | "transaction";
   }): Promise<{ success: boolean; message?: string }> => {
-    try {
-      const response = await apiClient.post<ApiResponse<{ success: boolean }>>(
-        "/biometric/verify-passcode",
-        data
-      );
-      return {
-        success: response.data.data?.success || false,
-        message: response.data.message,
-      };
-    } catch (err: any) {
-      return {
-        success: false,
-        message: err.response?.data?.message || "Passcode verification failed",
-      };
+    const response = await apiClient.post<ApiResponse<{ success: boolean }>>(
+      "/biometric/verify-passcode",
+      data
+    );
+
+    // Check if verification was successful
+    if (!response.data.data?.success) {
+      // CRITICAL: Throw error so onError callback fires, not onSuccess
+      throw new Error(response.data.message || "Invalid passcode");
     }
+
+    return {
+      success: true,
+      message: response.data.message,
+    };
   },
 };

@@ -3,7 +3,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { NotificationBanner } from "./notification-banner";
-import { VerificationBanner } from "./VerificationBanner";
 
 /**
  * HomeNotificationBanner Wrapper Component
@@ -32,7 +31,9 @@ export function HomeNotificationBanner() {
   // Combine verification banner with notifications
   return (
     <>
+      {/* TODO: Re-enable verification banner when verification flow is ready
       <VerificationBanner />
+      */}
       {!isLoading && !error && data?.data?.notifications && (
         <NotificationBanner
           notifications={data.data.notifications.filter(

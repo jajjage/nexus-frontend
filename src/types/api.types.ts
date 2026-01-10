@@ -43,6 +43,7 @@ export interface User {
   recentlyUsedNumbers?: RecentNumber[];
   permissions?: string[]; // Optional permissions array
   hasPin: boolean; // Whether the user has set a transaction PIN
+  hasPasscode: boolean; // Whether the user has set an app passcode (for soft lock)
   createdAt: string;
   updatedAt: string;
 }

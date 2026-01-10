@@ -1,7 +1,7 @@
 "use client";
 
 import { SetupWizard } from "@/components/features/auth/setup-wizard";
-import { Spinner } from "@/components/ui/spinner";
+import { PageLoader } from "@/components/ui/page-loader";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect } from "react";
@@ -18,11 +18,7 @@ function SetupContent() {
   }, [user, isLoading, router]);
 
   if (isLoading || !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Spinner className="text-primary size-8" />
-      </div>
-    );
+    return <PageLoader message="Loading..." />;
   }
 
   return (
@@ -36,13 +32,7 @@ function SetupContent() {
 
 export default function SetupPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <Spinner className="text-primary size-8" />
-        </div>
-      }
-    >
+    <Suspense fallback={<PageLoader message="Loading..." />}>
       <SetupContent />
     </Suspense>
   );

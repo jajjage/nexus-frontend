@@ -53,6 +53,33 @@ const authKeys = {
 };
 
 // ============================================================================
+// ROLE-BASED LOGIN URL HELPERS
+// ============================================================================
+
+/**
+ * Store user role in localStorage for use during session expiry redirect
+ * CRITICAL: Must be called whenever user is set, BEFORE session expires
+ */
+function storeUserRole(role: string | undefined) {
+  if (typeof window === "undefined") return;
+  if (role) {
+    localStorage.setItem("auth_user_role", role);
+  } else {
+    localStorage.removeItem("auth_user_role");
+  }
+}
+
+/**
+ * Get the correct login URL based on stored user role
+ * Used during session expiry when user object is already null
+ */
+function getStoredLoginUrl(): string {
+  if (typeof window === "undefined") return "/login";
+  const role = localStorage.getItem("auth_user_role");
+  return role === "admin" || role === "staff" ? "/admin/login" : "/login";
+}
+
+// ============================================================================
 // FETCH CURRENT USER - REACT QUERY
 // ============================================================================
 
@@ -123,9 +150,12 @@ function useCurrentUserQuery() {
     if (query.data !== undefined && query.isSuccess) {
       console.log("[AUTH] User profile updated in context", {
         userId: query.data?.userId,
+        role: query.data?.role,
       });
       setUser(query.data);
       setIsLoading(false);
+      // CRITICAL: Store role for session expiry redirect
+      storeUserRole(query.data?.role);
     }
   }, [query.data, query.isSuccess, setUser, setIsLoading]);
 
@@ -172,7 +202,9 @@ function useCurrentUserQuery() {
           setTimeout(() => {
             console.log("[AUTH] Executing immediate 404 redirect");
             if (typeof window !== "undefined") {
-              window.location.href = "/login";
+              const loginUrl = getStoredLoginUrl();
+              console.log("[AUTH] Redirecting to", loginUrl);
+              window.location.href = loginUrl;
             }
           }, 0);
         }
@@ -313,7 +345,9 @@ export function useAuth(): {
           "[AUTH] Executing redirect to login via window.location.href"
         );
         if (typeof window !== "undefined") {
-          window.location.href = "/login";
+          const loginUrl = getStoredLoginUrl();
+          console.log("[AUTH] Session expired - redirecting to", loginUrl);
+          window.location.href = loginUrl;
         }
       }, 50);
 

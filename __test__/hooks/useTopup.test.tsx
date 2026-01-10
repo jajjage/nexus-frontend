@@ -43,7 +43,7 @@ describe("useTopup Hook", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(toast.success).toHaveBeenCalledWith(
-      expect.stringContaining("Successful"),
+      expect.stringContaining("Order Placed"),
       expect.any(Object)
     );
   });

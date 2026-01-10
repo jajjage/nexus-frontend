@@ -7,6 +7,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 
+// ============= FEATURE FLAG =============
+// Referrals feature is temporarily disabled (Coming Soon)
+// Set to true to enable all referral API calls
+const REFERRALS_ENABLED = false;
+
 // ============= Query Keys =============
 export const referralKeys = {
   all: ["referrals"] as const,
@@ -27,6 +32,7 @@ export const referralKeys = {
 
 /**
  * Get comprehensive referral stats (V2)
+ * NOTE: Disabled while referrals feature is Coming Soon
  */
 export const useReferralStatsV2 = () => {
   return useQuery({
@@ -36,11 +42,13 @@ export const useReferralStatsV2 = () => {
       return response.data;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: REFERRALS_ENABLED, // Disabled - feature Coming Soon
   });
 };
 
 /**
  * Get available balance for withdrawal (V2)
+ * NOTE: Disabled while referrals feature is Coming Soon
  */
 export const useAvailableBalanceV2 = (userType: "referrer" | "referred") => {
   return useQuery({
@@ -49,6 +57,7 @@ export const useAvailableBalanceV2 = (userType: "referrer" | "referred") => {
       const response = await referralService.getAvailableBalanceV2(userType);
       return response.data;
     },
+    enabled: REFERRALS_ENABLED, // Disabled - feature Coming Soon
   });
 };
 
@@ -56,6 +65,7 @@ export const useAvailableBalanceV2 = (userType: "referrer" | "referred") => {
 
 /**
  * Get user's referral link data
+ * NOTE: Disabled while referrals feature is Coming Soon
  */
 export const useReferralLink = () => {
   return useQuery({
@@ -65,11 +75,13 @@ export const useReferralLink = () => {
       return response.data;
     },
     staleTime: Infinity,
+    enabled: REFERRALS_ENABLED, // Disabled - feature Coming Soon
   });
 };
 
 /**
  * Get list of referrals
+ * NOTE: Disabled while referrals feature is Coming Soon
  */
 export const useReferralsList = (params?: GetReferralsParams) => {
   return useQuery({
@@ -79,11 +91,13 @@ export const useReferralsList = (params?: GetReferralsParams) => {
       return response.data;
     },
     staleTime: 1000 * 60 * 2,
+    enabled: REFERRALS_ENABLED, // Disabled - feature Coming Soon
   });
 };
 
 /**
  * Get Referral Reward ID (Legacy/Helper)
+ * NOTE: Disabled while referrals feature is Coming Soon
  */
 export const useReferralRewardId = () => {
   return useQuery({
@@ -92,10 +106,12 @@ export const useReferralRewardId = () => {
       return await referralService.getReferralRewardId();
     },
     staleTime: Infinity,
+    enabled: REFERRALS_ENABLED, // Disabled - feature Coming Soon
   });
 };
 
 // ============= Referral Mutations (V2) =============
+// NOTE: Mutations are kept but will show "Feature coming soon" toast if called
 
 /**
  * Claim referral bonus (V2)
@@ -104,7 +120,12 @@ export const useClaimReferralBonusV2 = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => referralService.claimReferralBonusV2(),
+    mutationFn: () => {
+      if (!REFERRALS_ENABLED) {
+        return Promise.reject(new Error("Feature coming soon"));
+      }
+      return referralService.claimReferralBonusV2();
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: referralKeys.statsV2() });
       queryClient.invalidateQueries({
@@ -114,6 +135,10 @@ export const useClaimReferralBonusV2 = () => {
       toast.success(data.message || "Referral bonus claimed successfully!");
     },
     onError: (error: AxiosError<any>) => {
+      if (!REFERRALS_ENABLED) {
+        toast.info("Referrals feature coming soon!");
+        return;
+      }
       toast.error(
         error.response?.data?.message || "Failed to claim referral bonus"
       );
@@ -128,8 +153,12 @@ export const useRequestWithdrawalV2 = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: WithdrawalRequestV2) =>
-      referralService.requestWithdrawalV2(data),
+    mutationFn: (data: WithdrawalRequestV2) => {
+      if (!REFERRALS_ENABLED) {
+        return Promise.reject(new Error("Feature coming soon"));
+      }
+      return referralService.requestWithdrawalV2(data);
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: referralKeys.withdrawals.all(),
@@ -146,6 +175,10 @@ export const useRequestWithdrawalV2 = () => {
       toast.success(`Successfully withdrawn ${formattedAmount}`);
     },
     onError: (error: AxiosError<any>) => {
+      if (!REFERRALS_ENABLED) {
+        toast.info("Referrals feature coming soon!");
+        return;
+      }
       toast.error(
         error.response?.data?.message || "Failed to submit withdrawal request"
       );
@@ -162,12 +195,21 @@ export const useRegenerateReferralCode = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => referralService.regenerateReferralCode(),
+    mutationFn: () => {
+      if (!REFERRALS_ENABLED) {
+        return Promise.reject(new Error("Feature coming soon"));
+      }
+      return referralService.regenerateReferralCode();
+    },
     onSuccess: (data) => {
       queryClient.setQueryData(referralKeys.link(), data.data);
       toast.success("Referral code regenerated successfully");
     },
     onError: (error: AxiosError<any>) => {
+      if (!REFERRALS_ENABLED) {
+        toast.info("Referrals feature coming soon!");
+        return;
+      }
       toast.error(
         error.response?.data?.message || "Failed to regenerate referral code"
       );
@@ -182,12 +224,21 @@ export const useDeactivateReferralLink = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => referralService.deactivateReferralLink(),
+    mutationFn: () => {
+      if (!REFERRALS_ENABLED) {
+        return Promise.reject(new Error("Feature coming soon"));
+      }
+      return referralService.deactivateReferralLink();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: referralKeys.link() });
       toast.success("Referral link deactivated");
     },
     onError: (error: AxiosError<any>) => {
+      if (!REFERRALS_ENABLED) {
+        toast.info("Referrals feature coming soon!");
+        return;
+      }
       toast.error(
         error.response?.data?.message || "Failed to deactivate referral link"
       );
@@ -197,6 +248,7 @@ export const useDeactivateReferralLink = () => {
 
 /**
  * Validate referral code (Public)
+ * NOTE: This one stays enabled for registration flow
  */
 export const useValidateReferralCode = () => {
   return useMutation({

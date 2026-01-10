@@ -3,11 +3,9 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-// Helper to detect theme synchronously (runs during initial render)
+// Helper to detect theme synchronously
 function getInitialTheme(): boolean {
   if (typeof window === "undefined") return false;
-
-  // Check localStorage first (user preference)
   try {
     const storedTheme = localStorage.getItem("theme");
     if (storedTheme === "dark") return true;
@@ -15,8 +13,6 @@ function getInitialTheme(): boolean {
   } catch {
     // localStorage might not be available
   }
-
-  // Fall back to system preference
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
 }
 
@@ -30,12 +26,8 @@ function getIsPwa(): boolean {
 }
 
 /**
- * PWA Splash Screen - Shows immediately when app opens
- * Provides visual feedback while the app is loading
- * Adapts to system theme preference (light/dark mode)
- *
- * IMPORTANT: Uses inline styles for background to ensure immediate application
- * before CSS classes are processed.
+ * PWA Splash Screen - Clean design with circular spinner around logo
+ * Inspired by Hostinger's loading animation
  */
 export function PwaSplashScreen({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -43,22 +35,16 @@ export function PwaSplashScreen({ children }: { children: React.ReactNode }) {
   const [isDarkMode, setIsDarkMode] = useState(getInitialTheme);
 
   useEffect(() => {
-    // Re-check PWA status on mount (in case SSR was different)
     setIsPwa(getIsPwa());
     setIsDarkMode(getInitialTheme());
 
-    // Minimum splash display time for PWA (1.5 seconds for polished loading feel)
     const minTime = getIsPwa() ? 1500 : 0;
     const startTime = Date.now();
 
-    // Wait for document to be ready
     const checkReady = () => {
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, minTime - elapsed);
-
-      setTimeout(() => {
-        setIsLoading(false);
-      }, remaining);
+      setTimeout(() => setIsLoading(false), remaining);
     };
 
     if (document.readyState === "complete") {
@@ -69,45 +55,16 @@ export function PwaSplashScreen({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Only show splash for PWA users
   if (!isPwa || !isLoading) {
     return <>{children}</>;
   }
 
-  // Use inline styles for IMMEDIATE theme application
-  // This prevents flash where CSS classes haven't loaded yet
-  const containerStyle: React.CSSProperties = {
-    position: "fixed",
-    inset: 0,
-    zIndex: 9999,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    // CRITICAL: Inline background color ensures no flash
-    backgroundColor: isDarkMode ? "#09090b" : "#ffffff", // zinc-950 / white
-    color: isDarkMode ? "#ffffff" : "#18181b", // white / zinc-900
-  };
-
-  const mutedColor = isDarkMode ? "#a1a1aa" : "#71717a"; // zinc-400 / zinc-500
-  const spinnerStyle: React.CSSProperties = {
-    width: 32,
-    height: 32,
-    borderRadius: "50%",
-    border: `2px solid ${isDarkMode ? "#3f3f46" : "#e4e4e7"}`, // zinc-700 / zinc-200
-    borderTopColor: isDarkMode ? "#f59e0b" : "#d97706", // amber-500 / amber-600
-    animation: "spin 1s linear infinite",
-  };
-
-  // Use the same logo for both themes - just ensure it's visible
-  // The icon should be designed to work on both backgrounds
-  const logoSrc = isDarkMode
-    ? "/images/splash-icon-dark.png"
-    : "/images/splash-icon-light.png";
+  // Theme colors
+  const bgColor = isDarkMode ? "#09090b" : "#f5f5f5";
+  const spinnerColor = isDarkMode ? "#f59e0b" : "#d97706"; // amber-500/600
 
   return (
     <>
-      {/* Inject keyframes for spinner animation */}
       <style jsx global>{`
         @keyframes spin {
           from {
@@ -117,56 +74,62 @@ export function PwaSplashScreen({ children }: { children: React.ReactNode }) {
             transform: rotate(360deg);
           }
         }
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.7;
+          }
+        }
       `}</style>
 
-      <div style={containerStyle}>
-        {/* Logo with subtle scale animation */}
-        <div style={{ animation: "pulse 2s ease-in-out infinite" }}>
-          <Image
-            src={logoSrc}
-            alt="Nexus Data"
-            width={120}
-            height={120}
-            priority
-            style={{ objectFit: "contain" }}
-          />
-        </div>
-
-        {/* Brand name */}
-        <h1
-          style={{
-            marginTop: 16,
-            fontSize: 20,
-            fontWeight: 600,
-            letterSpacing: "-0.025em",
-          }}
-        >
-          Nexus Data
-        </h1>
-
-        {/* Tagline */}
-        <p
-          style={{
-            marginTop: 8,
-            fontSize: 14,
-            color: mutedColor,
-          }}
-        >
-          Your Gateway to Seamless Data
-        </p>
-
-        {/* Loading spinner */}
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 9999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: bgColor,
+        }}
+      >
+        {/* Circular spinner container with logo inside */}
         <div
           style={{
-            marginTop: 32,
+            position: "relative",
+            width: 140,
+            height: 140,
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
-            gap: 12,
+            justifyContent: "center",
           }}
         >
-          <div style={spinnerStyle} />
-          <p style={{ fontSize: 12, color: mutedColor }}>Loading...</p>
+          {/* Circular spinner ring */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "50%",
+              border: `3px solid ${isDarkMode ? "#27272a" : "#e5e7eb"}`,
+              borderTopColor: spinnerColor,
+              animation: "spin 1s linear infinite",
+            }}
+          />
+
+          {/* Logo in center - just the icon, no box */}
+          <div style={{ animation: "pulse 2s ease-in-out infinite" }}>
+            <Image
+              src="/images/adaptive-icon.png"
+              alt="Nexus Data"
+              width={80}
+              height={80}
+              priority
+              style={{ objectFit: "contain" }}
+            />
+          </div>
         </div>
       </div>
     </>
