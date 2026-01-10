@@ -365,7 +365,7 @@ export function BiometricVerificationModal({
                         <p className="text-sm text-gray-600">
                           Use your fingerprint to verify this{" "}
                           {transactionAmount
-                            ? `₦ ${transactionAmount} transaction`
+                            ? `₦ ${parseFloat(transactionAmount).toFixed(2)} transaction`
                             : "transaction"}
                         </p>
                       </>
@@ -381,7 +381,11 @@ export function BiometricVerificationModal({
                       </p>
 
                       <p className="text-lg font-semibold text-gray-900">
-                        ₦ {transactionAmount}
+                        ₦{" "}
+                        {parseFloat(transactionAmount).toLocaleString("en-NG", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </p>
                     </div>
                   )}

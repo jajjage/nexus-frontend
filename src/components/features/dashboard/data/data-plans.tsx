@@ -47,6 +47,7 @@ export function DataPlans() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [detectedNetwork, setDetectedNetwork] = useState<string | null>(null);
   const [hasInitializedPhone, setHasInitializedPhone] = useState(false);
+  const [networkMismatch, setNetworkMismatch] = useState(false); // Track if phone doesn't match selected network
 
   // Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -151,6 +152,7 @@ export function DataPlans() {
     if (matchedOperator) {
       setDetectedNetwork(matchedOperator.name);
       setSelectedNetwork(matchedOperator.name);
+      setNetworkMismatch(false); // Clear mismatch when network auto-detected
     }
   };
 
@@ -161,15 +163,20 @@ export function DataPlans() {
       detectedNetwork !== networkName &&
       phoneNumber.length >= 4
     ) {
+      // Set mismatch warning
+      setNetworkMismatch(true);
       toast.warning(`This number appears to be ${detectedNetwork}.`, {
-        description: `Are you sure you want to view ${networkName} plans?`,
+        description: `${networkName} plans won't work with this number.`,
         action: {
-          label: "Yes, switch",
-          onClick: () => setSelectedNetwork(networkName),
+          label: "Yes, switch anyway",
+          onClick: () => {
+            setSelectedNetwork(networkName);
+          },
         },
       });
       setSelectedNetwork(networkName);
     } else {
+      setNetworkMismatch(false);
       setSelectedNetwork(networkName);
     }
   };
@@ -213,6 +220,30 @@ export function DataPlans() {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
+
+    // STRICT VALIDATION: Block if phone number doesn't match product's network
+    const phoneNetwork = detectNetworkProvider(phoneNumber);
+    const productNetwork = product.operator?.name;
+
+    if (phoneNetwork && productNetwork) {
+      const isMatch = productNetwork
+        .toLowerCase()
+        .includes(phoneNetwork.toLowerCase());
+
+      if (!isMatch) {
+        toast.error(
+          `This ${productNetwork} plan cannot be used with your ${phoneNetwork} number.`,
+          {
+            description:
+              "Please enter a phone number that matches this network, or select a different network.",
+            duration: 5000,
+          }
+        );
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+
     setSelectedProduct(product);
     setIsSuccess(false); // Reset success state
 

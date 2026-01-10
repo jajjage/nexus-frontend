@@ -24,14 +24,14 @@ export function ProductCard({
       return `₦${parseFloat(p.denomAmount).toLocaleString()}`;
     }
 
-    // For Data
+    // For Data - use 1024 MB = 1 GB (binary, standard for data plans)
     const mb = p.dataMb;
     if (mb) {
-      if (mb >= 1000) {
-        const gb = mb / 1000;
-        // Round to clean values if close to whole number
+      if (mb >= 1024) {
+        const gb = mb / 1024;
+        // Round to whole number if close (within 0.1), otherwise show 1 decimal
         const roundedGb =
-          Math.abs(gb - Math.round(gb)) < 0.05
+          Math.abs(gb - Math.round(gb)) < 0.1
             ? Math.round(gb)
             : parseFloat(gb.toFixed(1));
         return `${roundedGb} GB`;
@@ -48,9 +48,15 @@ export function ProductCard({
   // 2. Determine Price
   const faceValue = parseFloat(product.denomAmount || "0");
   const supplierOffer = product.supplierOffers?.[0];
-  const supplierPrice = supplierOffer
+
+  // Parse supplier price, fallback to faceValue if missing or 0
+  const rawSupplierPrice = supplierOffer?.supplierPrice
     ? parseFloat(supplierOffer.supplierPrice)
-    : faceValue;
+    : 0;
+  // Use faceValue if supplier price is missing or 0 (no supplier discount without valid price)
+  const supplierPrice = rawSupplierPrice > 0 ? rawSupplierPrice : faceValue;
+  const hasValidSupplierDiscount =
+    rawSupplierPrice > 0 && rawSupplierPrice < faceValue;
 
   // Calculate base selling price (with markup)
   const actualMarkup = markupPercent < 1 ? markupPercent : markupPercent / 100;
@@ -67,20 +73,42 @@ export function ProductCard({
       : baseSellingPrice;
 
   // Show strikethrough price when display price is less than face value
-  // This covers BOTH supplier pricing discounts AND offer discounts
-  const originalPrice = displayPrice < faceValue ? faceValue : null;
+  // Only show if we have a valid discount (from offer OR valid supplier price)
+  const originalPrice =
+    displayPrice < faceValue && displayPrice > 0 ? faceValue : null;
 
   // Calculate discount percentage for badge
   let discountPercentage = 0;
-  if (
-    showDiscountedPrice &&
-    product.discountedPrice &&
-    product.discountedPrice < faceValue
+
+  if (hasOffer && (isGuest || isEligibleForOffer)) {
+    const offer = product.activeOffer;
+
+    // For percentage-type offers, use the discount value directly
+    if (offer?.discountType === "percentage") {
+      discountPercentage = offer.discountValue;
+    }
+    // For fixed_amount offers, calculate percentage from price difference
+    else if (
+      offer?.discountType === "fixed_amount" &&
+      product.discountedPrice
+    ) {
+      discountPercentage = Math.round(
+        ((faceValue - product.discountedPrice) / faceValue) * 100
+      );
+    }
+    // For fixed_price offers, calculate percentage from final price
+    else if (offer?.discountType === "fixed_price" && offer.discountValue) {
+      discountPercentage = Math.round(
+        ((faceValue - offer.discountValue) / faceValue) * 100
+      );
+    }
+  }
+  // Only show supplier discount badge if there's a valid supplier price less than face value
+  else if (
+    !hasOffer &&
+    hasValidSupplierDiscount &&
+    baseSellingPrice < faceValue
   ) {
-    discountPercentage = Math.round(
-      ((faceValue - product.discountedPrice) / faceValue) * 100
-    );
-  } else if (baseSellingPrice < faceValue) {
     discountPercentage = Math.round(
       ((faceValue - baseSellingPrice) / faceValue) * 100
     );

@@ -127,8 +127,11 @@ const getTransactionTypeLabel = (transaction: Transaction): string => {
   const isDebit = transaction.direction === "debit";
 
   if (isDebit && transaction.relatedType === "topup_request") {
-    const type = transaction.related?.type?.toLowerCase() || "topup";
-    return `${type.charAt(0).toUpperCase() + type.slice(1)} Purchase`;
+    // Use smart detection instead of relying on backend's related.type
+    // which might incorrectly be "airtime" for all transactions
+    const isData = isDataTransaction(transaction);
+    const typeLabel = isData ? "Data" : "Airtime";
+    return `${typeLabel} Purchase`;
   }
 
   if (!isDebit && transaction.relatedType === "incoming_payment") {
@@ -174,11 +177,13 @@ const getTransactionDescription = (transaction: Transaction): string => {
     const operator =
       transaction.related?.operatorCode?.toUpperCase() || "Unknown";
     const phone = transaction.related?.recipient_phone || "N/A";
-    const type = transaction.related?.type?.toLowerCase() || "topup";
+    // Use smart detection for type
+    const isData = isDataTransaction(transaction);
+    const typeLabel = isData ? "Data" : "Airtime";
     console.log(
-      `getTransactionDescription: ${type.charAt(0).toUpperCase() + type.slice(1)} to ${operator} - ${phone}`
+      `getTransactionDescription: ${typeLabel} to ${operator} - ${phone}`
     );
-    return `${type.charAt(0).toUpperCase() + type.slice(1)} to ${operator} - ${phone}`;
+    return `${typeLabel} to ${operator} - ${phone}`;
   }
 
   // For incoming payments, show a clean message instead of admin UUID

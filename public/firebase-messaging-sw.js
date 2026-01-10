@@ -102,8 +102,8 @@ self.addEventListener("push", (event) => {
 
     const notificationOptions = {
       body: notificationBody,
-      icon: payload.notification?.image || "/images/android-icon.png",
-      badge: "/images/ios-tinted.png",
+      icon: payload.notification?.image || "/images/adaptive-icon.png",
+      badge: "/res/drawable-xxxhdpi/ic_notification.png", // Monochrome icon for Android status bar
       tag: notificationId || "notification",
       requireInteraction: false,
       data: {

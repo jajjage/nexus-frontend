@@ -27,7 +27,7 @@ import {
   useUpdateSupplier,
 } from "@/hooks/admin/useAdminSuppliers";
 import { format } from "date-fns";
-import { ArrowLeft, Edit, Loader2, Server } from "lucide-react";
+import { ArrowLeft, Edit, Eye, EyeOff, Loader2, Server } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -42,6 +42,7 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
   const [editName, setEditName] = useState("");
   const [editApiBase, setEditApiBase] = useState("");
   const [editApiKey, setEditApiKey] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
   const [editPriority, setEditPriority] = useState(1);
   const [editIsActive, setEditIsActive] = useState(true);
 
@@ -153,13 +154,29 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="apiKey">API Key (leave empty to keep)</Label>
-                <Input
-                  id="apiKey"
-                  type="password"
-                  value={editApiKey}
-                  onChange={(e) => setEditApiKey(e.target.value)}
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <Input
+                    id="apiKey"
+                    type={showApiKey ? "text" : "password"}
+                    value={editApiKey}
+                    onChange={(e) => setEditApiKey(e.target.value)}
+                    placeholder="••••••••"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-0 right-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                  >
+                    {showApiKey ? (
+                      <EyeOff className="text-muted-foreground h-4 w-4" />
+                    ) : (
+                      <Eye className="text-muted-foreground h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="priority">Priority (lower = higher)</Label>

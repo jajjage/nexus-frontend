@@ -16,7 +16,7 @@
       "purpose": "any"
     },
     {
-      "src": "/images/android-icon.png",
+      "src": "/images/adaptive-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

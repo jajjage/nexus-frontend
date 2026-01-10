@@ -87,8 +87,19 @@ export function useTopup() {
         console.log("[useTopup] Balance rolled back");
       }
 
+      // Extract error message from various possible response structures
+      const responseData = error.response?.data;
       const errorMessage =
-        error.response?.data?.message || "Topup failed. Please try again.";
+        responseData?.message || // Standard API response
+        responseData?.msg || // Provider format 1
+        responseData?.data?.msg || // Nested provider format
+        responseData?.data?.message || // Nested API format
+        responseData?.error || // Error field
+        error.message || // Axios error message
+        "Topup failed. Please try again.";
+
+      console.log("[useTopup] Extracted error message:", errorMessage);
+
       toast.error("Transaction Failed", {
         description: errorMessage,
       });

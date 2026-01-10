@@ -36,6 +36,7 @@ export function SoftLockScreen() {
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
   const [isCheckingBiometric, setIsCheckingBiometric] = useState(true);
   const passcodeInputRef = useRef<HTMLInputElement>(null);
+  const hasAttemptedBiometric = useRef(false); // Prevent auto-retry after failure
 
   // CRITICAL: Don't render anything if not locked or not authenticated
   // This prevents API calls when user is not logged in
@@ -77,6 +78,7 @@ export function SoftLockScreen() {
       setShowEnrollment(false);
       setPasscode("");
       setError("");
+      hasAttemptedBiometric.current = false; // Reset for next lock
       return;
     }
 
@@ -89,14 +91,42 @@ export function SoftLockScreen() {
         // Wait for enrollments query to complete
         if (isLoadingEnrollments) return;
 
-        if (supported && hasBiometricEnrolled) {
-          // User has biometric enrolled - auto-trigger
-          handleBiometricUnlock();
+        if (
+          supported &&
+          hasBiometricEnrolled &&
+          !hasAttemptedBiometric.current
+        ) {
+          // User has biometric enrolled - auto-trigger (only once)
+          hasAttemptedBiometric.current = true;
+          // Use setTimeout to prevent state update during render
+          setTimeout(() => {
+            verifyBiometric(undefined, {
+              onSuccess: () => {
+                console.log("[SoftLockScreen] Biometric unlock successful");
+                unlock();
+              },
+              onError: (err: any) => {
+                console.log("[SoftLockScreen] Biometric failed:", err);
+                setShowPasscode(true);
+                setShowEnrollment(false);
+                if (
+                  !err.message?.includes("cancelled") &&
+                  !err.message?.includes("not allowed")
+                ) {
+                  setError("Biometric failed. Please use passcode.");
+                }
+                // Focus passcode input after biometric failure
+                setTimeout(() => {
+                  passcodeInputRef.current?.focus();
+                }, 200);
+              },
+            });
+          }, 100);
         } else if (supported && !hasBiometricEnrolled) {
           // Biometric supported but not enrolled - offer enrollment
           setShowEnrollment(true);
         } else {
-          // Not supported - show passcode
+          // Not supported or already attempted - show passcode
           setShowPasscode(true);
         }
       } catch {
@@ -107,6 +137,8 @@ export function SoftLockScreen() {
     };
 
     checkBiometric();
+    // Note: Intentionally not including verifyBiometric/unlock in deps to prevent loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldRender, isLoadingEnrollments, hasBiometricEnrolled]);
 
   // Focus passcode input when showing passcode screen

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useCreateSupplier } from "@/hooks/admin/useAdminSuppliers";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Loader2, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -25,6 +25,7 @@ export function CreateSupplierForm() {
   const [slug, setSlug] = useState("");
   const [apiBase, setApiBase] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
   const [priorityInt, setPriorityInt] = useState(1);
   const [isActive, setIsActive] = useState(true);
 
@@ -116,14 +117,30 @@ export function CreateSupplierForm() {
 
             <div className="space-y-2">
               <Label htmlFor="apiKey">API Key</Label>
-              <Input
-                id="apiKey"
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk_live_..."
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="apiKey"
+                  type={showApiKey ? "text" : "password"}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="sk_live_..."
+                  className="pr-10"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-0 right-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                >
+                  {showApiKey ? (
+                    <EyeOff className="text-muted-foreground h-4 w-4" />
+                  ) : (
+                    <Eye className="text-muted-foreground h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
