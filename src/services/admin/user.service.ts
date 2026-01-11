@@ -214,4 +214,14 @@ export const adminUserService = {
     });
     return response.data;
   },
+
+  /**
+   * Verify a user (manually mark as verified)
+   */
+  verifyUser: async (userId: string): Promise<ApiResponse> => {
+    const response = await apiClient.post<ApiResponse>(
+      `${BASE_PATH}/${userId}/verify`
+    );
+    return response.data;
+  },
 };

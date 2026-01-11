@@ -1,7 +1,11 @@
-import { useAdminUser, useAdminUsers } from "@/hooks/admin/useAdminUsers";
+import {
+  useAdminUser,
+  useAdminUsers,
+  useVerifyUser,
+} from "@/hooks/admin/useAdminUsers";
 import { adminUserService } from "@/services/admin/user.service";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import React, { ReactNode } from "react";
 import { Mocked, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -152,6 +156,53 @@ describe("Admin User Hooks", () => {
       expect(result.current.isPending).toBe(true);
       expect(result.current.fetchStatus).toBe("idle");
       expect(mockAdminUserService.getUserById).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("useVerifyUser", () => {
+    it("should verify user successfully", async () => {
+      const mockResponse = {
+        success: true,
+        message: "User verified successfully",
+      };
+      mockAdminUserService.verifyUser.mockResolvedValue(mockResponse);
+
+      const { result } = renderHook(() => useVerifyUser(), {
+        wrapper: createWrapper(),
+      });
+
+      await act(async () => {
+        result.current.mutate("user-123");
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(mockAdminUserService.verifyUser).toHaveBeenCalledWith("user-123");
+    });
+
+    it("should handle verify error", async () => {
+      const mockError = {
+        response: {
+          data: {
+            message: "User not found",
+          },
+        },
+      };
+      mockAdminUserService.verifyUser.mockRejectedValue(mockError);
+
+      const { result } = renderHook(() => useVerifyUser(), {
+        wrapper: createWrapper(),
+      });
+
+      await act(async () => {
+        result.current.mutate("invalid-user");
+      });
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
+
+      expect(mockAdminUserService.verifyUser).toHaveBeenCalledWith(
+        "invalid-user"
+      );
     });
   });
 });

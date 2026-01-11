@@ -39,20 +39,41 @@ export function PwaSplashScreen({ children }: { children: React.ReactNode }) {
     setIsDarkMode(getInitialTheme());
 
     const minTime = getIsPwa() ? 1500 : 0;
+    const maxTime = 5000; // Maximum wait time - fallback for iOS issues
     const startTime = Date.now();
+    let hasCompleted = false;
 
     const checkReady = () => {
+      if (hasCompleted) return;
+      hasCompleted = true;
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, minTime - elapsed);
       setTimeout(() => setIsLoading(false), remaining);
     };
 
+    // Check if already loaded
     if (document.readyState === "complete") {
       checkReady();
-    } else {
-      window.addEventListener("load", checkReady);
-      return () => window.removeEventListener("load", checkReady);
+      return;
     }
+
+    // Multiple event listeners for iOS reliability
+    window.addEventListener("load", checkReady);
+    document.addEventListener("DOMContentLoaded", () => {
+      // On DOMContentLoaded, wait a bit more for resources
+      setTimeout(checkReady, 500);
+    });
+
+    // CRITICAL: Fallback timeout for iOS PWA where events may not fire
+    const fallbackTimer = setTimeout(() => {
+      console.warn("[PwaSplashScreen] Fallback timeout triggered");
+      checkReady();
+    }, maxTime);
+
+    return () => {
+      window.removeEventListener("load", checkReady);
+      clearTimeout(fallbackTimer);
+    };
   }, []);
 
   if (!isPwa || !isLoading) {

@@ -310,3 +310,22 @@ export function useRevokeUserSessions() {
     },
   });
 }
+
+/**
+ * Verify user mutation (manually mark user as verified)
+ */
+export function useVerifyUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => adminUserService.verifyUser(userId),
+    onSuccess: (response, userId) => {
+      toast.success(response.message || "User verified successfully");
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.detail(userId) });
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.list() });
+    },
+    onError: (error: AxiosError<any>) => {
+      toast.error(error.response?.data?.message || "Failed to verify user");
+    },
+  });
+}

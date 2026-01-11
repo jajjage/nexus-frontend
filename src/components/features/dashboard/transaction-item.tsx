@@ -31,14 +31,22 @@ const getStatusColor = (status: string) => {
 
 // Helper to get user-friendly display status
 // For credit transactions (refunds) with failed/reversed status, show "Refunded" instead
+// For debit transactions with "reversed" status, show "Failed" (since the transaction failed)
 const getDisplayStatus = (transaction: Transaction): string => {
   const status = transaction.related?.status?.toLowerCase() || "";
   const isCredit = transaction.direction === "credit";
+  const isDebit = transaction.direction === "debit";
 
   // If this is a credit transaction (refund) for a failed/reversed topup
   // Show "Refunded" because the money successfully came back
   if (isCredit && (status === "failed" || status === "reversed")) {
     return "Refunded";
+  }
+
+  // If this is a debit transaction with "reversed" status
+  // Show "Failed" because the transaction failed (and was then refunded)
+  if (isDebit && status === "reversed") {
+    return "Failed";
   }
 
   // Default: capitalize the original status

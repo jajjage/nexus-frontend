@@ -41,7 +41,7 @@ export function CreateProductForm() {
   const [name, setName] = useState("");
   const [productType, setProductType] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [denomAmount, setDenomAmount] = useState(0);
+  const [denomAmount, setDenomAmount] = useState<number | "">("");
   const [dataMb, setDataMb] = useState<number | undefined>();
   const [validityDays, setValidityDays] = useState<number | undefined>();
   const [isActive, setIsActive] = useState(true);
@@ -53,7 +53,7 @@ export function CreateProductForm() {
   const [includeMapping, setIncludeMapping] = useState(false);
   const [supplierId, setSupplierId] = useState("");
   const [supplierProductCode, setSupplierProductCode] = useState("");
-  const [supplierPrice, setSupplierPrice] = useState(0);
+  const [supplierPrice, setSupplierPrice] = useState<number | "">("");
   const [minOrderAmount, setMinOrderAmount] = useState<number | undefined>();
   const [maxOrderAmount, setMaxOrderAmount] = useState<number | undefined>();
   const [leadTimeSeconds, setLeadTimeSeconds] = useState<number | undefined>();
@@ -85,7 +85,7 @@ export function CreateProductForm() {
         productCode,
         name,
         productType,
-        denomAmount,
+        denomAmount: typeof denomAmount === "number" ? denomAmount : 0,
         dataMb,
         validityDays,
         isActive,
@@ -101,7 +101,8 @@ export function CreateProductForm() {
           ? {
               supplierId,
               supplierProductCode,
-              supplierPrice,
+              supplierPrice:
+                typeof supplierPrice === "number" ? supplierPrice : undefined,
               minOrderAmount,
               maxOrderAmount,
               leadTimeSeconds,
@@ -215,7 +216,10 @@ export function CreateProductForm() {
                   id="denomAmount"
                   type="number"
                   value={denomAmount}
-                  onChange={(e) => setDenomAmount(Number(e.target.value))}
+                  onChange={(e) =>
+                    setDenomAmount(e.target.value ? Number(e.target.value) : "")
+                  }
+                  placeholder="Enter amount"
                   required
                 />
               </div>
@@ -358,7 +362,12 @@ export function CreateProductForm() {
                   <Input
                     type="number"
                     value={supplierPrice}
-                    onChange={(e) => setSupplierPrice(Number(e.target.value))}
+                    onChange={(e) =>
+                      setSupplierPrice(
+                        e.target.value ? Number(e.target.value) : ""
+                      )
+                    }
+                    placeholder="Enter price"
                   />
                 </div>
 

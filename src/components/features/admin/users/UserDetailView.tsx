@@ -45,6 +45,7 @@ import {
   useSuspendUser,
   useUnsuspendUser,
   useUpdateUser,
+  useVerifyUser,
 } from "@/hooks/admin/useAdminUsers";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -85,6 +86,7 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
   const revokeSessionsMutation = useRevokeUserSessions();
   const { data: rolesData, isLoading: isRolesLoading } = useAdminRoles();
   const assignRoleMutation = useAssignRole();
+  const verifyUserMutation = useVerifyUser();
 
   const [creditAmount, setCreditAmount] = useState("");
   const [debitAmount, setDebitAmount] = useState("");
@@ -319,6 +321,43 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Verify User - Only show if not verified */}
+            {!user.isVerified && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full border-green-500 text-green-600 hover:bg-green-50"
+                    disabled={verifyUserMutation.isPending}
+                  >
+                    {verifyUserMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                    )}
+                    Verify User
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Verify User?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will manually mark {user.fullName} as verified.
+                      Usually users verify through email confirmation.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => verifyUserMutation.mutate(userId)}
+                    >
+                      Verify
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+
             {/* Suspend/Unsuspend */}
             {user.isSuspended ? (
               <AlertDialog>
