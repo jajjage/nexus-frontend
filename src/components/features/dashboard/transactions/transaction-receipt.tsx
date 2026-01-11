@@ -28,39 +28,52 @@ const getStatusConfig = (status: string) => {
   switch (statusLower) {
     case "completed":
     case "received":
+    case "success": // Add success status
       return {
         icon: CheckCircle2,
         color: "text-green-600",
+        bgColor: "bg-green-50",
+        borderColor: "ring-green-100",
         label: "Successful",
       };
     case "pending":
       return {
         icon: Clock,
         color: "text-amber-600",
+        bgColor: "bg-amber-50",
+        borderColor: "ring-amber-100",
         label: "Pending",
       };
     case "failed":
       return {
         icon: XCircle,
         color: "text-red-600",
+        bgColor: "bg-red-50",
+        borderColor: "ring-red-100",
         label: "Failed",
       };
     case "cancelled":
       return {
         icon: XCircle,
         color: "text-gray-600",
+        bgColor: "bg-gray-50",
+        borderColor: "ring-gray-100",
         label: "Cancelled",
       };
     case "reversed":
       return {
         icon: AlertCircle,
         color: "text-orange-600",
+        bgColor: "bg-orange-50",
+        borderColor: "ring-orange-100",
         label: "Reversed",
       };
     default:
       return {
         icon: AlertCircle,
         color: "text-gray-600",
+        bgColor: "bg-gray-50",
+        borderColor: "ring-gray-100",
         label: status,
       };
   }
@@ -86,11 +99,25 @@ const getOperatorLogo = (transaction: Transaction): string | undefined => {
   return undefined;
 };
 
+// Helper to detect if a transaction is for data (moved up for reuse)
+const isDataTransactionCheck = (transaction: Transaction): boolean => {
+  // First check the related.type from backend
+  if (transaction.related?.type?.toLowerCase() === "data") {
+    return true;
+  }
+  // Fallback: Check productCode patterns that indicate data products
+  const productCode = (transaction.productCode || "").toUpperCase();
+  const dataPatterns = ["DATA", "GB", "MB", "TB", "BUNDLE"];
+  return dataPatterns.some((pattern) => productCode.includes(pattern));
+};
+
 // Get transaction type label
 const getTransactionTypeLabel = (transaction: Transaction): string => {
   if (transaction.relatedType === "topup_request") {
-    const type = transaction.related?.type?.toLowerCase() || "topup";
-    return `${type.charAt(0).toUpperCase() + type.slice(1)} Purchase`;
+    // Use smart detection instead of relying on backend's related.type
+    const isData = isDataTransactionCheck(transaction);
+    const typeLabel = isData ? "Data" : "Airtime";
+    return `${typeLabel} Purchase`;
   }
   if (transaction.relatedType === "incoming_payment") {
     return "Incoming Payment";
@@ -120,11 +147,13 @@ const getCashbackUsed = (transaction: Transaction): string => {
 // Get transaction description
 const getTransactionDescription = (transaction: Transaction): string => {
   if (transaction.relatedType === "topup_request") {
-    const type = transaction.related?.type?.toLowerCase() || "topup";
+    // Use smart detection for type
+    const isData = isDataTransactionCheck(transaction);
+    const typeLabel = isData ? "Data" : "Airtime";
     const operator =
       transaction.related?.operatorCode?.toUpperCase() || "Unknown";
     const phone = transaction.related?.recipient_phone || "N/A";
-    return `${type.charAt(0).toUpperCase() + type.slice(1)} to ${operator} - ${phone}`;
+    return `${typeLabel} to ${operator} - ${phone}`;
   }
   return transaction.note || transaction.method || "Transaction";
 };
@@ -273,7 +302,13 @@ export const TransactionReceipt = React.forwardRef<
         </div>
 
         {/* Status Line */}
-        <div className="mb-2 flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-100">
+        <div
+          className={cn(
+            "mb-2 flex items-center gap-2 rounded-full px-3 py-1 ring-1",
+            statusConfig.bgColor,
+            statusConfig.borderColor
+          )}
+        >
           <StatusIcon className={cn("h-4 w-4", statusConfig.color)} />
           <span className={cn("text-sm font-medium", statusConfig.color)}>
             {statusConfig.label}

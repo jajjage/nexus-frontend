@@ -430,11 +430,11 @@ export function TransactionDetailPage({
         </header>
 
         {/* Main Transaction Card */}
-        <Card className="overflow-hidden border-0 shadow-lg ring-1 ring-slate-200">
+        <Card className="bg-card ring-border overflow-hidden border-0 shadow-lg ring-1">
           {/* Header Section - Centralized */}
           <div className="flex flex-col items-center p-8 pb-4">
             {/* Logo / Icon Container */}
-            <div className="mb-4 flex size-16 items-center justify-center overflow-hidden rounded-full bg-slate-50 shadow-sm ring-1 ring-slate-100">
+            <div className="bg-muted ring-border mb-4 flex size-16 items-center justify-center overflow-hidden rounded-full shadow-sm ring-1">
               {logoUrl ? (
                 <img
                   src={logoUrl}
@@ -445,16 +445,16 @@ export function TransactionDetailPage({
                 transactionIcon
               )}
             </div>
-            <h2 className="mb-1 text-center text-lg font-semibold text-slate-900">
+            <h2 className="text-foreground mb-1 text-center text-lg font-semibold">
               {getTransactionTypeLabel(transaction)}
             </h2>
-            <p className="mb-6 max-w-[280px] text-center text-sm text-slate-500">
+            <p className="text-muted-foreground mb-6 max-w-[280px] text-center text-sm">
               {getTransactionDescription(transaction)}
             </p>
 
             {/* Amount */}
             <div className="mb-4 text-center">
-              <span className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+              <span className="text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
                 {formattedAmount}
               </span>
             </div>
@@ -473,20 +473,20 @@ export function TransactionDetailPage({
               </span>
             </div>
 
-            <p className="text-xs text-slate-400">
+            <p className="text-muted-foreground text-xs">
               {formatDate(transaction.createdAt)}
             </p>
           </div>
 
           {/* Dotted Separator */}
           <div className="relative flex items-center justify-center px-6">
-            <div className="h-px w-full border-t-2 border-dashed border-slate-200" />
+            <div className="border-border h-px w-full border-t-2 border-dashed" />
           </div>
 
           <CardContent className="space-y-10 px-6 py-8">
             {/* Status Timeline */}
             <div className="space-y-4">
-              <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+              <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 Transaction Status
               </p>
               <TransactionTimeline
@@ -502,16 +502,18 @@ export function TransactionDetailPage({
 
             {/* Details Section */}
             <div className="space-y-6">
-              <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+              <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 Transaction Details
               </p>
 
               <div className="space-y-4">
                 {/* Recipient Phone */}
                 {transaction.related?.recipient_phone && (
-                  <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
-                    <span className="text-slate-500">Recipient Phone</span>
-                    <span className="font-medium text-slate-900">
+                  <div className="border-border/50 flex justify-between border-b pb-3 text-sm">
+                    <span className="text-muted-foreground">
+                      Recipient Phone
+                    </span>
+                    <span className="text-foreground font-medium">
                       {transaction.related.recipient_phone}
                     </span>
                   </div>
@@ -519,9 +521,9 @@ export function TransactionDetailPage({
 
                 {/* Amount Paid */}
                 {transaction.amount && (
-                  <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
-                    <span className="text-slate-500">Amount Paid</span>
-                    <span className="font-medium text-slate-900">
+                  <div className="border-border/50 flex justify-between border-b pb-3 text-sm">
+                    <span className="text-muted-foreground">Amount Paid</span>
+                    <span className="text-foreground font-medium">
                       {formattedAmountPaid}
                     </span>
                   </div>
@@ -529,8 +531,8 @@ export function TransactionDetailPage({
 
                 {/* Cashback Used */}
                 {transaction.relatedType === "topup_request" && (
-                  <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
-                    <span className="text-slate-500">Cashback Used</span>
+                  <div className="border-border/50 flex justify-between border-b pb-3 text-sm">
+                    <span className="text-muted-foreground">Cashback Used</span>
                     <span className="font-medium text-red-500">
                       -{getCashbackUsed(transaction)}
                     </span>
@@ -538,14 +540,14 @@ export function TransactionDetailPage({
                 )}
 
                 {/* Service Type */}
-                <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
-                  <span className="text-slate-500">Service</span>
+                <div className="border-border/50 flex justify-between border-b pb-3 text-sm">
+                  <span className="text-muted-foreground">Service</span>
                   <div className="text-right">
-                    <span className="block font-medium text-slate-900">
+                    <span className="text-foreground block font-medium">
                       {getServiceTypeLabel(transaction)}
                     </span>
                     {transaction.productCode && (
-                      <span className="text-xs text-slate-400">
+                      <span className="text-muted-foreground text-xs">
                         {transaction.productCode}
                       </span>
                     )}
@@ -555,9 +557,9 @@ export function TransactionDetailPage({
                 {/* Method (for Transfers) */}
                 {transaction.relatedType === "incoming_payment" &&
                   transaction.method && (
-                    <div className="flex justify-between border-b border-slate-50 pb-3 text-sm">
-                      <span className="text-slate-500">Method</span>
-                      <span className="font-medium text-slate-900 capitalize">
+                    <div className="border-border/50 flex justify-between border-b pb-3 text-sm">
+                      <span className="text-muted-foreground">Method</span>
+                      <span className="text-foreground font-medium capitalize">
                         {transaction.method}
                       </span>
                     </div>
@@ -565,13 +567,13 @@ export function TransactionDetailPage({
 
                 {/* Reference */}
                 {transaction.reference && (
-                  <div className="space-y-1 border-b border-slate-50 pb-3 text-sm">
+                  <div className="border-border/50 space-y-1 border-b pb-3 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500">Reference</span>
+                      <span className="text-muted-foreground">Reference</span>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 text-slate-400 hover:text-slate-900"
+                        className="text-muted-foreground hover:text-foreground h-6 w-6"
                         onClick={() =>
                           copyToClipboard(transaction.reference!, "Reference")
                         }
@@ -579,7 +581,7 @@ export function TransactionDetailPage({
                         <Copy className="size-3" />
                       </Button>
                     </div>
-                    <code className="block font-mono text-xs break-all text-slate-600">
+                    <code className="text-muted-foreground block font-mono text-xs break-all">
                       {transaction.reference}
                     </code>
                   </div>
@@ -588,11 +590,13 @@ export function TransactionDetailPage({
                 {/* Transaction ID */}
                 <div className="space-y-1 pt-1 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Transaction ID</span>
+                    <span className="text-muted-foreground">
+                      Transaction ID
+                    </span>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 text-slate-400 hover:text-slate-900"
+                      className="text-muted-foreground hover:text-foreground h-6 w-6"
                       onClick={() =>
                         copyToClipboard(transaction.id, "Transaction ID")
                       }
@@ -600,7 +604,7 @@ export function TransactionDetailPage({
                       <Copy className="size-3" />
                     </Button>
                   </div>
-                  <code className="block font-mono text-xs break-all text-slate-600">
+                  <code className="text-muted-foreground block font-mono text-xs break-all">
                     {transaction.id}
                   </code>
                 </div>
@@ -609,11 +613,11 @@ export function TransactionDetailPage({
 
             {/* Transaction Note */}
             {transaction.note && (
-              <div className="mt-6 rounded-lg bg-slate-50 p-4 ring-1 ring-slate-100">
-                <p className="mb-1 text-xs font-semibold text-slate-400 uppercase">
+              <div className="bg-muted/50 ring-border mt-6 rounded-lg p-4 ring-1">
+                <p className="text-muted-foreground mb-1 text-xs font-semibold uppercase">
                   Note
                 </p>
-                <p className="text-sm text-slate-700">{transaction.note}</p>
+                <p className="text-foreground text-sm">{transaction.note}</p>
               </div>
             )}
           </CardContent>

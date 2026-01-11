@@ -119,13 +119,17 @@ export function PwaSplashScreen({ children }: { children: React.ReactNode }) {
             }}
           />
 
-          {/* Logo in center - just the icon, no box */}
+          {/* Logo in center - use theme-appropriate splash icon */}
           <div style={{ animation: "pulse 2s ease-in-out infinite" }}>
             <Image
-              src="/images/adaptive-icon.png"
+              src={
+                isDarkMode
+                  ? "/images/splash-icon-dark.png"
+                  : "/images/splash-icon-light.png"
+              }
               alt="Nexus Data"
-              width={80}
-              height={80}
+              width={100}
+              height={100}
               priority
               style={{ objectFit: "contain" }}
             />

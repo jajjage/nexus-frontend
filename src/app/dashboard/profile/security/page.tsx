@@ -20,7 +20,7 @@ export default function SecurityPage() {
       icon: Lock,
       href: "/dashboard/profile/security/password",
       color: "from-blue-500 to-cyan-500",
-      bgColor: "bg-blue-50",
+      bgColor: "bg-blue-50 dark:bg-blue-950/30",
     },
     {
       title: "Transaction PIN",
@@ -28,7 +28,7 @@ export default function SecurityPage() {
       icon: KeyRound,
       href: "/dashboard/profile/security/pin",
       color: "from-purple-500 to-pink-500",
-      bgColor: "bg-purple-50",
+      bgColor: "bg-purple-50 dark:bg-purple-950/30",
     },
   ];
 
@@ -39,7 +39,7 @@ export default function SecurityPage() {
       icon: Shield,
       href: "/dashboard/profile/security/passcode",
       color: "from-amber-500 to-orange-500",
-      bgColor: "bg-amber-50",
+      bgColor: "bg-amber-50 dark:bg-amber-950/30",
     },
     {
       title: "Biometric",
@@ -47,13 +47,13 @@ export default function SecurityPage() {
       icon: Fingerprint,
       href: "/dashboard/profile/security/biometric",
       color: "from-green-500 to-emerald-500",
-      bgColor: "bg-green-50",
+      bgColor: "bg-green-50 dark:bg-green-950/30",
     },
   ];
 
   const SecurityCard = ({ item }: { item: (typeof authSection)[0] }) => (
     <Link href={item.href} className="group h-full">
-      <Card className="relative h-full overflow-hidden border-0 shadow-sm transition-all duration-300 hover:scale-105 hover:shadow-md">
+      <Card className="bg-card relative h-full overflow-hidden border-0 shadow-sm transition-all duration-300 hover:scale-105 hover:shadow-md">
         {/* Gradient Background */}
         <div
           className={`absolute inset-0 bg-linear-to-br ${item.color} opacity-0 transition-opacity duration-300 group-hover:opacity-5`}
@@ -64,15 +64,15 @@ export default function SecurityPage() {
           <div
             className={`${item.bgColor} flex h-12 w-12 items-center justify-center rounded-lg transition-all duration-300 group-hover:scale-110`}
           >
-            <item.icon className="h-6 w-6 text-slate-700" />
+            <item.icon className="text-foreground h-6 w-6" />
           </div>
 
           {/* Content */}
           <div className="flex-1">
-            <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
+            <h3 className="text-foreground text-sm font-semibold sm:text-base">
               {item.title}
             </h3>
-            <p className="mt-1 text-xs text-slate-600 sm:text-sm">
+            <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
               {item.description}
             </p>
           </div>
@@ -97,10 +97,10 @@ export default function SecurityPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+          <h1 className="text-foreground text-2xl font-bold sm:text-3xl">
             Security
           </h1>
-          <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
             Manage your account security settings
           </p>
         </div>
@@ -110,10 +110,10 @@ export default function SecurityPage() {
         {/* Account Authentication Section */}
         <section>
           <div className="mb-3 sm:mb-4">
-            <h2 className="text-xs font-semibold tracking-wide text-slate-700 uppercase sm:text-sm">
+            <h2 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase sm:text-sm">
               Account Authentication
             </h2>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="text-muted-foreground mt-1 text-xs">
               Secure your login and transactions
             </p>
           </div>
@@ -127,10 +127,10 @@ export default function SecurityPage() {
         {/* App Security Section */}
         <section>
           <div className="mb-3 sm:mb-4">
-            <h2 className="text-xs font-semibold tracking-wide text-slate-700 uppercase sm:text-sm">
+            <h2 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase sm:text-sm">
               App Security
             </h2>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="text-muted-foreground mt-1 text-xs">
               Protect your app from unauthorized access
             </p>
           </div>
@@ -142,11 +142,11 @@ export default function SecurityPage() {
         </section>
 
         {/* Security Tips */}
-        <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 sm:p-5">
-          <h3 className="mb-3 text-sm font-semibold text-slate-900">
+        <section className="border-border bg-muted/50 rounded-lg border p-4 sm:p-5">
+          <h3 className="text-foreground mb-3 text-sm font-semibold">
             🛡️ Security Tips
           </h3>
-          <ul className="space-y-2 text-xs text-slate-700 sm:text-sm">
+          <ul className="text-muted-foreground space-y-2 text-xs sm:text-sm">
             <li>• Use strong, unique passwords for each account</li>
             <li>• Enable biometric authentication for faster, safer access</li>
             <li>• Change your passwords and PINs regularly</li>
