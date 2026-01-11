@@ -14,6 +14,7 @@ const getStatusColor = (status: string) => {
     case "completed":
     case "received":
     case "success":
+    case "refunded":
       return "bg-green-500 text-green-50";
     case "failed":
       return "bg-red-500 text-red-50";
@@ -26,6 +27,22 @@ const getStatusColor = (status: string) => {
     default:
       return "bg-gray-400 text-gray-50";
   }
+};
+
+// Helper to get user-friendly display status
+// For credit transactions (refunds) with failed/reversed status, show "Refunded" instead
+const getDisplayStatus = (transaction: Transaction): string => {
+  const status = transaction.related?.status?.toLowerCase() || "";
+  const isCredit = transaction.direction === "credit";
+
+  // If this is a credit transaction (refund) for a failed/reversed topup
+  // Show "Refunded" because the money successfully came back
+  if (isCredit && (status === "failed" || status === "reversed")) {
+    return "Refunded";
+  }
+
+  // Default: capitalize the original status
+  return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
 // Helper to detect if a transaction is for data (with fallback for incorrect backend type)
@@ -181,10 +198,10 @@ export function TransactionItem({ transaction, source }: TransactionItemProps) {
             <Badge
               className={cn(
                 "mt-1 inline-block rounded-full border-0 px-2 py-0.5 text-xs text-white capitalize",
-                getStatusColor(transaction.related.status)
+                getStatusColor(getDisplayStatus(transaction))
               )}
             >
-              {transaction.related.status}
+              {getDisplayStatus(transaction)}
             </Badge>
           )}
       </div>

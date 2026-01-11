@@ -111,9 +111,17 @@ export function TransactionTimeline({
   const steps = getStepsForType(transactionType, createdAt, completedAt);
 
   const getStepState = (stepStatus: string, index: number) => {
-    // Handle failed/cancelled states
-    if (currentStatus === "failed" && index >= 1) return "failed";
-    if (currentStatus === "cancelled" && index >= 1) return "failed";
+    // Handle failed/cancelled/reversed states
+    // Step 0 (Initiated) should always be "completed" since we received the request
+    // Step 1+ should be failed if the transaction failed
+    if (
+      currentStatus === "failed" ||
+      currentStatus === "cancelled" ||
+      currentStatus === "reversed"
+    ) {
+      if (index === 0) return "completed"; // Initiated step succeeded
+      return "failed"; // Processing and later steps failed
+    }
 
     // Handle completed/received/success - all steps are done
     if (
@@ -139,6 +147,11 @@ export function TransactionTimeline({
 
     if (currentStatus === "processing") {
       return index <= 1 ? "completed" : index === 2 ? "active" : "upcoming";
+    }
+
+    // For retry status - show as active/processing
+    if (currentStatus === "retry") {
+      return index === 0 ? "completed" : index === 1 ? "active" : "upcoming";
     }
 
     return "upcoming";
