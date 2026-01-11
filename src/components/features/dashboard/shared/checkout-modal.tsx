@@ -13,7 +13,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Product } from "@/types/product.types";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronRight, Info, X } from "lucide-react";
+import { Check, ChevronRight, Info, X, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface CheckoutModalProps {
@@ -28,6 +28,9 @@ interface CheckoutModalProps {
   onConfirm: (useCashback: boolean) => void;
   isProcessing: boolean;
   isSuccess?: boolean;
+  isFailed?: boolean;
+  failureMessage?: string;
+  onRetry?: () => void;
   markupPercent?: number;
 }
 
@@ -42,6 +45,9 @@ export function CheckoutModal({
   onConfirm,
   isProcessing,
   isSuccess = false,
+  isFailed = false,
+  failureMessage = "Transaction failed. Please try again.",
+  onRetry,
   markupPercent = 0,
 }: CheckoutModalProps) {
   const [useCashback, setUseCashback] = useState(false);
@@ -92,10 +98,79 @@ export function CheckoutModal({
         <DialogTitle className="sr-only">
           {isSuccess
             ? `${product.productType === "data" ? "Data" : "Airtime"} Purchase Successful`
-            : "Confirm Purchase"}
+            : isFailed
+              ? `${product.productType === "data" ? "Data" : "Airtime"} Purchase Failed`
+              : "Confirm Purchase"}
         </DialogTitle>
         <AnimatePresence mode="wait">
-          {isSuccess ? (
+          {isFailed ? (
+            <motion.div
+              key="failed"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col items-center justify-center px-6 py-12 text-center"
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.1, duration: 0.4 }}
+                className="mb-6 flex size-20 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+              >
+                <XCircle className="size-10 stroke-2" />
+              </motion.div>
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.3 }}
+                className="mb-2 text-2xl font-bold tracking-tight"
+              >
+                {product.productType === "data"
+                  ? "Data Purchase Failed"
+                  : "Airtime Purchase Failed"}
+              </motion.h2>
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.3 }}
+                className="text-muted-foreground mb-4 max-w-[280px]"
+              >
+                {failureMessage}
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35, duration: 0.3 }}
+                className="mb-6 rounded-lg bg-red-50 px-4 py-3 dark:bg-red-900/20"
+              >
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  Your wallet was not charged. Please try again or contact
+                  support if the issue persists.
+                </p>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4, duration: 0.3 }}
+                className="flex w-full gap-3"
+              >
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="flex-1"
+                  onClick={onClose}
+                >
+                  Close
+                </Button>
+                {onRetry && (
+                  <Button size="lg" className="flex-1" onClick={onRetry}>
+                    Try Again
+                  </Button>
+                )}
+              </motion.div>
+            </motion.div>
+          ) : isSuccess ? (
             <motion.div
               key="success"
               initial={{ opacity: 0, scale: 0.95 }}

@@ -214,17 +214,17 @@ export function AuditLogTable() {
         </div>
 
         {/* Table */}
-        <div className="rounded-md border">
-          <Table>
+        <div className="overflow-x-auto rounded-md border">
+          <Table className="min-w-[900px]">
             <TableHeader>
               <TableRow>
-                <TableHead>Action</TableHead>
-                <TableHead>Admin</TableHead>
-                <TableHead>Target User</TableHead>
-                <TableHead>Changes</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>IP Address</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead className="w-[120px]">Action</TableHead>
+                <TableHead className="w-[100px]">Admin</TableHead>
+                <TableHead className="w-[100px]">Target User</TableHead>
+                <TableHead className="w-[180px]">Changes</TableHead>
+                <TableHead className="w-[150px]">Reason</TableHead>
+                <TableHead className="w-[120px]">IP Address</TableHead>
+                <TableHead className="w-[130px]">Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -262,24 +262,34 @@ export function AuditLogTable() {
                         entry.target_user_id?.slice(0, 8) ||
                         "—"}
                     </TableCell>
-                    <TableCell className="max-w-[150px]">
-                      <div className="text-xs">
+                    <TableCell>
+                      <div className="max-w-[180px] text-xs">
                         {entry.old_value && (
-                          <span className="text-red-500 line-through">
+                          <div
+                            className="truncate text-red-500 line-through"
+                            title={entry.old_value}
+                          >
                             {formatValue(entry.old_value)}
-                          </span>
+                          </div>
                         )}
-                        {entry.old_value && entry.new_value && " → "}
                         {entry.new_value && (
-                          <span className="text-green-500">
+                          <div
+                            className="truncate text-green-500"
+                            title={entry.new_value}
+                          >
                             {formatValue(entry.new_value)}
-                          </span>
+                          </div>
                         )}
                         {!entry.old_value && !entry.new_value && "—"}
                       </div>
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate">
-                      {entry.reason || "—"}
+                    <TableCell className="max-w-[150px]">
+                      <span
+                        className="block truncate"
+                        title={entry.reason || undefined}
+                      >
+                        {entry.reason || "—"}
+                      </span>
                     </TableCell>
                     <TableCell className="font-mono text-xs">
                       {entry.ip_address}

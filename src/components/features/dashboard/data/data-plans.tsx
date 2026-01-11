@@ -54,6 +54,8 @@ export function DataPlans() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedMarkupPercent, setSelectedMarkupPercent] = useState(0);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
+  const [failureMessage, setFailureMessage] = useState("");
 
   const [errorMessage, setErrorMessage] = useState("");
   // const [pinMode, setPinMode] = useState<"setup" | "enter">("enter")
@@ -246,6 +248,8 @@ export function DataPlans() {
 
     setSelectedProduct(product);
     setIsSuccess(false); // Reset success state
+    setIsFailed(false); // Reset failure state
+    setFailureMessage("");
 
     // Get and set the markup percent for this product's supplier
     const supplierId = product.supplierOffers?.[0]?.supplierId || "";
@@ -431,7 +435,7 @@ export function DataPlans() {
           const msg =
             error?.response?.data?.message ||
             error?.message ||
-            "Transaction failed";
+            "Transaction failed. Please try again.";
 
           // Check if it's a PIN error
           if (
@@ -443,13 +447,26 @@ export function DataPlans() {
             setErrorMessage(msg);
             // Keep PIN modal open to show error
           } else {
-            // Other error - close BOTH modals and let hook show toast
+            // Other error - close verification modals and show failure in checkout modal
             setShowPinModal(false);
             setShowBiometricModal(false);
+            setIsFailed(true);
+            setFailureMessage(msg);
+            setIsCheckoutOpen(true); // Show checkout modal with failure state
           }
         },
       }
     );
+  };
+
+  // Handle retry from failure modal
+  const handleRetry = () => {
+    setIsFailed(false);
+    setFailureMessage("");
+    // Re-trigger the payment flow by reopening biometric modal
+    if (pendingPaymentData) {
+      setShowBiometricModal(true);
+    }
   };
 
   // Get logo for current selected network
@@ -581,6 +598,9 @@ export function DataPlans() {
             onConfirm={handlePayment}
             isProcessing={topupMutation.isPending}
             isSuccess={isSuccess}
+            isFailed={isFailed}
+            failureMessage={failureMessage}
+            onRetry={handleRetry}
             markupPercent={selectedMarkupPercent}
           />
         )}

@@ -44,6 +44,8 @@ export function AirtimePlans() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedMarkupPercent, setSelectedMarkupPercent] = useState(0);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
+  const [failureMessage, setFailureMessage] = useState("");
 
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -218,6 +220,8 @@ export function AirtimePlans() {
 
     setSelectedProduct(product);
     setIsSuccess(false);
+    setIsFailed(false);
+    setFailureMessage("");
 
     // Get and set the markup percent for this product's supplier
     const supplierId = product.supplierOffers?.[0]?.supplierId || "";
@@ -411,7 +415,7 @@ export function AirtimePlans() {
           const msg =
             error?.response?.data?.message ||
             error?.message ||
-            "Transaction failed";
+            "Transaction failed. Please try again.";
 
           // Check if it's a PIN error
           if (
@@ -423,9 +427,12 @@ export function AirtimePlans() {
             setErrorMessage(msg);
             // Keep PIN modal open to show error
           } else {
-            // Other error - close BOTH modals and let hook show toast
+            // Other error - close verification modals and show failure in checkout modal
             setShowPinModal(false);
             setShowBiometricModal(false);
+            setIsFailed(true);
+            setFailureMessage(msg);
+            setIsCheckoutOpen(true); // Show checkout modal with failure state
           }
         },
       }
@@ -570,6 +577,13 @@ export function AirtimePlans() {
             onConfirm={handlePayment}
             isProcessing={topupMutation.isPending}
             isSuccess={isSuccess}
+            isFailed={isFailed}
+            failureMessage={failureMessage}
+            onRetry={() => {
+              setIsFailed(false);
+              setFailureMessage("");
+              if (pendingPaymentData) setShowBiometricModal(true);
+            }}
             markupPercent={selectedMarkupPercent}
           />
         )}

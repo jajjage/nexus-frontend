@@ -10,6 +10,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useAuthContext } from "@/context/AuthContext";
 import { useSetPasscode } from "@/hooks/usePasscode";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
@@ -38,6 +39,7 @@ type PasscodeFormValues = z.infer<typeof passcodeSchema>;
 
 export function SetPasscodeForm() {
   const router = useRouter();
+  const { user } = useAuthContext();
   const { mutate: setPasscode, isPending } = useSetPasscode();
   const [showPasscode, setShowPasscode] = useState(false);
   const [showConfirmPasscode, setShowConfirmPasscode] = useState(false);
@@ -51,7 +53,7 @@ export function SetPasscodeForm() {
     },
   });
 
-  const hasPasscode = false; // TODO: Add hasPasscode to User type when backend supports it
+  const hasPasscode = user?.hasPasscode ?? false;
 
   // Clear password field when component mounts
   useEffect(() => {
