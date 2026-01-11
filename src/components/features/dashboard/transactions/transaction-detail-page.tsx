@@ -30,7 +30,18 @@ interface TransactionDetailPageProps {
 }
 
 // Get status icon and color configuration
-const getStatusConfig = (status: string) => {
+const getStatusConfig = (status: string, isRefund?: boolean) => {
+  // For refund transactions, always show as successful refund
+  if (isRefund) {
+    return {
+      icon: CheckCircle2,
+      color: "text-green-600",
+      label: "Refunded",
+      bgColor: "bg-green-50",
+      borderColor: "ring-green-100",
+    };
+  }
+
   const statusLower = status.toLowerCase();
   switch (statusLower) {
     case "completed":
@@ -125,6 +136,17 @@ const getTransactionIcon = (transaction: Transaction) => {
 // Helper to get transaction type label
 const getTransactionTypeLabel = (transaction: Transaction): string => {
   const isDebit = transaction.direction === "debit";
+  const isCredit = transaction.direction === "credit";
+  const relatedStatus = transaction.related?.status?.toLowerCase();
+
+  // Check if this is a refund (credit transaction with failed/reversed status)
+  if (
+    isCredit &&
+    transaction.relatedType === "topup_request" &&
+    (relatedStatus === "failed" || relatedStatus === "reversed")
+  ) {
+    return "Refund";
+  }
 
   if (isDebit && transaction.relatedType === "topup_request") {
     // Use smart detection instead of relying on backend's related.type
@@ -366,15 +388,28 @@ export function TransactionDetailPage({
   }
 
   const isCredit = transaction.direction === "credit";
+  const relatedStatus = transaction.related?.status?.toLowerCase();
+
+  // Check if this is a refund (credit transaction with failed/reversed topup status)
+  const isRefund =
+    isCredit &&
+    transaction.relatedType === "topup_request" &&
+    (relatedStatus === "failed" || relatedStatus === "reversed");
 
   // For topup transactions, show product name in main display
   // Uses smart detection that checks productCode patterns as fallback
   const isDataProduct = isDataTransaction(transaction);
   const isTopupRequest = transaction.relatedType === "topup_request";
 
-  // Main display: For topups show product name, for other transactions show amount
+  // Main display: For refunds show amount, for topups show product name
   let formattedAmount: string;
-  if (isTopupRequest) {
+  if (isRefund) {
+    // Refund: Show the refunded amount
+    formattedAmount = transaction.amount.toLocaleString("en-NG", {
+      style: "currency",
+      currency: "NGN",
+    });
+  } else if (isTopupRequest) {
     if (isDataProduct) {
       // Data: Show product code/name
       formattedAmount =
@@ -412,7 +447,7 @@ export function TransactionDetailPage({
     transaction.relatedType === "topup_request"
       ? transaction.related?.status || "pending"
       : transaction.related?.status || "completed";
-  const statusConfig = getStatusConfig(transactionStatus);
+  const statusConfig = getStatusConfig(transactionStatus, isRefund);
   const StatusIcon = statusConfig.icon;
 
   return (
@@ -497,6 +532,7 @@ export function TransactionDetailPage({
                     : new Date(transaction.createdAt).toISOString()
                 }
                 transactionType={transaction.relatedType}
+                isRefund={isRefund}
               />
             </div>
 

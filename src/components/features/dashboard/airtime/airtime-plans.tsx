@@ -76,7 +76,7 @@ export function AirtimePlans() {
 
   // Fetch all airtime products.
   const { data, isLoading, error } = useProducts(
-    { productType: "airtime" },
+    { productType: "airtime", isActive: true },
     { staleTime: Infinity }
   );
 

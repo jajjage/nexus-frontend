@@ -90,7 +90,7 @@ export function DataPlans() {
 
   // Fetch all data products.
   const { data, isLoading, error } = useProducts(
-    { productType: "data" },
+    { productType: "data", isActive: true },
     { staleTime: Infinity }
   );
 

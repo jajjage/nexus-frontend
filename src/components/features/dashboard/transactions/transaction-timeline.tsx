@@ -106,12 +106,19 @@ export function TransactionTimeline({
   completedAt,
   transactionType,
   className,
-}: TransactionTimelineProps) {
+  isRefund = false,
+}: TransactionTimelineProps & { isRefund?: boolean }) {
   const currentStatus = status.toLowerCase();
   const steps = getStepsForType(transactionType, createdAt, completedAt);
 
   const getStepState = (stepStatus: string, index: number) => {
-    // Handle failed/cancelled/reversed states
+    // For refund transactions, all steps should show as completed
+    // because the refund money successfully came back to the user
+    if (isRefund) {
+      return "completed";
+    }
+
+    // Handle failed/cancelled/reversed states for debit transactions
     // Step 0 (Initiated) should always be "completed" since we received the request
     // Step 1+ should be failed if the transaction failed
     if (

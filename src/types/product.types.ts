@@ -76,4 +76,5 @@ export interface ProductQueryParams {
   productType?: "airtime" | "data" | "bill";
   operatorId?: string;
   search?: string;
+  isActive?: boolean;
 }
