@@ -79,8 +79,9 @@ export function CheckoutModal({
     product.discountedPrice < baseSellingPrice;
 
   // Use discounted price if offer is active, otherwise use base selling price
+  // Note: hasOfferDiscount already ensures discountedPrice is defined, but we add fallback for TypeScript
   const sellingPrice = hasOfferDiscount
-    ? product.discountedPrice
+    ? (product.discountedPrice ?? baseSellingPrice)
     : baseSellingPrice;
 
   // Original price (for strikethrough display)
