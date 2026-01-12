@@ -56,12 +56,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [hasRefreshTokens, setHasRefreshTokens] = useState(false);
 
   useEffect(() => {
-    // Check if refresh token exists in cookies
-    const hasRefreshToken = document.cookie.includes("refreshToken");
-    setHasRefreshTokens(hasRefreshToken);
+    // NOTE: We cannot check httpOnly cookies via document.cookie
+    // Instead, check if we have cached user data as auth indicator
+    const cachedUser = localStorage.getItem("auth_user_cache");
+    setHasRefreshTokens(cachedUser !== null);
 
     // Initialize auth state from localStorage if available
-    const cachedUser = localStorage.getItem("auth_user_cache");
     if (cachedUser) {
       try {
         setUserState(JSON.parse(cachedUser));

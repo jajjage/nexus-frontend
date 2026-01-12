@@ -5,6 +5,8 @@
 
 import apiClient from "@/lib/api-client";
 import {
+  AnnounceOfferRequest,
+  AnnounceOfferResponse,
   ComputeSegmentResponse,
   CreateOfferRequest,
   CreateRedemptionsRequest,
@@ -43,6 +45,7 @@ const mapFromApiOffer = (apiOffer: any): Offer => {
     updatedAt: apiOffer.updated_at || apiOffer.updatedAt,
     deletedAt: apiOffer.deleted_at || apiOffer.deletedAt,
     createdBy: apiOffer.created_by || apiOffer.createdBy,
+    lastAnnouncedAt: apiOffer.last_announced_at || apiOffer.lastAnnouncedAt,
   };
 };
 
@@ -264,6 +267,20 @@ export const adminOfferService = {
   getProducts: async (): Promise<ApiResponse<{ products: any[] }>> => {
     const response =
       await apiClient.get<ApiResponse<{ products: any[] }>>(`/admin/products`);
+    return response.data;
+  },
+
+  /**
+   * Announce an offer to all eligible users via push notifications
+   */
+  announceOffer: async (
+    offerId: string,
+    data: AnnounceOfferRequest
+  ): Promise<ApiResponse<AnnounceOfferResponse>> => {
+    const response = await apiClient.post<ApiResponse<AnnounceOfferResponse>>(
+      `${BASE_PATH}/${offerId}/announce`,
+      data
+    );
     return response.data;
   },
 };

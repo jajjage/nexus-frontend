@@ -196,3 +196,35 @@ export function useCreateRedemptions() {
     },
   });
 }
+
+/**
+ * Announce offer to eligible users via push notifications
+ */
+export function useAnnounceOffer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      offerId,
+      data,
+    }: {
+      offerId: string;
+      data: { title: string; body: string; data?: Record<string, any> };
+    }) => adminOfferService.announceOffer(offerId, data),
+    onSuccess: (response, { offerId }) => {
+      toast.success(
+        response.message ||
+          `Announcement sent to ${response.data?.notificationsSent || 0} users`
+      );
+      queryClient.invalidateQueries({ queryKey: offerKeys.detail(offerId) });
+      queryClient.invalidateQueries({ queryKey: offerKeys.all });
+    },
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to announce offer";
+      toast.error(message);
+    },
+  });
+}

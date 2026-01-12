@@ -36,6 +36,19 @@ export const adminNotificationService = {
   },
 
   /**
+   * Get a single notification by ID
+   * GET /api/v1/admin/notifications/:notificationId
+   */
+  getNotificationById: async (
+    notificationId: string
+  ): Promise<ApiResponse<{ notification: Notification }>> => {
+    const response = await apiClient.get<
+      ApiResponse<{ notification: Notification }>
+    >(`${BASE_PATH}/${notificationId}`);
+    return response.data;
+  },
+
+  /**
    * Create a new notification
    * POST /api/v1/admin/notifications
    */

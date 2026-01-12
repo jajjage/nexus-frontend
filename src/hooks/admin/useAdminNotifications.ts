@@ -54,6 +54,17 @@ export function useNotificationAnalytics(notificationId: string) {
 }
 
 /**
+ * Fetch a single notification by ID
+ */
+export function useAdminNotification(notificationId: string) {
+  return useQuery({
+    queryKey: notificationKeys.detail(notificationId),
+    queryFn: () => adminNotificationService.getNotificationById(notificationId),
+    enabled: !!notificationId,
+  });
+}
+
+/**
  * Fetch notification templates
  */
 export function useNotificationTemplates() {

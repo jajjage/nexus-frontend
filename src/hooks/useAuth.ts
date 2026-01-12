@@ -475,6 +475,11 @@ export function useLogin(expectedRole?: "user" | "admin") {
       // 2. User missing PIN -> /setup (Onboarding)
       // 3. User with PIN -> /dashboard
       // Use window.location.href for reliable redirect in production
+
+      // IMPORTANT: Add small delay to ensure localStorage write completes
+      // iOS Safari may not persist localStorage before page unload otherwise
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
       if (user?.role === "admin") {
         console.log("[AUTH] Redirecting admin to dashboard");
         window.location.href = "/admin/dashboard";
@@ -603,10 +608,30 @@ export function useRegister() {
     },
 
     onError: (error: AxiosError<any>) => {
-      const errorMsg =
-        error.response?.data?.message ||
-        "Registration failed. Please try again.";
-      console.error("[AUTH] Registration failed", { message: errorMsg });
+      // Extract message from various possible error structures
+      const errorData = error.response?.data;
+      let errorMsg = "Registration failed. Please try again.";
+
+      if (typeof errorData?.message === "string") {
+        errorMsg = errorData.message;
+      } else if (typeof errorData?.error === "string") {
+        errorMsg = errorData.error;
+      } else if (errorData?.error?.message) {
+        errorMsg = errorData.error.message;
+      } else if (
+        Array.isArray(errorData?.errors) &&
+        errorData.errors.length > 0
+      ) {
+        // Handle array of validation errors
+        errorMsg = errorData.errors
+          .map((e: any) => e.message || e.msg || e)
+          .join(", ");
+      }
+
+      console.error("[AUTH] Registration failed", {
+        message: errorMsg,
+        rawError: errorData,
+      });
       toast.error(errorMsg);
       setIsLoading(false);
     },

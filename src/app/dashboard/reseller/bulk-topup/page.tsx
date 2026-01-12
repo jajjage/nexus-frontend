@@ -1,5 +1,6 @@
 "use client";
 
+import { BottomNav } from "@/components/features/dashboard/bottom-nav";
 import { BulkTopupForm } from "@/components/features/reseller";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,24 +21,27 @@ export default function BulkTopupPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8">
-      {/* Header */}
-      <div className="mb-6 flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/reseller">
-            <ArrowLeft className="size-5" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">Bulk Topup</h1>
-          <p className="text-muted-foreground text-sm">
-            Process up to 50 topups at once
-          </p>
+    <>
+      <div className="container mx-auto max-w-2xl px-4 py-8 pb-24">
+        {/* Header */}
+        <div className="mb-6 flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/dashboard/reseller">
+              <ArrowLeft className="size-5" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Bulk Topup</h1>
+            <p className="text-muted-foreground text-sm">
+              Process up to 50 topups at once
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Form */}
-      <BulkTopupForm />
-    </div>
+        {/* Form */}
+        <BulkTopupForm />
+      </div>
+      <BottomNav />
+    </>
   );
 }

@@ -25,9 +25,9 @@ export function PublicProductGrid({
   const [selectedNetwork, setSelectedNetwork] = useState<string>("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // Fetch products using public endpoint
+  // Fetch products using public endpoint - only active products
   const { data, isLoading, error } = useProducts(
-    { productType },
+    { productType, isActive: true },
     { staleTime: 1000 * 60 * 5 } // 5 minutes
   );
 

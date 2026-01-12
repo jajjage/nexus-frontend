@@ -69,7 +69,22 @@ export function CheckoutModal({
   // markupPercent can be either decimal (0.10) or percentage (10)
   // If it's less than 1, treat as decimal; otherwise divide by 100
   const actualMarkup = markupPercent < 1 ? markupPercent : markupPercent / 100;
-  const sellingPrice = supplierPrice + supplierPrice * actualMarkup;
+  const baseSellingPrice = supplierPrice + supplierPrice * actualMarkup;
+
+  // Check for active offer discount
+  // If product.discountedPrice is provided and less than base price, use it
+  const hasOfferDiscount =
+    product.discountedPrice !== undefined &&
+    product.discountedPrice !== null &&
+    product.discountedPrice < baseSellingPrice;
+
+  // Use discounted price if offer is active, otherwise use base selling price
+  const sellingPrice = hasOfferDiscount
+    ? product.discountedPrice
+    : baseSellingPrice;
+
+  // Original price (for strikethrough display)
+  const originalPrice = hasOfferDiscount ? baseSellingPrice : faceValue;
 
   // Calculate Cashback usage
   // If useCashback is true, deduct the available cashback balance from the selling price
@@ -280,13 +295,20 @@ export function CheckoutModal({
                     minimumFractionDigits: 2,
                   })}
                 </h2>
-                {sellingPrice < faceValue && (
-                  <span className="text-muted-foreground text-sm line-through">
-                    ₦
-                    {faceValue.toLocaleString("en-NG", {
-                      minimumFractionDigits: 2,
-                    })}
-                  </span>
+                {hasOfferDiscount && (
+                  <>
+                    <span className="text-muted-foreground text-sm line-through">
+                      ₦
+                      {originalPrice.toLocaleString("en-NG", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </span>
+                    {product.activeOffer?.title && (
+                      <span className="mt-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                        {product.activeOffer.title}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -336,14 +358,54 @@ export function CheckoutModal({
 
                 {/* Base Price */}
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Amount to Paid</span>
-                  <span className="font-medium">
+                  <span className="text-muted-foreground">
+                    {hasOfferDiscount ? "Original Price" : "Amount to Paid"}
+                  </span>
+                  <span
+                    className={`font-medium ${hasOfferDiscount ? "text-muted-foreground line-through" : ""}`}
+                  >
                     ₦
-                    {sellingPrice.toLocaleString("en-NG", {
+                    {(hasOfferDiscount
+                      ? originalPrice
+                      : sellingPrice
+                    ).toLocaleString("en-NG", {
                       minimumFractionDigits: 2,
                     })}
                   </span>
                 </div>
+
+                {/* Offer Discount */}
+                {hasOfferDiscount && (
+                  <>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-green-600 dark:text-green-400">
+                        Offer Discount
+                        {product.activeOffer?.discountType === "percentage" &&
+                          ` (${product.activeOffer.discountValue}%)`}
+                      </span>
+                      <span className="font-medium text-green-600 dark:text-green-400">
+                        -₦
+                        {(originalPrice - sellingPrice).toLocaleString(
+                          "en-NG",
+                          {
+                            minimumFractionDigits: 2,
+                          }
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm font-semibold">
+                      <span className="text-muted-foreground">
+                        Amount to Pay
+                      </span>
+                      <span className="font-bold">
+                        ₦
+                        {sellingPrice.toLocaleString("en-NG", {
+                          minimumFractionDigits: 2,
+                        })}
+                      </span>
+                    </div>
+                  </>
+                )}
 
                 {/* Wallet Promo Toggle (Use Cashback) */}
                 {userCashbackBalance > 0 && (

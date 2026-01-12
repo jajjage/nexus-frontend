@@ -4,17 +4,31 @@ import { BecomeResellerModal } from "@/components/features/reseller/BecomeResell
 import { useAuth } from "@/hooks/useAuth";
 import { useResellerUpgradeStatus } from "@/hooks/useReseller";
 import { cn } from "@/lib/utils";
-import { Clock, Home, Sparkles, Trophy, User, Users } from "lucide-react";
+import {
+  Briefcase,
+  Clock,
+  Home,
+  Sparkles,
+  Trophy,
+  User,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const navItems = [
+const baseNavItems = [
   { label: "Home", icon: Home, href: "/dashboard" },
   { label: "Referral", icon: Users, href: "/dashboard/referrals" },
   { label: "Rewards", icon: Trophy, href: "/dashboard/rewards" },
   { label: "Profile", icon: User, href: "/dashboard/profile" },
 ];
+
+const resellerNavItem = {
+  label: "Reseller",
+  icon: Briefcase,
+  href: "/dashboard/reseller",
+};
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -27,6 +41,11 @@ export function BottomNav() {
   const showBecomeReseller = user?.role === "user";
   const isReseller = user?.role === "reseller";
 
+  // Build nav items based on user role
+  const navItems = isReseller
+    ? [...baseNavItems.slice(0, 2), resellerNavItem, ...baseNavItems.slice(2)]
+    : baseNavItems;
+
   // Check pending status on mount and clear if user is now reseller
   useEffect(() => {
     if (isReseller) {
@@ -37,6 +56,9 @@ export function BottomNav() {
       setHasPendingUpgrade(status.pending);
     }
   }, [isReseller, getStatus, clearPending]);
+
+  // Check if current path is a reseller-related page
+  const isResellerPath = pathname.startsWith("/dashboard/reseller");
 
   return (
     <>
@@ -65,22 +87,35 @@ export function BottomNav() {
           ))}
 
         {/* Bottom Navigation */}
-        <div className="grid h-16 grid-cols-4 items-center">
-          {navItems.map((item) => (
-            <Link
-              href={item.href}
-              key={item.label}
-              className={cn(
-                "flex flex-col items-center gap-1 text-xs font-medium",
-                pathname === item.href
-                  ? "text-primary"
-                  : "text-muted-foreground"
-              )}
-            >
-              <item.icon className="size-5" />
-              <span>{item.label}</span>
-            </Link>
-          ))}
+        <div
+          className={cn(
+            "grid h-16 items-center",
+            isReseller ? "grid-cols-5" : "grid-cols-4"
+          )}
+        >
+          {navItems.map((item) => {
+            // For Reseller tab, check if path starts with /dashboard/reseller
+            const isActive =
+              item.href === "/dashboard/reseller"
+                ? isResellerPath
+                : pathname === item.href;
+
+            return (
+              <Link
+                href={item.href}
+                key={item.label}
+                className={cn(
+                  "flex flex-col items-center gap-1 text-xs font-medium",
+                  isActive ? "text-primary" : "text-muted-foreground",
+                  item.label === "Reseller" &&
+                    "relative after:absolute after:-top-1 after:right-1/4 after:size-1.5 after:rounded-full after:bg-amber-500"
+                )}
+              >
+                <item.icon className="size-5" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
 

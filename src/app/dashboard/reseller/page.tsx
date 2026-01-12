@@ -1,5 +1,6 @@
 "use client";
 
+import { BottomNav } from "@/components/features/dashboard/bottom-nav";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -50,37 +51,40 @@ export default function ResellerHubPage() {
   ];
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Reseller Hub</h1>
-        <p className="text-muted-foreground mt-2">
-          Tools to help you run your reseller business
-        </p>
-      </div>
+    <>
+      <div className="container mx-auto max-w-4xl px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Reseller Hub</h1>
+          <p className="text-muted-foreground mt-2">
+            Tools to help you run your reseller business
+          </p>
+        </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {features.map((feature) => (
-          <Card
-            key={feature.title}
-            className="transition-shadow hover:shadow-md"
-          >
-            <CardHeader>
-              <div
-                className={`bg-muted mb-2 flex size-12 items-center justify-center rounded-lg ${feature.color}`}
-              >
-                <feature.icon className="size-6" />
-              </div>
-              <CardTitle className="text-lg">{feature.title}</CardTitle>
-              <CardDescription>{feature.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild variant="outline" className="w-full">
-                <Link href={feature.href}>Open</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => (
+            <Card
+              key={feature.title}
+              className="transition-shadow hover:shadow-md"
+            >
+              <CardHeader>
+                <div
+                  className={`bg-muted mb-2 flex size-12 items-center justify-center rounded-lg ${feature.color}`}
+                >
+                  <feature.icon className="size-6" />
+                </div>
+                <CardTitle className="text-lg">{feature.title}</CardTitle>
+                <CardDescription>{feature.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="outline" className="w-full">
+                  <Link href={feature.href}>Open</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
-    </div>
+      <BottomNav />
+    </>
   );
 }

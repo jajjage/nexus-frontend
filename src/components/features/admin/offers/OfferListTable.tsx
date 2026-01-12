@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/table";
 import {
   useAdminOffers,
+  useAnnounceOffer,
   useDeleteOffer,
   useUpdateOffer,
 } from "@/hooks/admin/useAdminOffers";
@@ -41,6 +42,7 @@ import {
   ChevronRight,
   Gift,
   Loader2,
+  Megaphone,
   Pause,
   Play,
   Plus,
@@ -78,9 +80,15 @@ export function OfferListTable() {
 
   const deleteMutation = useDeleteOffer();
   const updateMutation = useUpdateOffer();
+  const announceMutation = useAnnounceOffer();
 
   // Track which offer is being toggled (for loading state)
   const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  // Announce dialog state
+  const [announceOffer, setAnnounceOffer] = useState<Offer | null>(null);
+  const [announceTitle, setAnnounceTitle] = useState("");
+  const [announceBody, setAnnounceBody] = useState("");
 
   const offers = data?.data?.offers || [];
   const pagination = data?.data?.pagination;
@@ -346,6 +354,29 @@ export function OfferListTable() {
                               )}
                             </Button>
                           )}
+                          {/* Announce Button (only for active offers) */}
+                          {offer.status === "active" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-blue-500 hover:text-blue-600"
+                              onClick={() => {
+                                setAnnounceOffer(offer);
+                                setAnnounceTitle(`🎉 ${offer.title}`);
+                                setAnnounceBody(
+                                  offer.description ||
+                                    `Don't miss out on this special offer!`
+                                );
+                              }}
+                              title={
+                                offer.lastAnnouncedAt
+                                  ? `Announce (last: ${formatDate(offer.lastAnnouncedAt)})`
+                                  : "Announce to users"
+                              }
+                            >
+                              <Megaphone className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button variant="ghost" size="sm" asChild>
                             <Link href={`/admin/dashboard/offers/${offer.id}`}>
                               View
@@ -421,6 +452,99 @@ export function OfferListTable() {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Announce Offer Dialog */}
+      <Dialog
+        open={!!announceOffer}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAnnounceOffer(null);
+            setAnnounceTitle("");
+            setAnnounceBody("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Megaphone className="h-5 w-5 text-blue-500" />
+              Announce Offer
+            </DialogTitle>
+            <DialogDescription>
+              Send a push notification to all eligible users for this offer.
+              {announceOffer?.lastAnnouncedAt && (
+                <span className="mt-1 block text-amber-600">
+                  Last announced: {formatDate(announceOffer.lastAnnouncedAt)}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Notification Title</label>
+              <input
+                type="text"
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                value={announceTitle}
+                onChange={(e) => setAnnounceTitle(e.target.value)}
+                placeholder="Enter notification title"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Notification Body</label>
+              <textarea
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                value={announceBody}
+                onChange={(e) => setAnnounceBody(e.target.value)}
+                placeholder="Enter notification message"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAnnounceOffer(null);
+                setAnnounceTitle("");
+                setAnnounceBody("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (announceOffer && announceTitle && announceBody) {
+                  announceMutation.mutate(
+                    {
+                      offerId: announceOffer.id,
+                      data: {
+                        title: announceTitle,
+                        body: announceBody,
+                        data: { offerId: announceOffer.id },
+                      },
+                    },
+                    {
+                      onSuccess: () => {
+                        setAnnounceOffer(null);
+                        setAnnounceTitle("");
+                        setAnnounceBody("");
+                      },
+                    }
+                  );
+                }
+              }}
+              disabled={
+                announceMutation.isPending || !announceTitle || !announceBody
+              }
+            >
+              {announceMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Send Announcement
             </Button>
           </DialogFooter>
         </DialogContent>

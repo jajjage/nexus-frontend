@@ -1,5 +1,6 @@
 "use client";
 
+import { BottomNav } from "@/components/features/dashboard/bottom-nav";
 import { ApiKeyList } from "@/components/features/reseller";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,24 +21,27 @@ export default function ApiKeysPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
-      {/* Header */}
-      <div className="mb-6 flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/reseller">
-            <ArrowLeft className="size-5" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">API Keys</h1>
-          <p className="text-muted-foreground text-sm">
-            Manage keys for your integrations
-          </p>
+    <>
+      <div className="container mx-auto max-w-4xl px-4 py-8 pb-24">
+        {/* Header */}
+        <div className="mb-6 flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/dashboard/reseller">
+              <ArrowLeft className="size-5" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">API Keys</h1>
+            <p className="text-muted-foreground text-sm">
+              Manage keys for your integrations
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* API Key List */}
-      <ApiKeyList />
-    </div>
+        {/* API Key List */}
+        <ApiKeyList />
+      </div>
+      <BottomNav />
+    </>
   );
 }

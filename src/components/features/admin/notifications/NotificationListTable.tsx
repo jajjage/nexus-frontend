@@ -1,5 +1,15 @@
 "use client";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +66,7 @@ import {
   Calendar,
   CheckCircle,
   Edit,
+  Eye,
   Info,
   Loader2,
   Plus,
@@ -63,6 +74,7 @@ import {
   Trash2,
   XCircle,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 const typeIcons: Record<NotificationType, React.ReactNode> = {
@@ -79,6 +91,7 @@ export function NotificationListTable() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [editingNotification, setEditingNotification] =
     useState<Notification | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Create Form state (immediate notification)
   const [title, setTitle] = useState("");
@@ -260,9 +273,11 @@ export function NotificationListTable() {
     );
   };
 
-  const handleDelete = (notificationId: string) => {
-    if (confirm("Are you sure you want to delete this notification?")) {
-      deleteMutation.mutate(notificationId);
+  const handleDelete = () => {
+    if (deleteId) {
+      deleteMutation.mutate(deleteId, {
+        onSuccess: () => setDeleteId(null),
+      });
     }
   };
 
@@ -794,6 +809,13 @@ export function NotificationListTable() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon-sm" asChild>
+                          <Link
+                            href={`/admin/dashboard/notifications/${notification.id}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon-sm"
@@ -807,7 +829,7 @@ export function NotificationListTable() {
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          onClick={() => handleDelete(notification.id)}
+                          onClick={() => setDeleteId(notification.id)}
                           disabled={deleteMutation.isPending}
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
@@ -914,6 +936,32 @@ export function NotificationListTable() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Notification</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this notification? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

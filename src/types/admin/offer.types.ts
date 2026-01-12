@@ -64,6 +64,7 @@ export interface Offer {
   updatedAt?: string;
   deletedAt?: string | null;
   createdBy?: string | null;
+  lastAnnouncedAt?: string | null;
 
   // Frontend helpers or mapped fields (optional during transition)
   name?: string; // Mapped from title
@@ -212,4 +213,18 @@ export interface OfferQueryParams {
 export interface EligibleUsersQueryParams {
   page?: number;
   limit?: number;
+}
+
+// ============= Announcement Types =============
+
+export interface AnnounceOfferRequest {
+  title: string;
+  body: string;
+  data?: Record<string, any>;
+}
+
+export interface AnnounceOfferResponse {
+  jobId?: string;
+  notificationsSent?: number;
+  message?: string;
 }
