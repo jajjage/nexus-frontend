@@ -91,7 +91,7 @@ export function DataPlans() {
   // Fetch all data products.
   const { data, isLoading, error } = useProducts(
     { productType: "data", isActive: true },
-    { staleTime: Infinity }
+    { staleTime: 5 * 60 * 1000 } // 5 minutes - allow offer updates to reflect
   );
 
   const products = data?.products || [];

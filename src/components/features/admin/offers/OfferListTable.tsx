@@ -29,7 +29,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useAdminOffers, useDeleteOffer } from "@/hooks/admin/useAdminOffers";
+import {
+  useAdminOffers,
+  useDeleteOffer,
+  useUpdateOffer,
+} from "@/hooks/admin/useAdminOffers";
 import { Offer, OfferStatus } from "@/types/admin/offer.types";
 import { format, isValid } from "date-fns";
 import {
@@ -37,6 +41,8 @@ import {
   ChevronRight,
   Gift,
   Loader2,
+  Pause,
+  Play,
   Plus,
   RefreshCw,
   Trash2,
@@ -71,6 +77,10 @@ export function OfferListTable() {
   });
 
   const deleteMutation = useDeleteOffer();
+  const updateMutation = useUpdateOffer();
+
+  // Track which offer is being toggled (for loading state)
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const offers = data?.data?.offers || [];
   const pagination = data?.data?.pagination;
@@ -264,6 +274,78 @@ export function OfferListTable() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {/* Pause/Activate Toggle */}
+                          {(offer.status === "active" ||
+                            offer.status === "paused") && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-8 w-8 ${
+                                offer.status === "active"
+                                  ? "text-amber-500 hover:text-amber-600"
+                                  : "text-green-500 hover:text-green-600"
+                              }`}
+                              onClick={() => {
+                                setTogglingId(offer.id);
+                                updateMutation.mutate(
+                                  {
+                                    offerId: offer.id,
+                                    data: {
+                                      status:
+                                        offer.status === "active"
+                                          ? "paused"
+                                          : "active",
+                                    },
+                                  },
+                                  {
+                                    onSettled: () => setTogglingId(null),
+                                  }
+                                );
+                              }}
+                              disabled={togglingId === offer.id}
+                              title={
+                                offer.status === "active"
+                                  ? "Pause offer"
+                                  : "Activate offer"
+                              }
+                            >
+                              {togglingId === offer.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : offer.status === "active" ? (
+                                <Pause className="h-4 w-4" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+                          {/* Activate Draft */}
+                          {offer.status === "draft" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-green-500 hover:text-green-600"
+                              onClick={() => {
+                                setTogglingId(offer.id);
+                                updateMutation.mutate(
+                                  {
+                                    offerId: offer.id,
+                                    data: { status: "active" },
+                                  },
+                                  {
+                                    onSettled: () => setTogglingId(null),
+                                  }
+                                );
+                              }}
+                              disabled={togglingId === offer.id}
+                              title="Activate offer"
+                            >
+                              {togglingId === offer.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
                           <Button variant="ghost" size="sm" asChild>
                             <Link href={`/admin/dashboard/offers/${offer.id}`}>
                               View

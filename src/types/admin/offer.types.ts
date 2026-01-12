@@ -136,10 +136,14 @@ export interface CreateRedemptionsResponse {
 // ============= Request Types =============
 
 export type OfferRuleType =
-  | "min_spend"
-  | "min_tx_count"
   | "new_user"
-  | "specific_role";
+  | "min_topups"
+  | "min_transactions"
+  | "min_spent"
+  | "operator_topup_count"
+  | "operator_spent"
+  | "last_active_within"
+  | "active_days";
 
 export interface OfferRule {
   rule_key: string;

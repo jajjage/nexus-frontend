@@ -626,9 +626,19 @@ export function CreateOfferWizard({
                 </div>
 
                 {createMutation.isError && (
-                  <div className="bg-destructive/10 text-destructive flex items-center gap-2 rounded-md p-3 text-sm">
-                    <AlertCircle className="h-4 w-4" />
-                    Failed to create offer. Please try again.
+                  <div className="bg-destructive/10 text-destructive flex items-start gap-2 rounded-md p-3 text-sm">
+                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">Failed to create offer</p>
+                      <p className="mt-1 text-xs opacity-90">
+                        {(createMutation.error as any)?.response?.data
+                          ?.message ||
+                          (createMutation.error as any)?.response?.data
+                            ?.error ||
+                          (createMutation.error as any)?.message ||
+                          "Please check your form and try again."}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

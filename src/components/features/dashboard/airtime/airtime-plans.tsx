@@ -77,7 +77,7 @@ export function AirtimePlans() {
   // Fetch all airtime products.
   const { data, isLoading, error } = useProducts(
     { productType: "airtime", isActive: true },
-    { staleTime: Infinity }
+    { staleTime: 5 * 60 * 1000 } // 5 minutes - allow offer updates to reflect
   );
 
   const products = data?.products || [];

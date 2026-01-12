@@ -9,35 +9,41 @@ export interface Product {
   id: string;
   operatorId: string;
   operatorName?: string;
+  categoryId?: string | null;
   productCode: string;
   name: string;
   productType: string;
   denomAmount: number;
-  dataMb?: number;
-  validityDays?: number;
+  dataMb?: number | null;
+  validityDays?: number | null;
   isActive: boolean;
   hasCashback?: boolean;
   cashbackPercentage?: number;
   metadata?: Record<string, unknown>;
+  slug?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  // Mappings array from API
+  mappings?: SupplierProductMapping[];
 }
 
 // ============= Supplier Mapping Entity =============
 
 export interface SupplierProductMapping {
   id: string;
-  productId: string;
   supplierId: string;
-  supplierName?: string;
+  operatorProductId: string;
   supplierProductCode: string;
-  supplierPrice: number;
-  minOrderAmount?: number;
-  maxOrderAmount?: number;
+  supplierPrice: string; // API returns as string
+  minOrderAmount?: string;
+  maxOrderAmount?: string;
   leadTimeSeconds?: number;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
+  // Joined fields from API
+  supplierName?: string;
+  supplierSlug?: string;
 }
 
 // ============= API Responses =============

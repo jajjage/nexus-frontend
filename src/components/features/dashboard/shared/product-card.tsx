@@ -66,13 +66,34 @@ export function ProductCard({
   const hasOffer = !!product.activeOffer;
   const showDiscountedPrice = hasOffer && (isGuest || isEligibleForOffer);
 
-  // Use pre-calculated discountedPrice from API if available, otherwise use base price
+  // Calculate discounted price client-side if not provided by backend
+  const calculateDiscountedPrice = (): number => {
+    if (!hasOffer || !showDiscountedPrice || !product.activeOffer)
+      return baseSellingPrice;
+
+    const offer = product.activeOffer;
+
+    switch (offer.discountType) {
+      case "percentage":
+        return baseSellingPrice * (1 - offer.discountValue / 100);
+      case "fixed_amount":
+        return Math.max(0, baseSellingPrice - offer.discountValue);
+      case "fixed_price":
+        return offer.discountValue;
+      default:
+        return baseSellingPrice;
+    }
+  };
+
+  // Use pre-calculated discountedPrice from API if available, otherwise calculate
   const displayPrice =
     showDiscountedPrice && product.discountedPrice
       ? product.discountedPrice
-      : baseSellingPrice;
+      : showDiscountedPrice && product.activeOffer
+        ? calculateDiscountedPrice()
+        : baseSellingPrice;
 
-  // Show strikethrough price when display price is less than face value
+  // Show strikethrough price when display price is less than base/face value
   // Only show if we have a valid discount (from offer OR valid supplier price)
   const originalPrice =
     displayPrice < faceValue && displayPrice > 0 ? faceValue : null;

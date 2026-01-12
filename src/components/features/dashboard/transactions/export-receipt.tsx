@@ -9,7 +9,12 @@ interface ExportReceiptProps {
 }
 
 // Get status text color
-const getStatusColor = (status: string) => {
+const getStatusColor = (status: string, isRefund?: boolean) => {
+  // For refund transactions, show green
+  if (isRefund) {
+    return "#166534"; // green-800
+  }
+
   const statusLower = status.toLowerCase();
   switch (statusLower) {
     case "completed":
@@ -18,11 +23,10 @@ const getStatusColor = (status: string) => {
     case "pending":
       return "#B45309"; // amber-700
     case "failed":
+    case "reversed": // Treat reversed as failed for debit transactions
       return "#991B1B"; // red-800
     case "cancelled":
       return "#374151"; // gray-700
-    case "reversed":
-      return "#9A3412"; // orange-800
     default:
       return "#374151";
   }
@@ -82,6 +86,18 @@ const getCashbackUsed = (transaction: Transaction): string => {
 
 // Get transaction type label
 const getTransactionTypeLabel = (transaction: Transaction): string => {
+  const isCredit = transaction.direction === "credit";
+  const relatedStatus = transaction.related?.status?.toLowerCase();
+
+  // Check if this is a refund (credit transaction with failed/reversed topup status)
+  if (
+    isCredit &&
+    transaction.relatedType === "topup_request" &&
+    (relatedStatus === "failed" || relatedStatus === "reversed")
+  ) {
+    return "Refund";
+  }
+
   if (transaction.relatedType === "topup_request") {
     const type = transaction.related?.type?.toLowerCase() || "topup";
     return `${type.charAt(0).toUpperCase() + type.slice(1)} Purchase`;
@@ -154,15 +170,28 @@ export const ExportReceipt = React.forwardRef<
   ExportReceiptProps
 >(({ transaction, operatorLogo }, ref) => {
   const isCredit = transaction.direction === "credit";
+  const relatedStatus = transaction.related?.status?.toLowerCase();
+
+  // Check if this is a refund (credit transaction with failed/reversed topup status)
+  const isRefund =
+    isCredit &&
+    transaction.relatedType === "topup_request" &&
+    (relatedStatus === "failed" || relatedStatus === "reversed");
 
   // For topup transactions, show product name in main display
   // Uses smart detection that checks productCode patterns as fallback
   const isDataProduct = isDataTransaction(transaction);
   const isTopupRequest = transaction.relatedType === "topup_request";
 
-  // Main display: For topups show product name, for other transactions show amount
+  // Main display: For refunds show amount, for topups show product name
   let formattedAmount: string;
-  if (isTopupRequest) {
+  if (isRefund) {
+    // Refund: Show the refunded amount
+    formattedAmount = transaction.amount.toLocaleString("en-NG", {
+      style: "currency",
+      currency: "NGN",
+    });
+  } else if (isTopupRequest) {
     if (isDataProduct) {
       // Data: Show product code/name
       formattedAmount =
@@ -192,7 +221,18 @@ export const ExportReceipt = React.forwardRef<
   });
 
   const logoUrl = getOperatorLogo(transaction, operatorLogo);
-  const statusColor = getStatusColor(transaction.related?.status || "pending");
+  const statusColor = getStatusColor(
+    transaction.related?.status || "pending",
+    isRefund
+  );
+
+  // Get display status text
+  const getDisplayStatus = () => {
+    if (isRefund) return "REFUNDED";
+    const status = transaction.related?.status?.toLowerCase();
+    if (status === "reversed") return "FAILED";
+    return (transaction.related?.status || "PENDING").toUpperCase();
+  };
 
   const operatorName =
     transaction.productCode || transaction.productCode || "N/A";
@@ -299,7 +339,7 @@ export const ExportReceipt = React.forwardRef<
             letterSpacing: "0.5px",
           }}
         >
-          {transaction.related?.status || "PENDING"}
+          {getDisplayStatus()}
         </div>
 
         <p style={{ margin: "8px 0 0 0", fontSize: "12px", color: "#9CA3AF" }}>

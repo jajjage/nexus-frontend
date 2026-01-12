@@ -89,8 +89,8 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
       setEditProductCode(product.productCode);
       setEditProductType(product.productType);
       setEditDenomAmount(product.denomAmount);
-      setEditDataMb(product.dataMb);
-      setEditValidityDays(product.validityDays);
+      setEditDataMb(product.dataMb ?? undefined);
+      setEditValidityDays(product.validityDays ?? undefined);
       setEditIsActive(product.isActive);
       setIsEditOpen(true);
     }
@@ -490,6 +490,86 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Supplier Mappings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LinkIcon className="h-5 w-5" />
+            Supplier Mappings
+          </CardTitle>
+          <CardDescription>
+            Product-to-supplier mappings for fulfillment
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {product.mappings && product.mappings.length > 0 ? (
+            <div className="space-y-4">
+              {product.mappings.map((mapping: any) => (
+                <div
+                  key={mapping.id}
+                  className="bg-muted/50 flex items-center justify-between rounded-lg border p-4"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">
+                        {mapping.supplierName || "Unknown Supplier"}
+                      </span>
+                      <Badge
+                        variant={mapping.isActive ? "default" : "secondary"}
+                        className="text-xs"
+                      >
+                        {mapping.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                    <div className="text-muted-foreground flex flex-wrap gap-4 text-sm">
+                      <span>
+                        Code:{" "}
+                        <code className="bg-muted rounded px-1">
+                          {mapping.supplierProductCode}
+                        </code>
+                      </span>
+                      <span>
+                        Price: ₦
+                        {parseFloat(
+                          mapping.supplierPrice || 0
+                        ).toLocaleString()}
+                      </span>
+                      <span>Lead Time: {mapping.leadTimeSeconds}s</span>
+                      {mapping.minOrderAmount &&
+                        parseFloat(mapping.minOrderAmount) > 0 && (
+                          <span>
+                            Min: ₦
+                            {parseFloat(
+                              mapping.minOrderAmount
+                            ).toLocaleString()}
+                          </span>
+                        )}
+                      {mapping.maxOrderAmount &&
+                        parseFloat(mapping.maxOrderAmount) > 0 && (
+                          <span>
+                            Max: ₦
+                            {parseFloat(
+                              mapping.maxOrderAmount
+                            ).toLocaleString()}
+                          </span>
+                        )}
+                    </div>
+                  </div>
+                  <div className="text-muted-foreground text-xs">
+                    {mapping.createdAt &&
+                      format(new Date(mapping.createdAt), "PP")}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground py-8 text-center text-sm">
+              No supplier mappings. Click "Map to Supplier" to add one.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

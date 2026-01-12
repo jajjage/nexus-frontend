@@ -184,6 +184,45 @@ export function TransactionTimeline({
     }
   };
 
+  // Check if transaction is failed/reversed (non-refund)
+  const isTransactionFailed =
+    !isRefund &&
+    (currentStatus === "failed" ||
+      currentStatus === "cancelled" ||
+      currentStatus === "reversed");
+
+  // Get dynamic label for a step
+  const getStepLabel = (step: TimelineStep, index: number, isLast: boolean) => {
+    // For failed transactions, show "Failed" for the processing step (index 1) in 3-step flow
+    // and show "Failed" for the last step
+    if (isTransactionFailed) {
+      if (index === 1 && steps.length === 3) {
+        return "Processing Failed";
+      }
+      if (isLast) {
+        return "Failed";
+      }
+    }
+    return step.label;
+  };
+
+  // Get dynamic description for a step
+  const getStepDescription = (
+    step: TimelineStep,
+    index: number,
+    isLast: boolean
+  ) => {
+    if (isTransactionFailed) {
+      if (index === 1 && steps.length === 3) {
+        return "Transaction could not be completed by provider.";
+      }
+      if (isLast) {
+        return "This transaction has been reversed. Your funds have been refunded.";
+      }
+    }
+    return step.description;
+  };
+
   return (
     <div className={cn("space-y-8", className)}>
       {steps.map((step, index) => {
@@ -195,7 +234,7 @@ export function TransactionTimeline({
             {!isLast && (
               <div
                 className={cn(
-                  "absolute top-8 left-[11px] h-[calc(100%-8px)] w-0.5 bg-slate-200",
+                  "absolute top-8 left-[11px] h-[calc(100%-8px)] w-0.5 bg-slate-200 dark:bg-slate-700",
                   state === "completed" && "bg-green-500"
                 )}
               />
@@ -203,13 +242,13 @@ export function TransactionTimeline({
 
             <div className="relative z-10 flex flex-col items-center">
               {state === "completed" ? (
-                <CheckCircle2 className="size-6 rounded-full bg-white text-green-500" />
+                <CheckCircle2 className="size-6 rounded-full bg-white text-green-500 dark:bg-slate-900" />
               ) : state === "active" ? (
-                <Loader2 className="text-primary size-6 animate-spin rounded-full bg-white" />
+                <Loader2 className="text-primary size-6 animate-spin rounded-full bg-white dark:bg-slate-900" />
               ) : state === "failed" ? (
-                <XCircle className="text-destructive size-6 rounded-full bg-white" />
+                <XCircle className="text-destructive size-6 rounded-full bg-white dark:bg-slate-900" />
               ) : (
-                <div className="size-6 rounded-full border-2 border-slate-200 bg-white" />
+                <div className="size-6 rounded-full border-2 border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900" />
               )}
             </div>
 
@@ -218,21 +257,22 @@ export function TransactionTimeline({
                 <h4
                   className={cn(
                     "text-sm font-semibold",
-                    state === "active" ? "text-primary" : "text-slate-900"
+                    state === "active"
+                      ? "text-primary"
+                      : "text-slate-900 dark:text-slate-100",
+                    state === "failed" && "text-red-600 dark:text-red-400"
                   )}
                 >
-                  {currentStatus === "failed" && isLast ? "Failed" : step.label}
+                  {getStepLabel(step, index, isLast)}
                 </h4>
                 {step.timestamp && (
-                  <span className="rounded bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
+                  <span className="rounded bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 dark:bg-slate-800 dark:text-slate-500">
                     {formatDate(step.timestamp)}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500">
-                {currentStatus === "failed" && isLast
-                  ? "Something went wrong with this transaction."
-                  : step.description}
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {getStepDescription(step, index, isLast)}
               </p>
             </div>
           </div>

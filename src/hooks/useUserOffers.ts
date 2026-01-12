@@ -27,13 +27,32 @@ export function useEligibleOffers(enabled: boolean = true) {
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
+  // Handle multiple possible response structures:
+  // 1. { data: { offers: [...] } } - expected structure
+  // 2. { json: { offers: [...] } } - actual backend structure
+  // 3. { offers: [...] } - direct structure
+  const getOffers = () => {
+    if (!query.data) return [];
+
+    const data = query.data as any;
+
+    // Try different paths to find offers array
+    if (data?.data?.offers) return data.data.offers;
+    if (data?.json?.offers) return data.json.offers;
+    if (data?.offers) return data.offers;
+
+    return [];
+  };
+
+  const offers = getOffers();
+
   // Create a Set of eligible offer IDs for fast lookup
-  const eligibleIds = new Set(query.data?.data?.offers?.map((o) => o.id) || []);
+  const eligibleIds = new Set(offers.map((o: any) => o.id));
 
   return {
     ...query,
     eligibleIds,
-    offers: query.data?.data?.offers || [],
+    offers,
   };
 }
 

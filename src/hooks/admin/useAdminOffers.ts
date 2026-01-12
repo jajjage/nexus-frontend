@@ -92,8 +92,14 @@ export function useCreateOffer() {
       toast.success(response.message || "Offer created successfully");
       queryClient.invalidateQueries({ queryKey: offerKeys.all });
     },
-    onError: () => {
-      toast.error("Failed to create offer");
+    onError: (error: any) => {
+      // Extract error message from backend response
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to create offer";
+      toast.error(backendMessage);
     },
   });
 }

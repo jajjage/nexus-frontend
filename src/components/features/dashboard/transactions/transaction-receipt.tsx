@@ -23,7 +23,18 @@ interface TransactionReceiptProps {
 }
 
 // Get status icon and color
-const getStatusConfig = (status: string) => {
+const getStatusConfig = (status: string, isRefund?: boolean) => {
+  // For refund transactions, always show as successful refund
+  if (isRefund) {
+    return {
+      icon: CheckCircle2,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      borderColor: "ring-green-100",
+      label: "Refunded",
+    };
+  }
+
   const statusLower = status.toLowerCase();
   switch (statusLower) {
     case "completed":
@@ -62,11 +73,11 @@ const getStatusConfig = (status: string) => {
       };
     case "reversed":
       return {
-        icon: AlertCircle,
-        color: "text-orange-600",
-        bgColor: "bg-orange-50",
-        borderColor: "ring-orange-100",
-        label: "Reversed",
+        icon: XCircle,
+        color: "text-red-600",
+        bgColor: "bg-red-50",
+        borderColor: "ring-red-100",
+        label: "Failed",
       };
     default:
       return {
@@ -113,6 +124,18 @@ const isDataTransactionCheck = (transaction: Transaction): boolean => {
 
 // Get transaction type label
 const getTransactionTypeLabel = (transaction: Transaction): string => {
+  const isCredit = transaction.direction === "credit";
+  const relatedStatus = transaction.related?.status?.toLowerCase();
+
+  // Check if this is a refund (credit transaction with failed/reversed topup status)
+  if (
+    isCredit &&
+    transaction.relatedType === "topup_request" &&
+    (relatedStatus === "failed" || relatedStatus === "reversed")
+  ) {
+    return "Refund";
+  }
+
   if (transaction.relatedType === "topup_request") {
     // Use smart detection instead of relying on backend's related.type
     const isData = isDataTransactionCheck(transaction);
@@ -208,15 +231,28 @@ export const TransactionReceipt = React.forwardRef<
   TransactionReceiptProps
 >(({ transaction, showLogo = true, className }, ref) => {
   const isCredit = transaction.direction === "credit";
+  const relatedStatus = transaction.related?.status?.toLowerCase();
+
+  // Check if this is a refund (credit transaction with failed/reversed topup status)
+  const isRefund =
+    isCredit &&
+    transaction.relatedType === "topup_request" &&
+    (relatedStatus === "failed" || relatedStatus === "reversed");
 
   // For topup transactions, show product name in main display
   // Uses smart detection that checks productCode patterns as fallback
   const isDataProduct = isDataTransaction(transaction);
   const isTopupRequest = transaction.relatedType === "topup_request";
 
-  // Main display: For topups show product name, for other transactions show amount
+  // Main display: For refunds show amount, for topups show product name
   let formattedAmount: string;
-  if (isTopupRequest) {
+  if (isRefund) {
+    // Refund: Show the refunded amount
+    formattedAmount = transaction.amount.toLocaleString("en-NG", {
+      style: "currency",
+      currency: "NGN",
+    });
+  } else if (isTopupRequest) {
     if (isDataProduct) {
       // Data: Show product code/name
       formattedAmount =
@@ -247,7 +283,8 @@ export const TransactionReceipt = React.forwardRef<
 
   const logoUrl = getOperatorLogo(transaction);
   const statusConfig = getStatusConfig(
-    transaction.related?.status || "pending"
+    transaction.related?.status || "pending",
+    isRefund
   );
   const StatusIcon = statusConfig.icon;
 
