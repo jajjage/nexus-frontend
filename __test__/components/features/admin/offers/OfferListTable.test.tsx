@@ -1,8 +1,10 @@
 import { OfferListTable } from "@/components/features/admin/offers/OfferListTable";
 import {
   useAdminOffers,
+  useAnnounceOffer,
   useCreateOffer,
   useDeleteOffer,
+  useUpdateOffer,
 } from "@/hooks/admin/useAdminOffers";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -19,6 +21,12 @@ const mockUseCreateOffer = useCreateOffer as unknown as ReturnType<
   typeof vi.fn
 >;
 const mockUseDeleteOffer = useDeleteOffer as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockUseUpdateOffer = useUpdateOffer as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockUseAnnounceOffer = useAnnounceOffer as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -81,6 +89,16 @@ describe("OfferListTable", () => {
     });
 
     mockUseDeleteOffer.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
+
+    mockUseUpdateOffer.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
+
+    mockUseAnnounceOffer.mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
     });
