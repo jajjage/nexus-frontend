@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { SmartBiometricIcon } from "@/components/ui/smart-biometric-icon";
 import { useAuthContext } from "@/context/AuthContext";
 import { useSoftLock } from "@/context/SoftLockContext";
 import {
@@ -8,9 +9,10 @@ import {
   useBiometricEnrollments,
   useBiometricRegistration,
 } from "@/hooks/useBiometric";
+import { useBiometricType } from "@/hooks/useBiometricType";
 import { useVerifyPasscode } from "@/hooks/usePasscode";
 import { WebAuthnService } from "@/services/webauthn.service";
-import { Fingerprint, Loader2, Lock, Plus } from "lucide-react";
+import { Loader2, Lock, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
@@ -37,6 +39,8 @@ export function SoftLockScreen() {
   const [isCheckingBiometric, setIsCheckingBiometric] = useState(true);
   const passcodeInputRef = useRef<HTMLInputElement>(null);
   const hasAttemptedBiometric = useRef(false); // Prevent auto-retry after failure
+
+  const { label } = useBiometricType();
 
   // CRITICAL: Don't render anything if not locked or not authenticated
   // This prevents API calls when user is not logged in
@@ -113,7 +117,7 @@ export function SoftLockScreen() {
                   !err.message?.includes("cancelled") &&
                   !err.message?.includes("not allowed")
                 ) {
-                  setError("Biometric failed. Please use passcode.");
+                  setError(`Biometric failed. Please use passcode.`);
                 }
                 // Focus passcode input after biometric failure
                 setTimeout(() => {
@@ -167,7 +171,7 @@ export function SoftLockScreen() {
           !err.message?.includes("cancelled") &&
           !err.message?.includes("not allowed")
         ) {
-          setError("Biometric failed. Please use passcode.");
+          setError(`Biometric failed. Please use passcode.`);
         }
       },
     });
@@ -341,8 +345,8 @@ export function SoftLockScreen() {
                 disabled={isPending}
                 className="w-full"
               >
-                <Fingerprint className="mr-2 h-4 w-4" />
-                Use Biometric
+                <SmartBiometricIcon size={16} className="mr-2" />
+                Use {label}
               </Button>
             )}
           </div>
@@ -351,13 +355,16 @@ export function SoftLockScreen() {
         // Offer biometric enrollment
         <div className="flex flex-col items-center gap-4 px-4">
           <div className="flex h-24 w-24 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-            <Fingerprint className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+            <SmartBiometricIcon
+              size={48}
+              className="text-blue-600 dark:text-blue-400"
+            />
           </div>
 
           <div className="text-center">
-            <p className="font-medium">Enable Biometric Unlock</p>
+            <p className="font-medium">Enable {label} Unlock</p>
             <p className={`mt-1 text-sm ${mutedColor}`}>
-              Set up fingerprint or Face ID for faster unlocking
+              Set up {label.toLowerCase()} for faster unlocking
             </p>
           </div>
 
@@ -377,7 +384,7 @@ export function SoftLockScreen() {
               ) : (
                 <>
                   <Plus className="mr-2 h-4 w-4" />
-                  Enable Biometric
+                  Enable {label}
                 </>
               )}
             </Button>
@@ -399,13 +406,16 @@ export function SoftLockScreen() {
         // Biometric prompt (user has biometric enrolled)
         <div className="flex flex-col items-center gap-4">
           <div className="flex h-24 w-24 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
-            <Fingerprint className="h-12 w-12 text-amber-600 dark:text-amber-400" />
+            <SmartBiometricIcon
+              size={48}
+              className="text-amber-600 dark:text-amber-400"
+            />
           </div>
 
           <p className={`text-sm ${mutedColor}`}>
             {isBiometricPending
-              ? "Touch your fingerprint sensor..."
-              : "Tap to unlock with biometric"}
+              ? `Scan your ${label.toLowerCase()}...`
+              : `Tap to unlock with ${label.toLowerCase()}`}
           </p>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
@@ -423,8 +433,8 @@ export function SoftLockScreen() {
                 </>
               ) : (
                 <>
-                  <Fingerprint className="mr-2 h-4 w-4" />
-                  Unlock with Biometric
+                  <SmartBiometricIcon size={16} className="mr-2" />
+                  Unlock with {label}
                 </>
               )}
             </Button>

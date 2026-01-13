@@ -10,9 +10,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SmartBiometricIcon } from "@/components/ui/smart-biometric-icon";
 import { useBiometricRegistration } from "@/hooks/useBiometric";
 import { WebAuthnService } from "@/services/webauthn.service";
-import { Fingerprint, Loader2, Smartphone } from "lucide-react";
+import { Loader2, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function BiometricRegistration() {
@@ -42,7 +43,7 @@ export function BiometricRegistration() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Fingerprint className="size-5" />
+            <SmartBiometricIcon size={20} />
             Biometric Authentication
           </CardTitle>
           <CardDescription>
@@ -58,7 +59,7 @@ export function BiometricRegistration() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Fingerprint className="size-5" />
+          <SmartBiometricIcon size={20} />
           Register New Device
         </CardTitle>
         <CardDescription>
@@ -74,7 +75,7 @@ export function BiometricRegistration() {
               <Smartphone className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
               <Input
                 id="deviceName"
-                placeholder="e.g. My iPhone"
+                placeholder={`e.g. My ${/iPhone|iPad/.test(navigator.userAgent) ? "iPhone" : "Device"}`}
                 value={deviceName}
                 onChange={(e) => setDeviceName(e.target.value)}
                 className="pl-9"
@@ -95,7 +96,7 @@ export function BiometricRegistration() {
             </>
           ) : (
             <>
-              <Fingerprint className="mr-2 size-4" />
+              <SmartBiometricIcon size={16} className="mr-2" />
               Register This Device
             </>
           )}

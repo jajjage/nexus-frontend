@@ -7,10 +7,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SmartBiometricIcon } from "@/components/ui/smart-biometric-icon";
 import { useAuthContext } from "@/context/AuthContext";
 import { useBiometricTransaction } from "@/hooks/useBiometric";
+import { useBiometricType } from "@/hooks/useBiometricType";
 import { WebAuthnService } from "@/services/webauthn.service";
-import { AlertCircle, Fingerprint, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 interface BiometricVerificationModalProps {
@@ -67,6 +69,7 @@ export function BiometricVerificationModal({
   isVerifying = false,
 }: BiometricVerificationModalProps) {
   const { user } = useAuthContext();
+  const { label } = useBiometricType();
 
   const [supportedChecked, setSupportedChecked] = useState(false);
 
@@ -288,7 +291,7 @@ export function BiometricVerificationModal({
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Verify with Fingerprint</DialogTitle>
+              <DialogTitle>Verify with {label}</DialogTitle>
             </DialogHeader>
 
             <div className="flex flex-col gap-4 py-4">
@@ -316,7 +319,10 @@ export function BiometricVerificationModal({
 
                   <div className="flex justify-center">
                     <div className="flex h-24 w-24 items-center justify-center rounded-full bg-linear-to-br from-blue-50 to-indigo-50">
-                      <Fingerprint className="h-12 w-12 text-indigo-600" />
+                      <SmartBiometricIcon
+                        size={48}
+                        className="text-indigo-600"
+                      />
                     </div>
                   </div>
 
@@ -347,13 +353,13 @@ export function BiometricVerificationModal({
                     ) : loading ? (
                       <>
                         <p className="font-medium text-gray-900">
-                          Waiting for Fingerprint
+                          Waiting for {label}
                         </p>
 
                         <p className="text-sm text-gray-600">
                           {isAutoRetry
                             ? "Preparing biometric verification..."
-                            : "Touch your fingerprint sensor"}
+                            : `Scan your ${label.toLowerCase()}`}
                         </p>
                       </>
                     ) : (
@@ -363,7 +369,7 @@ export function BiometricVerificationModal({
                         </p>
 
                         <p className="text-sm text-gray-600">
-                          Use your fingerprint to verify this{" "}
+                          Use your {label.toLowerCase()} to verify this{" "}
                           {transactionAmount
                             ? `₦ ${parseFloat(transactionAmount).toFixed(2)} transaction`
                             : "transaction"}
@@ -409,7 +415,7 @@ export function BiometricVerificationModal({
                           Processing...
                         </>
                       ) : (
-                        "Use Fingerprint"
+                        `Use ${label}`
                       )}
                     </Button>
 

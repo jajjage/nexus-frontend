@@ -2,17 +2,15 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Fingerprint,
-  KeyRound,
-  Lock,
-  Shield,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, KeyRound, Lock, Shield } from "lucide-react";
 import Link from "next/link";
 
+import { SmartBiometricIcon } from "@/components/ui/smart-biometric-icon";
+import { useBiometricType } from "@/hooks/useBiometricType";
+
 export default function SecurityPage() {
+  const { label } = useBiometricType();
+
   const authSection = [
     {
       title: "Password",
@@ -42,9 +40,9 @@ export default function SecurityPage() {
       bgColor: "bg-amber-50 dark:bg-amber-950/30",
     },
     {
-      title: "Biometric",
-      description: "Fingerprint or face authentication",
-      icon: Fingerprint,
+      title: label || "Biometric",
+      description: `${label || "Fingerprint"} or face authentication`,
+      icon: SmartBiometricIcon as any,
       href: "/dashboard/profile/security/biometric",
       color: "from-green-500 to-emerald-500",
       bgColor: "bg-green-50 dark:bg-green-950/30",

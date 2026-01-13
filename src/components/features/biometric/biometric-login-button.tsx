@@ -1,11 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { SmartBiometricIcon } from "@/components/ui/smart-biometric-icon";
 import { useAuthContext } from "@/context/AuthContext";
 import { useBiometricAuthentication } from "@/hooks/useBiometric";
+import { useBiometricType } from "@/hooks/useBiometricType";
 import { WebAuthnService } from "@/services/webauthn.service";
 import { useQueryClient } from "@tanstack/react-query";
-import { Fingerprint, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -24,6 +26,7 @@ export function BiometricLoginButton({
   const { setUser } = useAuthContext();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { label } = useBiometricType();
 
   useEffect(() => {
     WebAuthnService.isWebAuthnSupported().then(setIsSupported);
@@ -37,7 +40,7 @@ export function BiometricLoginButton({
 
         // Manually refetch profile to be safe and update context
         // Or just redirect and let the protected route logic handle it
-        toast.success("Welcome back!");
+        toast.success(`Welcome back!`);
         window.location.href = "/dashboard";
       },
     });
@@ -56,9 +59,9 @@ export function BiometricLoginButton({
       {isPending ? (
         <Loader2 className="mr-2 size-4 animate-spin" />
       ) : (
-        <Fingerprint className="mr-2 size-4" />
+        <SmartBiometricIcon size={16} className="mr-2" />
       )}
-      Biometric Login
+      {label} Login
     </Button>
   );
 }

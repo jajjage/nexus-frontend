@@ -9,9 +9,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SmartBiometricIcon } from "@/components/ui/smart-biometric-icon";
 import { useBiometricRegistration } from "@/hooks/useBiometric";
+import { useBiometricType } from "@/hooks/useBiometricType";
 import { WebAuthnService } from "@/services/webauthn.service";
-import { Fingerprint, Loader2, ShieldCheck, X } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -21,6 +23,7 @@ export function BiometricPromptModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const { mutate: register, isPending } = useBiometricRegistration();
+  const { label } = useBiometricType();
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -53,7 +56,7 @@ export function BiometricPromptModal() {
         // Save status as enabled
         localStorage.setItem(BIOMETRIC_PROMPT_KEY, "enabled");
         setIsOpen(false);
-        toast.success("Biometric login enabled for this device");
+        toast.success(`Biometric login enabled for this device`);
       },
       onError: () => {
         // Even if failed, we don't save status so they can try again later
@@ -76,14 +79,14 @@ export function BiometricPromptModal() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="bg-primary/10 text-primary mx-auto mb-4 flex size-12 items-center justify-center rounded-full">
-            <Fingerprint className="size-6" />
+            <SmartBiometricIcon size={24} />
           </div>
           <DialogTitle className="text-center text-xl">
-            Enable Biometric Login?
+            Enable {label}?
           </DialogTitle>
           <DialogDescription className="pt-2 text-center">
-            Log in faster and more securely using your device's fingerprint or
-            face recognition.
+            Log in faster and more securely using your device&apos;s{" "}
+            {label.toLowerCase()}.
           </DialogDescription>
         </DialogHeader>
 
