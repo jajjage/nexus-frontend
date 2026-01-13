@@ -71,6 +71,17 @@ export function UserDashboard() {
     }
   }, [user?.role, isLoading, router]);
 
+  // Self-healing: If valid session exists (cookie) but no user data (cleared cache/race condition),
+  // manually trigger a fetch. This fixes the "stuck loading" issue on iOS PWAs.
+  useEffect(() => {
+    if (!isLoading && !user) {
+      console.log(
+        "[DASHBOARD] User missing/stale - attempting to refetch session"
+      );
+      refetchUser();
+    }
+  }, [isLoading, user, refetchUser]);
+
   // Show PIN setup modal only once when user data is loaded and they don't have a PIN
   useEffect(() => {
     if (user && user.hasPin !== undefined) {
