@@ -102,7 +102,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -118,3 +118,8 @@ jobs:
 
       - name: Print image digest
         run: echo "Image pushed with digest ${{ steps.meta.outputs.digest }}"
+
+      - name: Trigger Dokploy Deployment
+        # We use 'if: success()' so it only runs if the build passed
+        if: success()
+        run: curl -X POST "${{ secrets.DOKPLOY_WEBHOOK_URL }}"
