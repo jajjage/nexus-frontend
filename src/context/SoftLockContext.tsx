@@ -41,7 +41,7 @@ function getIsPwa(): boolean {
 // Storage key for soft lock preference
 const SOFT_LOCK_ENABLED_KEY = "soft_lock_enabled";
 const SOFT_LOCK_TIMESTAMP_KEY = "soft_lock_timestamp";
-const SOFT_LOCK_STATE_KEY = "soft_lock_state"; // NEW: Persist lock state for refresh
+const SOFT_LOCK_STATE_KEY = "soft_lock_state"; // Persist lock state for refresh AND app restart
 const LOCK_AFTER_SECONDS = 300; // Lock after 5 minutes in background
 
 interface SoftLockProviderProps {
@@ -56,18 +56,46 @@ export function SoftLockProvider({ children }: SoftLockProviderProps) {
 
   // Initialize PWA detection and lock preference
   useEffect(() => {
-    setIsPwa(getIsPwa());
+    const pwa = getIsPwa();
+    setIsPwa(pwa);
 
     // Check if soft lock is enabled in localStorage
     try {
       const enabled = localStorage.getItem(SOFT_LOCK_ENABLED_KEY);
-      setIsEnabledState(enabled === "true");
+      const isEnabledValue = enabled === "true";
+      setIsEnabledState(isEnabledValue);
 
-      // CRITICAL: Restore lock state on page refresh (prevents pull-to-refresh bypass)
-      const lockedState = sessionStorage.getItem(SOFT_LOCK_STATE_KEY);
-      if (lockedState === "locked" && enabled === "true") {
-        console.log("[SoftLock] Restoring locked state after refresh");
-        setIsLocked(true);
+      // CRITICAL FIX: Always lock on fresh PWA start if soft lock is enabled
+      // This handles the case when app is completely closed and reopened
+      if (pwa && isEnabledValue) {
+        // Check if this is a fresh start (no active session marker)
+        const lastUnlockTime = localStorage.getItem(SOFT_LOCK_TIMESTAMP_KEY);
+        const lockState = localStorage.getItem(SOFT_LOCK_STATE_KEY);
+
+        if (lockState === "locked") {
+          // Was locked before - stay locked
+          console.log("[SoftLock] Restoring locked state after app restart");
+          setIsLocked(true);
+        } else if (lastUnlockTime) {
+          // Check if enough time has passed since last unlock
+          const elapsed = Date.now() - parseInt(lastUnlockTime, 10);
+          if (elapsed > LOCK_AFTER_SECONDS * 1000) {
+            console.log(
+              "[SoftLock] Locking due to timeout since last unlock:",
+              elapsed,
+              "ms"
+            );
+            setIsLocked(true);
+            localStorage.setItem(SOFT_LOCK_STATE_KEY, "locked");
+          }
+        } else {
+          // First ever launch or no timestamp - lock for security
+          console.log(
+            "[SoftLock] Fresh start with soft lock enabled - locking"
+          );
+          setIsLocked(true);
+          localStorage.setItem(SOFT_LOCK_STATE_KEY, "locked");
+        }
       }
     } catch {
       // localStorage might not be available
@@ -89,9 +117,9 @@ export function SoftLockProvider({ children }: SoftLockProviderProps) {
     if (isAuthenticated && isEnabled) {
       console.log("[SoftLock] Locking app");
       setIsLocked(true);
-      // Persist lock state in sessionStorage
+      // Persist lock state in localStorage (survives app restart)
       try {
-        sessionStorage.setItem(SOFT_LOCK_STATE_KEY, "locked");
+        localStorage.setItem(SOFT_LOCK_STATE_KEY, "locked");
       } catch {
         // Ignore
       }
@@ -105,7 +133,7 @@ export function SoftLockProvider({ children }: SoftLockProviderProps) {
     // Update last active timestamp and clear lock state
     try {
       localStorage.setItem(SOFT_LOCK_TIMESTAMP_KEY, Date.now().toString());
-      sessionStorage.removeItem(SOFT_LOCK_STATE_KEY); // Remove lock state
+      localStorage.removeItem(SOFT_LOCK_STATE_KEY); // Clear lock state
     } catch {
       // Ignore
     }

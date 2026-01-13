@@ -9,7 +9,7 @@ import { useUnreadNotificationCount } from "@/hooks/useNotifications";
 import { Bell, Gift, Signal } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Import components
 import { PinSetupModal } from "@/components/features/security/pin-setup-modal";
@@ -57,6 +57,9 @@ export function UserDashboard() {
   const queryClient = useQueryClient();
   const router = useRouter();
 
+  // Track if we've already attempted session recovery to prevent infinite loops
+  const hasAttemptedRecovery = useRef(false);
+
   const unreadNotificationCount = unreadCountResponse?.data?.unreadCount || 0;
 
   // Security check - redirect if user is admin
@@ -73,14 +76,23 @@ export function UserDashboard() {
 
   // Self-healing: If valid session exists (cookie) but no user data (cleared cache/race condition),
   // manually trigger a fetch. This fixes the "stuck loading" issue on iOS PWAs.
+  // IMPORTANT: Only attempt ONCE to prevent infinite loops if user is truly logged out.
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !user && !hasAttemptedRecovery.current) {
+      hasAttemptedRecovery.current = true;
       console.log(
-        "[DASHBOARD] User missing/stale - attempting to refetch session"
+        "[DASHBOARD] User missing/stale - attempting ONE session recovery"
       );
       refetchUser();
     }
   }, [isLoading, user, refetchUser]);
+
+  // Reset recovery flag when user successfully loads
+  useEffect(() => {
+    if (user) {
+      hasAttemptedRecovery.current = false;
+    }
+  }, [user]);
 
   // Show PIN setup modal only once when user data is loaded and they don't have a PIN
   useEffect(() => {
@@ -97,6 +109,18 @@ export function UserDashboard() {
       setShowPinModal(false);
     }
   }, [user?.hasPin, showPinModal]);
+
+  // If recovery was attempted but still no user, redirect to login
+  if (!isLoading && !user && hasAttemptedRecovery.current) {
+    // Session is truly gone - redirect to login
+    if (typeof window !== "undefined") {
+      console.log(
+        "[DASHBOARD] No session after recovery attempt - redirecting to login"
+      );
+      window.location.href = "/login";
+    }
+    return null;
+  }
 
   if (isLoading || !user) {
     return (
