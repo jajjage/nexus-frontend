@@ -190,4 +190,191 @@ describe("adminAnalyticsService", () => {
       expect(result.data?.labels).toHaveLength(3);
     });
   });
+
+  // ============================================================================
+  // NEW ANALYTICS ENDPOINTS TESTS
+  // ============================================================================
+
+  describe("getTodaySnapshot", () => {
+    it("should fetch today's snapshot", async () => {
+      const mockData = {
+        transactions: {
+          count: 150,
+          volume: 45000.5,
+          profit: 2200.25,
+          successful: 145,
+          failed: 3,
+          pending: 2,
+        },
+        newUsers: 12,
+        activeUsers: 85,
+        walletDeposits: 65000.0,
+        walletWithdrawals: 12000.0,
+        revenueEstimate: 2200.25,
+        comparedToYesterday: {
+          transactionsDelta: 15,
+          transactionsDeltaPercent: "+11.1%",
+          volumeDelta: 5000.5,
+          volumeDeltaPercent: "+12.5%",
+        },
+      };
+
+      mockApiClient.get.mockResolvedValue({
+        data: { success: true, data: mockData },
+      });
+
+      const result = await adminAnalyticsService.getTodaySnapshot();
+
+      expect(mockApiClient.get).toHaveBeenCalledWith("/admin/analytics/today");
+      expect(result.data?.transactions.count).toBe(150);
+      expect(result.data?.comparedToYesterday.transactionsDeltaPercent).toBe(
+        "+11.1%"
+      );
+    });
+  });
+
+  describe("getDailyMetrics", () => {
+    it("should fetch daily metrics with params", async () => {
+      const mockData = [
+        {
+          date: "2026-01-01",
+          transactions: {
+            count: 100,
+            volume: 25000,
+            successCount: 98,
+            failedCount: 1,
+            reversedCount: 1,
+          },
+          users: { newRegistrations: 5, activeUsers: 45 },
+          wallet: { deposits: 30000, withdrawals: 5000, netFlow: 25000 },
+          topups: { count: 100, volume: 25000 },
+        },
+      ];
+
+      mockApiClient.get.mockResolvedValue({
+        data: { success: true, data: mockData },
+      });
+
+      const params = {
+        fromDate: "2026-01-01",
+        toDate: "2026-01-07",
+        granularity: "day" as const,
+      };
+      const result = await adminAnalyticsService.getDailyMetrics(params);
+
+      expect(mockApiClient.get).toHaveBeenCalledWith(
+        "/admin/analytics/daily-metrics",
+        { params }
+      );
+      expect(result.data).toHaveLength(1);
+      expect(result.data?.[0].transactions.count).toBe(100);
+    });
+  });
+
+  describe("getRevenueMetrics", () => {
+    it("should fetch revenue metrics", async () => {
+      const mockData = {
+        period: { from: "2026-01-01", to: "2026-01-12" },
+        gmv: 1000000.0,
+        revenue: 50000.0,
+        profit: 35000.0,
+        profitMargin: "3.5%",
+        costBreakdown: {
+          supplierCosts: 950000.0,
+          paymentFees: 15000.0,
+          otherCosts: 0,
+        },
+        revenueByProduct: [
+          {
+            productType: "data",
+            operator: "MTN",
+            gmv: 400000,
+            revenue: 20000,
+            margin: "5.0%",
+          },
+        ],
+      };
+
+      mockApiClient.get.mockResolvedValue({
+        data: { success: true, data: mockData },
+      });
+
+      const result = await adminAnalyticsService.getRevenueMetrics();
+
+      expect(mockApiClient.get).toHaveBeenCalledWith(
+        "/admin/analytics/revenue",
+        { params: undefined }
+      );
+      expect(result.data?.profitMargin).toBe("3.5%");
+      expect(result.data?.revenueByProduct).toHaveLength(1);
+    });
+  });
+
+  describe("getOperatorPerformance", () => {
+    it("should fetch operator performance metrics", async () => {
+      const mockData = {
+        operators: [
+          {
+            name: "MTN",
+            supplierSlug: "smeplug",
+            transactions: {
+              total: 500,
+              successful: 480,
+              failed: 20,
+              successRate: "96.0%",
+            },
+            volume: { total: 150000, successful: 144000 },
+            avgResponseTime: 0,
+            trend: { volumeChange: "0%", successRateChange: "0%" },
+          },
+        ],
+      };
+
+      mockApiClient.get.mockResolvedValue({
+        data: { success: true, data: mockData },
+      });
+
+      const result = await adminAnalyticsService.getOperatorPerformance();
+
+      expect(mockApiClient.get).toHaveBeenCalledWith(
+        "/admin/analytics/operators/performance",
+        { params: undefined }
+      );
+      expect(result.data?.operators).toHaveLength(1);
+      expect(result.data?.operators[0].transactions.successRate).toBe("96.0%");
+    });
+  });
+
+  describe("getUserSegments", () => {
+    it("should fetch user segments", async () => {
+      const mockData = {
+        byActivity: {
+          superActive: 15,
+          active: 45,
+          occasional: 120,
+          dormant: 300,
+          churned: 500,
+        },
+        bySpend: { highValue: 10, medium: 80, low: 400 },
+        byRegistration: {
+          last7Days: 25,
+          last30Days: 110,
+          last90Days: 450,
+          older: 1200,
+        },
+      };
+
+      mockApiClient.get.mockResolvedValue({
+        data: { success: true, data: mockData },
+      });
+
+      const result = await adminAnalyticsService.getUserSegments();
+
+      expect(mockApiClient.get).toHaveBeenCalledWith(
+        "/admin/analytics/users/segments"
+      );
+      expect(result.data?.byActivity.superActive).toBe(15);
+      expect(result.data?.bySpend.highValue).toBe(10);
+    });
+  });
 });

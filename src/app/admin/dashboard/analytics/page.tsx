@@ -3,14 +3,18 @@
 import {
   GmvOverviewCard,
   KeyMetricsCards,
+  OperatorPerformanceCard,
+  RevenueCard,
+  TodaySnapshotCard,
   TopupPerformanceChart,
   TransactionOverviewCard,
   TransactionTypeChart,
   UserOverviewCard,
+  UserSegmentsCard,
   WalletOverviewCard,
 } from "@/components/features/admin/analytics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Wallet } from "lucide-react";
+import { BarChart3, DollarSign, Users, Wallet } from "lucide-react";
 
 export default function AnalyticsPage() {
   return (
@@ -25,16 +29,27 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      {/* Today's Snapshot - Hero Card */}
+      <TodaySnapshotCard />
+
       {/* Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Overview
           </TabsTrigger>
+          <TabsTrigger value="revenue" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Revenue
+          </TabsTrigger>
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Users
+          </TabsTrigger>
           <TabsTrigger value="wallet" className="flex items-center gap-2">
             <Wallet className="h-4 w-4" />
-            Wallet & Finance
+            Wallet
           </TabsTrigger>
         </TabsList>
 
@@ -43,16 +58,35 @@ export default function AnalyticsPage() {
           {/* Key Metrics Row */}
           <KeyMetricsCards />
 
-          {/* User & Transaction Overview Row */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <UserOverviewCard />
+          {/* Transaction Overview & Operator Performance */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <TransactionOverviewCard />
+            <OperatorPerformanceCard />
           </div>
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <TopupPerformanceChart />
             <TransactionTypeChart />
+          </div>
+        </TabsContent>
+
+        {/* Revenue Tab */}
+        <TabsContent value="revenue" className="mt-6 space-y-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <RevenueCard />
+            <GmvOverviewCard />
+          </div>
+
+          {/* Operator Performance for revenue context */}
+          <OperatorPerformanceCard />
+        </TabsContent>
+
+        {/* Users Tab */}
+        <TabsContent value="users" className="mt-6 space-y-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <UserOverviewCard />
+            <UserSegmentsCard />
           </div>
         </TabsContent>
 

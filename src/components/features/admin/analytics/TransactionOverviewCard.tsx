@@ -4,7 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTransactionOverview } from "@/hooks/admin/useAdminAnalytics";
 import { DateRangeParams } from "@/types/admin/analytics.types";
-import { CheckCircle, Clock, TrendingUp, XCircle } from "lucide-react";
+import {
+  CheckCircle,
+  Clock,
+  Loader2,
+  RotateCcw,
+  TrendingUp,
+  XCircle,
+} from "lucide-react";
 
 interface TransactionOverviewCardProps {
   dateRange?: DateRangeParams;
@@ -96,7 +103,7 @@ export function TransactionOverviewCard({
         </div>
 
         {/* Status Breakdown */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
           <div className="bg-muted/50 flex flex-col items-center rounded-lg p-3">
             <CheckCircle className="mb-1 h-5 w-5 text-green-500" />
             <span className="text-lg font-bold">
@@ -118,6 +125,24 @@ export function TransactionOverviewCard({
             </span>
             <span className="text-muted-foreground text-xs">Pending</span>
           </div>
+          {breakdown?.reversed !== undefined && (
+            <div className="bg-muted/50 flex flex-col items-center rounded-lg p-3">
+              <RotateCcw className="mb-1 h-5 w-5 text-purple-500" />
+              <span className="text-lg font-bold">
+                {breakdown.reversed?.toLocaleString() || 0}
+              </span>
+              <span className="text-muted-foreground text-xs">Reversed</span>
+            </div>
+          )}
+          {breakdown?.processing !== undefined && (
+            <div className="bg-muted/50 flex flex-col items-center rounded-lg p-3">
+              <Loader2 className="mb-1 h-5 w-5 text-blue-500" />
+              <span className="text-lg font-bold">
+                {breakdown.processing?.toLocaleString() || 0}
+              </span>
+              <span className="text-muted-foreground text-xs">Processing</span>
+            </div>
+          )}
         </div>
 
         {/* Average */}

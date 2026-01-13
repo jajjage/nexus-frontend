@@ -6,12 +6,18 @@
 import apiClient from "@/lib/api-client";
 import {
   ChartData,
+  DailyMetric,
+  DailyMetricsParams,
   DateRangeParams,
   GmvOverview,
   KeyMetrics,
+  OperatorPerformance,
+  RevenueMetrics,
+  TodaySnapshot,
   TopupOverview,
   TransactionOverview,
   UserOverview,
+  UserSegments,
   WalletOverview,
 } from "@/types/admin/analytics.types";
 import { ApiResponse } from "@/types/api.types";
@@ -104,6 +110,71 @@ export const adminAnalyticsService = {
     const response = await apiClient.get<ApiResponse<ChartData>>(
       `${BASE_PATH}/transactions/by-type`,
       { params }
+    );
+    return response.data;
+  },
+
+  // ============================================================================
+  // NEW ANALYTICS ENDPOINTS
+  // ============================================================================
+
+  /**
+   * Get today's snapshot with comparison to yesterday
+   * Cached for 2 minutes on backend
+   */
+  getTodaySnapshot: async (): Promise<ApiResponse<TodaySnapshot>> => {
+    const response = await apiClient.get<ApiResponse<TodaySnapshot>>(
+      `${BASE_PATH}/today`
+    );
+    return response.data;
+  },
+
+  /**
+   * Get daily metrics time series for charts
+   * Supports granularity: day, week, month
+   */
+  getDailyMetrics: async (
+    params: DailyMetricsParams
+  ): Promise<ApiResponse<DailyMetric[]>> => {
+    const response = await apiClient.get<ApiResponse<DailyMetric[]>>(
+      `${BASE_PATH}/daily-metrics`,
+      { params }
+    );
+    return response.data;
+  },
+
+  /**
+   * Get revenue and profit metrics
+   */
+  getRevenueMetrics: async (
+    params?: DateRangeParams
+  ): Promise<ApiResponse<RevenueMetrics>> => {
+    const response = await apiClient.get<ApiResponse<RevenueMetrics>>(
+      `${BASE_PATH}/revenue`,
+      { params }
+    );
+    return response.data;
+  },
+
+  /**
+   * Get operator/supplier performance metrics
+   */
+  getOperatorPerformance: async (
+    params?: DateRangeParams
+  ): Promise<ApiResponse<OperatorPerformance>> => {
+    const response = await apiClient.get<ApiResponse<OperatorPerformance>>(
+      `${BASE_PATH}/operators/performance`,
+      { params }
+    );
+    return response.data;
+  },
+
+  /**
+   * Get user segments by activity, spend, and registration
+   */
+  getUserSegments: async (): Promise<ApiResponse<UserSegments>> => {
+    const response = await apiClient.get<ApiResponse<UserSegments>>(
+      `${BASE_PATH}/users/segments`
     );
     return response.data;
   },

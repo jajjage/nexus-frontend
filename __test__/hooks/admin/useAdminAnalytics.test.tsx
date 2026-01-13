@@ -1,10 +1,15 @@
 import {
   transformOperatorDataForChart,
+  useDailyMetrics,
   useKeyMetrics,
+  useOperatorPerformance,
+  useRevenueMetrics,
+  useTodaySnapshot,
   useTopupOverview,
   useTransactionOverview,
   useTransactionsByType,
   useUserOverview,
+  useUserSegments,
   useWalletOverview,
 } from "@/hooks/admin/useAdminAnalytics";
 import { adminAnalyticsService } from "@/services/admin/analytics.service";
@@ -210,6 +215,209 @@ describe("useAdminAnalytics Hooks", () => {
         value: 4000,
         fill: expect.any(String),
       });
+    });
+  });
+
+  // ============================================================================
+  // NEW ANALYTICS HOOKS TESTS
+  // ============================================================================
+
+  describe("useTodaySnapshot", () => {
+    it("should fetch today's snapshot", async () => {
+      const mockData = {
+        transactions: {
+          count: 150,
+          volume: 45000.5,
+          profit: 2200.25,
+          successful: 145,
+          failed: 3,
+          pending: 2,
+        },
+        newUsers: 12,
+        activeUsers: 85,
+        walletDeposits: 65000.0,
+        walletWithdrawals: 12000.0,
+        revenueEstimate: 2200.25,
+        comparedToYesterday: {
+          transactionsDelta: 15,
+          transactionsDeltaPercent: "+11.1%",
+          volumeDelta: 5000.5,
+          volumeDeltaPercent: "+12.5%",
+        },
+      };
+
+      vi.mocked(adminAnalyticsService.getTodaySnapshot).mockResolvedValue({
+        success: true,
+        data: mockData,
+        message: "",
+      });
+
+      const { result } = renderHook(() => useTodaySnapshot(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.transactions.count).toBe(150);
+      expect(
+        result.current.data?.comparedToYesterday.transactionsDeltaPercent
+      ).toBe("+11.1%");
+    });
+  });
+
+  describe("useDailyMetrics", () => {
+    it("should fetch daily metrics with valid params", async () => {
+      const mockData = [
+        {
+          date: "2026-01-01",
+          transactions: {
+            count: 100,
+            volume: 25000,
+            successCount: 98,
+            failedCount: 1,
+            reversedCount: 1,
+          },
+          users: { newRegistrations: 5, activeUsers: 45 },
+          wallet: { deposits: 30000, withdrawals: 5000, netFlow: 25000 },
+          topups: { count: 100, volume: 25000 },
+        },
+      ];
+
+      vi.mocked(adminAnalyticsService.getDailyMetrics).mockResolvedValue({
+        success: true,
+        data: mockData,
+        message: "",
+      });
+
+      const params = { fromDate: "2026-01-01", toDate: "2026-01-07" };
+      const { result } = renderHook(() => useDailyMetrics(params), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data).toHaveLength(1);
+      expect(adminAnalyticsService.getDailyMetrics).toHaveBeenCalledWith(
+        params
+      );
+    });
+
+    it("should not fetch when params are missing", async () => {
+      const params = { fromDate: "", toDate: "" };
+      const { result } = renderHook(() => useDailyMetrics(params), {
+        wrapper: createWrapper(),
+      });
+
+      // Should not be fetching because enabled is false
+      expect(result.current.isFetching).toBe(false);
+      expect(adminAnalyticsService.getDailyMetrics).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("useRevenueMetrics", () => {
+    it("should fetch revenue metrics", async () => {
+      const mockData = {
+        period: { from: "2026-01-01", to: "2026-01-12" },
+        gmv: 1000000.0,
+        revenue: 50000.0,
+        profit: 35000.0,
+        profitMargin: "3.5%",
+        costBreakdown: {
+          supplierCosts: 950000.0,
+          paymentFees: 15000.0,
+          otherCosts: 0,
+        },
+        revenueByProduct: [],
+      };
+
+      vi.mocked(adminAnalyticsService.getRevenueMetrics).mockResolvedValue({
+        success: true,
+        data: mockData,
+        message: "",
+      });
+
+      const { result } = renderHook(() => useRevenueMetrics(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.profitMargin).toBe("3.5%");
+    });
+  });
+
+  describe("useOperatorPerformance", () => {
+    it("should fetch operator performance", async () => {
+      const mockData = {
+        operators: [
+          {
+            name: "MTN",
+            supplierSlug: "smeplug",
+            transactions: {
+              total: 500,
+              successful: 480,
+              failed: 20,
+              successRate: "96.0%",
+            },
+            volume: { total: 150000, successful: 144000 },
+            avgResponseTime: 0,
+            trend: { volumeChange: "0%", successRateChange: "0%" },
+          },
+        ],
+      };
+
+      vi.mocked(adminAnalyticsService.getOperatorPerformance).mockResolvedValue(
+        {
+          success: true,
+          data: mockData,
+          message: "",
+        }
+      );
+
+      const { result } = renderHook(() => useOperatorPerformance(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.operators).toHaveLength(1);
+      expect(result.current.data?.operators[0].name).toBe("MTN");
+    });
+  });
+
+  describe("useUserSegments", () => {
+    it("should fetch user segments", async () => {
+      const mockData = {
+        byActivity: {
+          superActive: 15,
+          active: 45,
+          occasional: 120,
+          dormant: 300,
+          churned: 500,
+        },
+        bySpend: { highValue: 10, medium: 80, low: 400 },
+        byRegistration: {
+          last7Days: 25,
+          last30Days: 110,
+          last90Days: 450,
+          older: 1200,
+        },
+      };
+
+      vi.mocked(adminAnalyticsService.getUserSegments).mockResolvedValue({
+        success: true,
+        data: mockData,
+        message: "",
+      });
+
+      const { result } = renderHook(() => useUserSegments(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.byActivity.superActive).toBe(15);
+      expect(result.current.data?.bySpend.highValue).toBe(10);
     });
   });
 });

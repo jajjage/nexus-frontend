@@ -7,6 +7,7 @@
 
 import { adminAnalyticsService } from "@/services/admin/analytics.service";
 import {
+  DailyMetricsParams,
   DateRangeParams,
   RechartsDataPoint,
 } from "@/types/admin/analytics.types";
@@ -26,6 +27,15 @@ const analyticsKeys = {
   walletOverview: () => [...analyticsKeys.all, "wallet", "overview"] as const,
   transactionsByType: (params?: DateRangeParams) =>
     [...analyticsKeys.all, "transactions", "by-type", params] as const,
+  // New endpoints
+  todaySnapshot: () => [...analyticsKeys.all, "today"] as const,
+  dailyMetrics: (params: DailyMetricsParams) =>
+    [...analyticsKeys.all, "daily-metrics", params] as const,
+  revenue: (params?: DateRangeParams) =>
+    [...analyticsKeys.all, "revenue", params] as const,
+  operatorPerformance: (params?: DateRangeParams) =>
+    [...analyticsKeys.all, "operators", "performance", params] as const,
+  userSegments: () => [...analyticsKeys.all, "users", "segments"] as const,
 };
 
 /**
@@ -149,4 +159,74 @@ export function transformOperatorDataForChart(
     value,
     fill: CHART_COLORS_FALLBACK[index % CHART_COLORS_FALLBACK.length],
   }));
+}
+
+// ============================================================================
+// NEW ANALYTICS HOOKS
+// ============================================================================
+
+/**
+ * Fetch today's snapshot with comparison to yesterday
+ * Short cache - 2 minutes (frequently updated)
+ */
+export function useTodaySnapshot() {
+  return useQuery({
+    queryKey: analyticsKeys.todaySnapshot(),
+    queryFn: () => adminAnalyticsService.getTodaySnapshot(),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    select: (data) => data.data,
+  });
+}
+
+/**
+ * Fetch daily metrics time series for charts
+ * Medium cache - 5 minutes
+ */
+export function useDailyMetrics(params: DailyMetricsParams) {
+  return useQuery({
+    queryKey: analyticsKeys.dailyMetrics(params),
+    queryFn: () => adminAnalyticsService.getDailyMetrics(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    select: (data) => data.data,
+    enabled: !!params.fromDate && !!params.toDate,
+  });
+}
+
+/**
+ * Fetch revenue and profit metrics
+ * Medium cache - 5 minutes
+ */
+export function useRevenueMetrics(params?: DateRangeParams) {
+  return useQuery({
+    queryKey: analyticsKeys.revenue(params),
+    queryFn: () => adminAnalyticsService.getRevenueMetrics(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    select: (data) => data.data,
+  });
+}
+
+/**
+ * Fetch operator/supplier performance metrics
+ * Medium cache - 5 minutes
+ */
+export function useOperatorPerformance(params?: DateRangeParams) {
+  return useQuery({
+    queryKey: analyticsKeys.operatorPerformance(params),
+    queryFn: () => adminAnalyticsService.getOperatorPerformance(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    select: (data) => data.data,
+  });
+}
+
+/**
+ * Fetch user segments by activity, spend, and registration
+ * Longer cache - 10 minutes (changes slowly)
+ */
+export function useUserSegments() {
+  return useQuery({
+    queryKey: analyticsKeys.userSegments(),
+    queryFn: () => adminAnalyticsService.getUserSegments(),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    select: (data) => data.data,
+  });
 }
