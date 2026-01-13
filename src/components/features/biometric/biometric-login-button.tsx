@@ -10,7 +10,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 interface BiometricLoginButtonProps {
   className?: string;
@@ -40,7 +39,7 @@ export function BiometricLoginButton({
 
         // Manually refetch profile to be safe and update context
         // Or just redirect and let the protected route logic handle it
-        toast.success(`Welcome back!`);
+        // Redirect is sufficient feedback
         window.location.href = "/dashboard";
       },
     });

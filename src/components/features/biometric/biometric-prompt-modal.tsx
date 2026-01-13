@@ -15,7 +15,6 @@ import { useBiometricType } from "@/hooks/useBiometricType";
 import { WebAuthnService } from "@/services/webauthn.service";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 const BIOMETRIC_PROMPT_KEY = "biometric_prompt_status";
 
@@ -56,7 +55,7 @@ export function BiometricPromptModal() {
         // Save status as enabled
         localStorage.setItem(BIOMETRIC_PROMPT_KEY, "enabled");
         setIsOpen(false);
-        toast.success(`Biometric login enabled for this device`);
+        // Modal closes - no toast needed
       },
       onError: () => {
         // Even if failed, we don't save status so they can try again later
