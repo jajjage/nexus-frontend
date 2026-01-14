@@ -227,7 +227,6 @@ function useCurrentUserQuery() {
 // MAIN AUTH HOOK
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 /**
  * useAuth Hook - Main interface for auth state
  *
@@ -411,7 +410,6 @@ export function useAuth(): {
 // LOGIN HOOK
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function useLogin(expectedRole?: "user" | "admin") {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -514,7 +512,6 @@ export function useLogin(expectedRole?: "user" | "admin") {
 // Track if a logout is already in progress to prevent duplicate calls
 let isLoggingOut = false;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function useLogout() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -604,7 +601,7 @@ export function useRegister() {
       // Registration does NOT set auth cookies, so do NOT set user context or redirect to dashboard
       // Instead, redirect to login and show a success message
       toast.success("Registration successful! Please log in.");
-      window.location.href = "/login";
+      window.location.href = "/login?fromRegister=true";
     },
 
     onError: (error: AxiosError<any>) => {

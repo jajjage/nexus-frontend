@@ -104,7 +104,8 @@ describe("LoginForm Component", () => {
       render(<LoginForm />, { wrapper: createWrapper() });
 
       const credentialsInput = screen.getByLabelText(/Email or Phone Number/i);
-      await user.click(credentialsInput);
+      await user.type(credentialsInput, "a");
+      await user.clear(credentialsInput);
       await user.tab();
 
       await waitFor(() => {
@@ -119,7 +120,8 @@ describe("LoginForm Component", () => {
       render(<LoginForm />, { wrapper: createWrapper() });
 
       const passwordInput = screen.getByLabelText(/^Password$/i);
-      await user.click(passwordInput);
+      await user.type(passwordInput, "a");
+      await user.clear(passwordInput);
       await user.tab();
 
       await waitFor(() => {

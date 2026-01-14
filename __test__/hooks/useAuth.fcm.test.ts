@@ -290,7 +290,7 @@ describe("Auth Hooks - FCM Integration", () => {
       });
 
       // After registration, user should be redirected to login via window.location.href
-      expect(window.location.href).toBe("/login");
+      expect(window.location.href).toBe("/login?fromRegister=true");
     });
 
     it("should show success message after registration", async () => {

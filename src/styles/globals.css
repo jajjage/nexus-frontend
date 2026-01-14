@@ -133,3 +133,20 @@
     text-security: disc;
   }
 }
+
+/* Global Autofill Animation Hook */
+@keyframes onAutoFillStart {
+  from {
+  }
+  to {
+  }
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  animation-name: onAutoFillStart;
+  animation-duration: 0.1s; /* Short duration */
+  transition: background-color 5000s ease-in-out 0s; /* Prevent background color change if desired, but helps identifying autofill */
+}

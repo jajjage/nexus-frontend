@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -20,7 +21,7 @@ import { AxiosError } from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { TwoFactorForm } from "./TwoFactorForm";
@@ -44,10 +45,8 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
   const [pendingCredentials, setPendingCredentials] =
     useState<LoginRequest | null>(null);
   const [twoFactorError, setTwoFactorError] = useState<string | undefined>();
-  const [autoSubmitCredentials, setAutoSubmitCredentials] = useState<{
-    credentials: string;
-    password: string;
-  } | null>(null);
+
+  /* Removed biometric state as requested */
 
   const searchParams = useSearchParams();
   const loginMutation = useLogin(role);
@@ -67,180 +66,83 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
   });
   console.log("API BASE URL:", process.env.NEXT_PUBLIC_API_URL);
 
-  // Pre-fill email and password from URL params and sessionStorage (when redirected from register)
+  // Pre-fill email and password from URL params only (not browser storage)
   useEffect(() => {
-    console.log("Login form mounted, searchParams:", {
-      email: searchParams.get("email"),
-      fromRegister: searchParams.get("fromRegister"),
-    });
-
     const email = searchParams.get("email");
     const fromRegister = searchParams.get("fromRegister");
 
+    // Only fill from URL param if explicitly provided
     if (email) {
-      console.log("Setting email from URL param:", email);
       setValue("credentials", email);
     }
 
+    // Only check session storage if we just came from registration
     if (fromRegister === "true") {
       const storedPassword = sessionStorage.getItem("registrationPassword");
       const storedEmail = sessionStorage.getItem("registrationEmail");
 
-      console.log("Coming from register, checking sessionStorage:", {
-        hasPassword: !!storedPassword,
-        hasEmail: !!storedEmail,
-      });
+      if (storedPassword) setValue("password", storedPassword);
+      // Only override email if not in URL
+      if (storedEmail && !email) setValue("credentials", storedEmail);
 
-      if (storedPassword) {
-        console.log("Setting password from sessionStorage");
-        setValue("password", storedPassword);
-      }
-      if (storedEmail && !email) {
-        console.log("Setting email from sessionStorage");
-        setValue("credentials", storedEmail);
-      }
+      // Cleanup storage after using it to prevent "ghost" fills later
+      sessionStorage.removeItem("registrationPassword");
+      sessionStorage.removeItem("registrationEmail");
     }
 
-    if (!email) {
-      const fallbackEmail = sessionStorage.getItem("registrationEmail");
-      if (fallbackEmail) {
-        console.log("Setting fallback email from sessionStorage");
-        setValue("credentials", fallbackEmail);
-      }
+    // Trigger validation if we filled something
+    if (email || fromRegister) {
+      setTimeout(() => trigger(), 100);
     }
-
-    if (!searchParams.get("password")) {
-      const fallbackPassword = sessionStorage.getItem("registrationPassword");
-      if (fallbackPassword) {
-        console.log("Setting fallback password from sessionStorage");
-        setValue("password", fallbackPassword);
-      }
-    }
-
-    setTimeout(() => {
-      trigger();
-    }, 100);
   }, [searchParams, setValue, trigger]);
 
-  // Attempt to get stored credentials with biometric unlock
-  useEffect(() => {
-    const checkStoredCredentials = async () => {
-      try {
-        const stored = await credentialManager.getCredentials("optional");
-        if (stored) {
-          console.log(
-            "[LoginForm] Retrieved stored credentials for:",
-            stored.id
-          );
-          setValue("credentials", stored.id);
-          setValue("password", stored.password);
+  // Handle "Conditional UI" (Browser Autofill hooked to Biometric API)
+  // This waits in the background for the user to select a credential from the browser's dropdown
 
-          // Trigger validation first
-          const isValid = await trigger();
-
-          // Set auto-submit credentials if valid - another useEffect will handle submit
-          if (isValid) {
-            console.log("[LoginForm] Credentials valid, queueing auto-submit");
-            setAutoSubmitCredentials({
-              credentials: stored.id,
-              password: stored.password,
-            });
-          }
-        }
-      } catch (err) {
-        // Silently fail - this is an optional enhancement
-        console.log("[LoginForm] No stored credentials available");
-      }
-    };
-
-    // Only check if form is empty (no URL params filled it)
-    const hasUrlParams =
-      searchParams.get("email") || searchParams.get("fromRegister");
-    if (!hasUrlParams) {
-      checkStoredCredentials();
-    }
-  }, [setValue, trigger, searchParams]);
-
-  // Handle auto-submit after biometric authentication fills credentials
-  useEffect(() => {
-    if (autoSubmitCredentials) {
-      console.log("[LoginForm] Auto-submitting after biometric auth");
-
-      // Build payload
-      const { credentials, password } = autoSubmitCredentials;
+  const onSubmit = useCallback(
+    async (data: LoginFormValues) => {
+      const { credentials, password } = data;
       const isEmail = credentials.includes("@");
+
       const payload: LoginRequest = {
         password,
         ...(isEmail ? { email: credentials } : { phone: credentials }),
       };
 
-      // Store for 2FA retry
+      // Store credentials for potential 2FA retry
       setPendingCredentials(payload);
       setTwoFactorError(undefined);
 
-      // Submit login
+      console.log("[DEBUG] Login Payload:", payload);
+
       loginMutation.mutate(payload, {
         onSuccess: async () => {
+          // Store credentials for future biometric login
           try {
             await credentialManager.storeCredentials(
               credentials,
               password,
               credentials
             );
-          } catch {
-            // Silent fail
+          } catch (err) {
+            console.log("[LoginForm] Credential storage skipped", err);
+          }
+        },
+        onError: (error: AxiosError<any>) => {
+          const responseData = error.response?.data;
+          if (
+            responseData?.message === "2FA code is required" ||
+            responseData?.error === "2FA code is required"
+          ) {
+            setStep("2fa");
           }
         },
       });
+    },
+    [loginMutation]
+  );
 
-      // Clear auto-submit state
-      setAutoSubmitCredentials(null);
-    }
-  }, [autoSubmitCredentials, loginMutation]);
-  const onSubmit = async (data: LoginFormValues) => {
-    const { credentials, password } = data;
-    const isEmail = credentials.includes("@");
-
-    const payload: LoginRequest = {
-      password,
-      ...(isEmail ? { email: credentials } : { phone: credentials }),
-    };
-
-    // Store credentials for potential 2FA retry
-    setPendingCredentials(payload);
-    setTwoFactorError(undefined);
-
-    console.log("[DEBUG] Login Payload:", payload); // Added debug log
-
-    loginMutation.mutate(payload, {
-      onSuccess: async () => {
-        // Store credentials for browser's native autofill with biometric
-        try {
-          await credentialManager.storeCredentials(
-            credentials,
-            password,
-            credentials // name is the same as id
-          );
-        } catch (err) {
-          // Silently fail - credential storage is optional enhancement
-          console.log("[LoginForm] Credential storage skipped", err);
-        }
-      },
-      onError: (error: AxiosError<any>) => {
-        // Check if the error response indicates 2FA is required
-        const responseData = error.response?.data;
-        console.log("reponse 2fa", responseData?.message, responseData?.error);
-        if (
-          responseData?.message === "2FA code is required" ||
-          responseData?.error === "2FA code is required"
-        ) {
-          console.log("[AUTH] 2FA required - transitioning to 2FA step");
-          setStep("2fa");
-        }
-        // Regular errors are handled by the mutation's default onError
-      },
-    });
-  };
+  /* Removed handleBiometricLogin as requested */
 
   const handleTwoFactorSubmit = (code: string, isBackupCode: boolean) => {
     if (!pendingCredentials) return;
@@ -267,39 +169,16 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
     loginMutation.reset();
   };
 
+  const handleAutoFill = (e: React.AnimationEvent<HTMLInputElement>) => {
+    if (e.animationName === "onAutoFillStart") {
+      console.log("[LoginForm] Autofill detected, submitting...");
+      handleSubmit(onSubmit)();
+    }
+  };
+
   // Separate the register calls to avoid ref conflicts
   const credentialsRegister = register("credentials");
   const passwordRegister = register("password");
-
-  useEffect(() => {
-    const handleAutofill = async (event: AnimationEvent) => {
-      if (event.animationName === "onAutoFillStart") {
-        const isValid = await trigger();
-        if (isValid) {
-          setTimeout(() => {
-            handleSubmit(onSubmit)();
-          }, 100);
-        }
-      }
-    };
-
-    const credentialsInput = document.getElementById("credentials");
-    const passwordInput = document.getElementById("password");
-
-    credentialsInput?.addEventListener("animationstart", handleAutofill as any);
-    passwordInput?.addEventListener("animationstart", handleAutofill as any);
-
-    return () => {
-      credentialsInput?.removeEventListener(
-        "animationstart",
-        handleAutofill as any
-      );
-      passwordInput?.removeEventListener(
-        "animationstart",
-        handleAutofill as any
-      );
-    };
-  }, [handleSubmit, trigger]);
 
   const title = role === "admin" ? "Admin Login" : "Login";
   const description =
@@ -352,6 +231,7 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
               type="text"
               autoComplete="username"
               placeholder="m@example.com or 08012345678"
+              onAnimationStart={handleAutoFill}
             />
             {errors.credentials && (
               <p className="text-sm text-red-500">
@@ -378,6 +258,7 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
                 autoComplete="current-password"
                 placeholder="••••••••"
                 className="pr-10"
+                onAnimationStart={handleAutoFill}
               />
               <button
                 type="button"
@@ -396,6 +277,9 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
               <p className="text-sm text-red-500">{errors.password.message}</p>
             )}
           </div>
+
+          {/* Biometric Login Button Removed */}
+
           <Button
             type="submit"
             className="w-full"
