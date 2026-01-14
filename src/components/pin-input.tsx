@@ -2,20 +2,14 @@
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 
 // ==================== PIN Input Component ====================
 interface PinInputProps {
   length?: number;
   value: string;
   onChange: (value: string) => void;
-  onComplete?: () => void;
+  onComplete?: (value: string) => void;
   error?: boolean;
   disabled?: boolean;
   className?: string;
@@ -55,7 +49,7 @@ export const PinInput = forwardRef<HTMLInputElement, PinInputProps>(
       onChange(sanitizedValue);
 
       if (sanitizedValue.length === length) {
-        onComplete?.();
+        onComplete?.(sanitizedValue);
       }
     };
 

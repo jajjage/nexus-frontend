@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SmartBiometricIcon } from "@/components/ui/smart-biometric-icon";
 import { useBiometricRegistration } from "@/hooks/useBiometric";
+import { useBiometricType } from "@/hooks/useBiometricType";
 import { WebAuthnService } from "@/services/webauthn.service";
 import { Loader2, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -20,6 +21,7 @@ export function BiometricRegistration() {
   const [deviceName, setDeviceName] = useState("");
   const [isSupported, setIsSupported] = useState(false);
   const { mutate: register, isPending } = useBiometricRegistration();
+  const { label } = useBiometricType();
 
   useEffect(() => {
     WebAuthnService.isWebAuthnSupported().then(setIsSupported);
@@ -44,11 +46,11 @@ export function BiometricRegistration() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <SmartBiometricIcon size={20} />
-            Biometric Authentication
+            {label} Authentication
           </CardTitle>
           <CardDescription>
-            Your device does not support biometric authentication or it is not
-            available in this browser context.
+            Your device does not support {label.toLowerCase()} authentication or
+            it is not available in this browser context.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -63,8 +65,7 @@ export function BiometricRegistration() {
           Register New Device
         </CardTitle>
         <CardDescription>
-          Enable fingerprint or Face ID for faster and more secure login on this
-          device.
+          Enable {label} for faster and more secure login on this device.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

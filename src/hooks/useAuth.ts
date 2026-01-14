@@ -47,7 +47,7 @@ import { toast } from "sonner";
  */
 
 // Query keys for React Query cache
-const authKeys = {
+export const authKeys = {
   all: ["auth"] as const,
   currentUser: () => [...authKeys.all, "current-user"] as const,
 };

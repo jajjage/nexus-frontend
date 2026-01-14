@@ -12,7 +12,7 @@ import {
 import { useSetPin } from "@/hooks/useUser";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface PinSetupModalProps {
   isOpen: boolean;
@@ -30,13 +30,22 @@ export function PinSetupModal({
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError] = useState<string>("");
-  const confirmPinRef = useRef<HTMLDivElement>(null);
+  const pinInputRef = useRef<HTMLInputElement>(null);
+  const confirmPinRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus first PIN input when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        pinInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isOpen]);
 
   const handlePinComplete = () => {
-    // Focus the first input of the confirm PIN section
-    const firstInput = confirmPinRef.current?.querySelector("input");
+    // Focus the confirm PIN input
     setTimeout(() => {
-      firstInput?.focus();
+      confirmPinRef.current?.focus();
     }, 100);
   };
 
@@ -109,6 +118,7 @@ export function PinSetupModal({
           <div className="space-y-3">
             <label className="text-sm font-medium">New Transaction PIN</label>
             <PinInput
+              ref={pinInputRef}
               length={4}
               value={pin}
               onChange={setPin}
@@ -118,9 +128,10 @@ export function PinSetupModal({
             />
           </div>
 
-          <div className="space-y-3" ref={confirmPinRef}>
+          <div className="space-y-3">
             <label className="text-sm font-medium">Confirm PIN</label>
             <PinInput
+              ref={confirmPinRef}
               length={4}
               value={confirmPin}
               onChange={setConfirmPin}

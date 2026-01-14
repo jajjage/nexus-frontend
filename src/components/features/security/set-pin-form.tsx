@@ -1,5 +1,6 @@
 "use client";
 
+import { PinInput } from "@/components/pin-input";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -13,9 +14,9 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useSetPin } from "@/hooks/useUser";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -36,8 +37,9 @@ export function SetPinForm({ onSuccess }: SetPinFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get("returnUrl");
-  const [showPin, setShowPin] = useState(false);
-  const [showConfirmPin, setShowConfirmPin] = useState(false);
+
+  const pinInputRef = useRef<HTMLInputElement>(null);
+  const confirmPinInputRef = useRef<HTMLInputElement>(null);
 
   const hasPin = user?.hasPin;
 
@@ -75,6 +77,15 @@ export function SetPinForm({ onSuccess }: SetPinFormProps) {
     },
   });
 
+  // Auto-focus first PIN input on mount (if no password field) or when password is filled
+  useEffect(() => {
+    if (!hasPin) {
+      setTimeout(() => {
+        pinInputRef.current?.focus();
+      }, 100);
+    }
+  }, [hasPin]);
+
   function onSubmit(data: PinFormValues) {
     setPin(
       {
@@ -106,6 +117,18 @@ export function SetPinForm({ onSuccess }: SetPinFormProps) {
     );
   }
 
+  const handlePinComplete = () => {
+    // Auto-advance to confirm PIN
+    setTimeout(() => {
+      confirmPinInputRef.current?.focus();
+    }, 50);
+  };
+
+  const handleConfirmComplete = () => {
+    // Auto-submit if valid
+    form.handleSubmit(onSubmit)();
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -117,7 +140,7 @@ export function SetPinForm({ onSuccess }: SetPinFormProps) {
               <FormItem>
                 <FormLabel>Current Password</FormLabel>
                 <FormControl>
-                  <Input type="password" {...field} />
+                  <Input type="password" {...field} autoFocus />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -134,26 +157,15 @@ export function SetPinForm({ onSuccess }: SetPinFormProps) {
                 {hasPin ? "New Transaction PIN" : "Set Transaction PIN"}
               </FormLabel>
               <FormControl>
-                <div className="relative">
-                  <Input
-                    type={showPin ? "text" : "password"}
-                    maxLength={4}
-                    {...field}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1/2 right-1 -translate-y-1/2"
-                    onClick={() => setShowPin(!showPin)}
-                  >
-                    {showPin ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
+                <PinInput
+                  ref={pinInputRef}
+                  length={4}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onComplete={handlePinComplete}
+                  masked={true}
+                  error={!!form.formState.errors.pin}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -167,26 +179,15 @@ export function SetPinForm({ onSuccess }: SetPinFormProps) {
             <FormItem>
               <FormLabel>Confirm Transaction PIN</FormLabel>
               <FormControl>
-                <div className="relative">
-                  <Input
-                    type={showConfirmPin ? "text" : "password"}
-                    maxLength={4}
-                    {...field}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1/2 right-1 -translate-y-1/2"
-                    onClick={() => setShowConfirmPin(!showConfirmPin)}
-                  >
-                    {showConfirmPin ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
+                <PinInput
+                  ref={confirmPinInputRef}
+                  length={4}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onComplete={handleConfirmComplete}
+                  masked={true}
+                  error={!!form.formState.errors.confirmPin}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

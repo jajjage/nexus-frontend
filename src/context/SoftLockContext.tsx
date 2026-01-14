@@ -145,34 +145,17 @@ export function SoftLockProvider({ children }: SoftLockProviderProps) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
-        // App going to background - save timestamp
-        console.log("[SoftLock] App going to background");
-        try {
-          localStorage.setItem(SOFT_LOCK_TIMESTAMP_KEY, Date.now().toString());
-        } catch {
-          // Ignore
-        }
+        // CRITICAL FIX: Lock IMMEDIATELY when app goes to background
+        // This ensures the dashboard is hidden before the browser suspends the page
+        console.log("[SoftLock] App going to background - LOCKING IMMEDIATELY");
+        lock();
       } else if (document.visibilityState === "visible") {
-        // App coming to foreground - check if should lock
-        console.log("[SoftLock] App coming to foreground");
-        try {
-          const timestamp = localStorage.getItem(SOFT_LOCK_TIMESTAMP_KEY);
-          if (timestamp) {
-            const elapsed = Date.now() - parseInt(timestamp, 10);
-            const shouldLock = elapsed > LOCK_AFTER_SECONDS * 1000;
-            console.log(
-              "[SoftLock] Elapsed:",
-              elapsed,
-              "Should lock:",
-              shouldLock
-            );
-            if (shouldLock) {
-              lock();
-            }
-          }
-        } catch {
-          // Ignore
-        }
+        // App coming to foreground - lock is already engaged
+        // Just log for debugging
+        console.log(
+          "[SoftLock] App coming to foreground, lock state:",
+          isLocked
+        );
       }
     };
 

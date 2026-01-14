@@ -5,11 +5,16 @@ import { userService } from "@/services/user.service";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { useQueryClient } from "@tanstack/react-query";
+import { authKeys } from "./useAuth";
+
 /**
  * Hook to set or update user's passcode
  * Used for soft-lock and session revalidation
  */
 export function useSetPasscode() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (data: {
       passcode: string;
@@ -28,15 +33,13 @@ export function useSetPasscode() {
         currentPasscode: data.currentPasscode,
       });
     },
-    onSuccess: (response, variables) => {
+    onSuccess: async (response, variables) => {
       console.log("[useSetPasscode] Success", {
         message: response.message,
       });
-      toast.success(
-        variables.currentPasscode
-          ? "Passcode updated successfully"
-          : "Passcode set successfully"
-      );
+
+      // Invalidate both auth and user profile queries to update hasPasscode status
+      await queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
     },
     onError: (error: any) => {
       console.error("[useSetPasscode] Error", error);

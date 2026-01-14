@@ -36,7 +36,6 @@ export function SoftLockScreen() {
   const [showPasscode, setShowPasscode] = useState(false);
   const [showEnrollment, setShowEnrollment] = useState(false);
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
-  const [isCheckingBiometric, setIsCheckingBiometric] = useState(true);
   const passcodeInputRef = useRef<HTMLInputElement>(null);
   const hasAttemptedBiometric = useRef(false); // Prevent auto-retry after failure
 
@@ -74,10 +73,10 @@ export function SoftLockScreen() {
   }, [shouldRender]);
 
   // Check biometric support and enrollments on mount - only when locked
+  // OPTIMISTIC: We auto-trigger biometric, but UI shows immediately (no blocking spinner)
   useEffect(() => {
     if (!shouldRender) {
       // Reset state when not locked
-      setIsCheckingBiometric(true);
       setShowPasscode(false);
       setShowEnrollment(false);
       setPasscode("");
@@ -86,13 +85,12 @@ export function SoftLockScreen() {
       return;
     }
 
-    const checkBiometric = async () => {
+    const checkAndTriggerBiometric = async () => {
       try {
         const supported = await WebAuthnService.isWebAuthnSupported();
         setIsBiometricSupported(supported);
-        setIsCheckingBiometric(false);
 
-        // Wait for enrollments query to complete
+        // Wait for enrollments query to complete before auto-triggering
         if (isLoadingEnrollments) return;
 
         if (
@@ -102,7 +100,7 @@ export function SoftLockScreen() {
         ) {
           // User has biometric enrolled - auto-trigger (only once)
           hasAttemptedBiometric.current = true;
-          // Use setTimeout to prevent state update during render
+          // Small delay to let UI render first, then trigger biometric
           setTimeout(() => {
             verifyBiometric(undefined, {
               onSuccess: () => {
@@ -111,36 +109,31 @@ export function SoftLockScreen() {
               },
               onError: (err: any) => {
                 console.log("[SoftLockScreen] Biometric failed:", err);
-                setShowPasscode(true);
-                setShowEnrollment(false);
+                // Don't auto-switch to passcode - let user try again or choose passcode
                 if (
                   !err.message?.includes("cancelled") &&
                   !err.message?.includes("not allowed")
                 ) {
-                  setError(`Biometric failed. Please use passcode.`);
+                  setError(`Biometric failed. Tap to retry or use passcode.`);
                 }
-                // Focus passcode input after biometric failure
-                setTimeout(() => {
-                  passcodeInputRef.current?.focus();
-                }, 200);
               },
             });
           }, 100);
         } else if (supported && !hasBiometricEnrolled) {
           // Biometric supported but not enrolled - offer enrollment
           setShowEnrollment(true);
-        } else {
-          // Not supported or already attempted - show passcode
+        } else if (!supported) {
+          // Not supported - show passcode
           setShowPasscode(true);
         }
+        // If supported but no enrollments yet (loading), keep showing biometric UI
       } catch {
         setIsBiometricSupported(false);
-        setIsCheckingBiometric(false);
         setShowPasscode(true);
       }
     };
 
-    checkBiometric();
+    checkAndTriggerBiometric();
     // Note: Intentionally not including verifyBiometric/unlock in deps to prevent loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldRender, isLoadingEnrollments, hasBiometricEnrolled]);
@@ -262,13 +255,8 @@ export function SoftLockScreen() {
         </div>
       )}
 
-      {/* Main Content */}
-      {isCheckingBiometric || isLoadingEnrollments ? (
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
-          <p className={`text-sm ${mutedColor}`}>Checking biometric...</p>
-        </div>
-      ) : showPasscode ? (
+      {/* Main Content - OPTIMISTIC UI: Show unlock button immediately, no spinner */}
+      {showPasscode ? (
         <div className="w-full max-w-xs px-4">
           <p className="mb-4 text-center text-sm">
             Enter your 6-digit passcode

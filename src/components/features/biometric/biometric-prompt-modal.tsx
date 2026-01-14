@@ -120,7 +120,7 @@ export function BiometricPromptModal() {
                 Enabling...
               </>
             ) : (
-              "Enable Biometrics"
+              `Enable ${label}`
             )}
           </Button>
         </DialogFooter>

@@ -1,5 +1,6 @@
 "use client";
 
+import { PinInput } from "@/components/pin-input";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { useSetPasscode } from "@/hooks/usePasscode";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface SetPasscodeModalProps {
   open: boolean;
@@ -23,11 +24,12 @@ interface SetPasscodeModalProps {
  * SetPasscodeModal
  *
  * For setting a new passcode or changing existing one.
+ * Uses individual input boxes with auto-focus and auto-advance.
  *
  * Flow:
- * 1. Enter new 6-digit passcode
- * 2. Confirm passcode (retype)
- * 3. If changing: Enter current passcode for verification
+ * 1. Enter new 6-digit passcode (auto-advance on complete)
+ * 2. Confirm passcode (auto-advance on complete)
+ * 3. If changing: Enter current passcode for verification (auto-submit)
  * 4. Submit to backend
  */
 export function SetPasscodeModal({
@@ -44,48 +46,52 @@ export function SetPasscodeModal({
   const [confirmPasscode, setConfirmPasscode] = useState("");
   const [error, setError] = useState("");
 
+  // Refs for focusing inputs
+  const newInputRef = useRef<HTMLInputElement>(null);
+  const confirmInputRef = useRef<HTMLInputElement>(null);
+  const currentInputRef = useRef<HTMLInputElement>(null);
+
   const { mutate: setPasscode, isPending } = useSetPasscode();
 
-  const handlePasscodeInput = (
-    value: string,
-    setter: (val: string) => void
-  ) => {
-    // Only allow digits, max 6
-    const digits = value.replace(/\D/g, "").slice(0, 6);
-    setter(digits);
+  // Auto-focus the current step's input when step changes or modal opens
+  useEffect(() => {
+    if (!open) return;
+
+    const focusDelay = setTimeout(() => {
+      if (step === "current") {
+        currentInputRef.current?.focus();
+      } else if (step === "new") {
+        newInputRef.current?.focus();
+      } else if (step === "confirm") {
+        confirmInputRef.current?.focus();
+      }
+    }, 100);
+
+    return () => clearTimeout(focusDelay);
+  }, [open, step]);
+
+  // Handle step completion - auto-advance to next step
+  const handleNewComplete = () => {
     setError("");
+    setStep("confirm");
   };
 
-  const handleNext = () => {
+  const handleConfirmComplete = () => {
     setError("");
-
-    if (step === "current") {
-      if (currentPasscode.length !== 6) {
-        setError("Current passcode must be 6 digits");
-        return;
-      }
-      setStep("new");
-    } else if (step === "new") {
-      if (newPasscode.length !== 6) {
-        setError("New passcode must be 6 digits");
-        return;
-      }
-      setStep("confirm");
-    } else if (step === "confirm") {
-      if (confirmPasscode.length !== 6) {
-        setError("Confirmation must be 6 digits");
-        return;
-      }
-      if (newPasscode !== confirmPasscode) {
-        setError("Passcodes do not match");
-        setConfirmPasscode("");
-        return;
-      }
-      handleSubmit();
+    if (newPasscode !== confirmPasscode) {
+      setError("Passcodes do not match");
+      setConfirmPasscode("");
+      return;
     }
+    handleSubmit();
   };
 
-  const handleSubmit = async () => {
+  const handleCurrentComplete = () => {
+    setError("");
+    setStep("new");
+  };
+
+  const handleSubmit = () => {
     setError("");
 
     setPasscode(
@@ -95,7 +101,6 @@ export function SetPasscodeModal({
       },
       {
         onSuccess: () => {
-          console.log("[SetPasscodeModal] Passcode set successfully");
           // Reset form
           setCurrentPasscode("");
           setNewPasscode("");
@@ -150,129 +155,86 @@ export function SetPasscodeModal({
         <div className="space-y-6 py-4">
           {/* Step 1: Current Passcode (if changing) */}
           {step === "current" && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700">
+            <div className="space-y-3">
+              <label className="block text-sm font-medium">
                 Current Passcode
               </label>
-              <div className="flex justify-between gap-2">
-                {[0, 1, 2, 3, 4, 5].map((index) => (
-                  <div
-                    key={index}
-                    className="flex h-14 w-12 items-center justify-center rounded-lg border-2 border-slate-300 bg-white text-center text-2xl font-bold text-slate-900"
-                  >
-                    {currentPasscode[index] ? "•" : ""}
-                  </div>
-                ))}
-              </div>
-              <input
-                type="text"
-                inputMode="numeric"
+              <PinInput
+                ref={currentInputRef}
+                length={6}
                 value={currentPasscode}
-                onChange={(e) =>
-                  handlePasscodeInput(e.target.value, setCurrentPasscode)
-                }
-                className="absolute -left-full opacity-0"
-                autoFocus
+                onChange={setCurrentPasscode}
+                onComplete={handleCurrentComplete}
+                disabled={isPending}
+                masked={true}
+                error={!!error}
               />
             </div>
           )}
 
           {/* Step 2: New Passcode */}
           {step === "new" && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700">
-                New Passcode
-              </label>
-              <div className="flex justify-between gap-2">
-                {[0, 1, 2, 3, 4, 5].map((index) => (
-                  <div
-                    key={index}
-                    className="flex h-14 w-12 items-center justify-center rounded-lg border-2 border-slate-300 bg-white text-center text-2xl font-bold text-slate-900"
-                  >
-                    {newPasscode[index] ? "•" : ""}
-                  </div>
-                ))}
-              </div>
-              <input
-                type="text"
-                inputMode="numeric"
+            <div className="space-y-3">
+              <label className="block text-sm font-medium">New Passcode</label>
+              <PinInput
+                ref={newInputRef}
+                length={6}
                 value={newPasscode}
-                onChange={(e) =>
-                  handlePasscodeInput(e.target.value, setNewPasscode)
-                }
-                className="absolute -left-full opacity-0"
-                autoFocus
+                onChange={setNewPasscode}
+                onComplete={handleNewComplete}
+                disabled={isPending}
+                masked={true}
+                error={!!error}
               />
             </div>
           )}
 
           {/* Step 3: Confirm Passcode */}
           {step === "confirm" && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700">
+            <div className="space-y-3">
+              <label className="block text-sm font-medium">
                 Confirm Passcode
               </label>
-              <div className="flex justify-between gap-2">
-                {[0, 1, 2, 3, 4, 5].map((index) => (
-                  <div
-                    key={index}
-                    className="flex h-14 w-12 items-center justify-center rounded-lg border-2 border-slate-300 bg-white text-center text-2xl font-bold text-slate-900"
-                  >
-                    {confirmPasscode[index] ? "•" : ""}
-                  </div>
-                ))}
-              </div>
-              <input
-                type="text"
-                inputMode="numeric"
+              <PinInput
+                ref={confirmInputRef}
+                length={6}
                 value={confirmPasscode}
-                onChange={(e) =>
-                  handlePasscodeInput(e.target.value, setConfirmPasscode)
-                }
-                className="absolute -left-full opacity-0"
-                autoFocus
+                onChange={setConfirmPasscode}
+                onComplete={handleConfirmComplete}
+                disabled={isPending}
+                masked={true}
+                error={!!error}
               />
             </div>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
             </div>
           )}
 
-          {/* Buttons */}
-          <div className="flex gap-3 pt-4">
+          {/* Loading indicator */}
+          {isPending && (
+            <div className="flex items-center justify-center gap-2 py-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-muted-foreground text-sm">
+                Processing...
+              </span>
+            </div>
+          )}
+
+          {/* Close button */}
+          <div className="pt-2">
             <Button
               variant="outline"
               onClick={handleClose}
               disabled={isPending}
-              className="flex-1"
+              className="w-full"
             >
               Cancel
-            </Button>
-            <Button
-              onClick={handleNext}
-              disabled={
-                isPending ||
-                (step === "current" && currentPasscode.length !== 6) ||
-                (step === "new" && newPasscode.length !== 6) ||
-                (step === "confirm" && confirmPasscode.length !== 6)
-              }
-              className="flex-1"
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : step === "confirm" ? (
-                "Complete"
-              ) : (
-                "Next"
-              )}
             </Button>
           </div>
         </div>

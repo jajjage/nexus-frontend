@@ -1,6 +1,7 @@
 "use client";
 
 import { SetPinForm } from "@/components/features/security/set-pin-form";
+import { PinInput } from "@/components/pin-input";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,21 +10,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { SmartBiometricIcon } from "@/components/ui/smart-biometric-icon";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/hooks/useAuth";
 import { useBiometricRegistration } from "@/hooks/useBiometric";
+import { useBiometricType } from "@/hooks/useBiometricType";
 import { useSetPasscode } from "@/hooks/usePasscode";
 import { WebAuthnService } from "@/services/webauthn.service";
-import {
-  Eye,
-  EyeOff,
-  Fingerprint,
-  Loader2,
-  Lock,
-  ShieldCheck,
-} from "lucide-react";
+import { Loader2, Lock, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 // Keys for local storage to track setup status
@@ -42,14 +38,18 @@ export function SetupWizard() {
   // Passcode state
   const [passcode, setPasscode] = useState("");
   const [confirmPasscode, setConfirmPasscode] = useState("");
-  const [showPasscode, setShowPasscode] = useState(false);
   const [passcodeError, setPasscodeError] = useState("");
+
+  // Refs for auto-focus
+  const passcodeRef = useRef<HTMLInputElement>(null);
+  const confirmPasscodeRef = useRef<HTMLInputElement>(null);
 
   // Hooks
   const { mutate: registerBiometric, isPending: isBiometricPending } =
     useBiometricRegistration();
   const { mutate: setUserPasscode, isPending: isPasscodePending } =
     useSetPasscode();
+  const { label } = useBiometricType();
 
   // Check PWA mode (still used for soft lock feature)
   useEffect(() => {
@@ -104,6 +104,16 @@ export function SetupWizard() {
     checkStatus();
   }, [user, isAuthLoading, isPwaMode]);
 
+  // Handle finish step - redirect to dashboard
+  useEffect(() => {
+    if (step === "finish") {
+      const timer = setTimeout(() => {
+        router.replace("/dashboard");
+      }, 1000); // Small delay to show the completion state
+      return () => clearTimeout(timer);
+    }
+  }, [step, router]);
+
   // Handle PIN Success - Move to next step
   const handlePinSuccess = () => {
     setTimeout(async () => {
@@ -125,20 +135,30 @@ export function SetupWizard() {
   };
 
   // Handle Passcode Submit
-  const handlePasscodeSubmit = () => {
+  const handleNewPasscodeComplete = () => {
+    setTimeout(() => {
+      confirmPasscodeRef.current?.focus();
+    }, 50);
+  };
+
+  const handleConfirmPasscodeComplete = (val: string) => {
+    // Auto submit with the final value
+    handlePasscodeSubmit(val);
+  };
+
+  // Handle Passcode Submit
+  const handlePasscodeSubmit = (confirmVal?: string) => {
     setPasscodeError("");
+
+    // Use provided value or fall back to state (for button click)
+    const finalConfirmPasscode = confirmVal ?? confirmPasscode;
 
     if (passcode.length !== 6) {
       setPasscodeError("Passcode must be 6 digits");
       return;
     }
 
-    if (!/^\d{6}$/.test(passcode)) {
-      setPasscodeError("Passcode must contain only digits");
-      return;
-    }
-
-    if (passcode !== confirmPasscode) {
+    if (passcode !== finalConfirmPasscode) {
       setPasscodeError("Passcodes do not match");
       return;
     }
@@ -149,7 +169,7 @@ export function SetupWizard() {
         onSuccess: () => {
           localStorage.setItem(PASSCODE_PROMPT_KEY, "enabled");
           toast.success("App passcode set successfully");
-          handlePasscodeComplete();
+          handleFinish(); // Move to biometric or finish
         },
         onError: (error: any) => {
           setPasscodeError(
@@ -158,23 +178,6 @@ export function SetupWizard() {
         },
       }
     );
-  };
-
-  // Handle Passcode Skip
-  const handlePasscodeSkip = () => {
-    localStorage.setItem(PASSCODE_PROMPT_KEY, "skipped");
-    handlePasscodeComplete();
-  };
-
-  // After passcode, move to biometric
-  const handlePasscodeComplete = async () => {
-    const supported = await WebAuthnService.isWebAuthnSupported();
-    const promptStatus = localStorage.getItem(BIOMETRIC_PROMPT_KEY);
-    if (supported && !promptStatus) {
-      setStep("biometric");
-    } else {
-      setStep("finish");
-    }
   };
 
   // Handle Biometric Enable
@@ -199,13 +202,6 @@ export function SetupWizard() {
   const handleFinish = () => {
     router.replace("/dashboard");
   };
-
-  // Auto-redirect on finish
-  useEffect(() => {
-    if (step === "finish") {
-      handleFinish();
-    }
-  }, [step]);
 
   // Loading/Finish state
   if (step === "loading" || step === "finish") {
@@ -257,56 +253,39 @@ export function SetupWizard() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Passcode Input */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <label className="text-sm font-medium">New Passcode</label>
-            <div className="relative">
-              <input
-                type={showPasscode ? "text" : "password"}
-                value={passcode}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, "").slice(0, 6);
-                  setPasscode(val);
-                  setPasscodeError("");
-                }}
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="000000"
-                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-lg tracking-[0.5em] file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute top-1/2 right-1 -translate-y-1/2"
-                onClick={() => setShowPasscode(!showPasscode)}
-              >
-                {showPasscode ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+            <PinInput
+              ref={passcodeRef}
+              length={6}
+              value={passcode}
+              onChange={(val: string) => {
+                setPasscode(val);
+                setPasscodeError("");
+              }}
+              onComplete={handleNewPasscodeComplete}
+              masked={true}
+              disabled={isPasscodePending}
+              error={!!passcodeError}
+            />
           </div>
 
           {/* Confirm Passcode */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <label className="text-sm font-medium">Confirm Passcode</label>
-            <div className="relative">
-              <input
-                type={showPasscode ? "text" : "password"}
-                value={confirmPasscode}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, "").slice(0, 6);
-                  setConfirmPasscode(val);
-                  setPasscodeError("");
-                }}
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="000000"
-                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-lg tracking-[0.5em] file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
+            <PinInput
+              ref={confirmPasscodeRef}
+              length={6}
+              value={confirmPasscode}
+              onChange={(val: string) => {
+                setConfirmPasscode(val);
+                setPasscodeError("");
+              }}
+              onComplete={handleConfirmPasscodeComplete}
+              masked={true}
+              disabled={isPasscodePending}
+              error={!!passcodeError}
+            />
           </div>
 
           {/* Error */}
@@ -327,7 +306,7 @@ export function SetupWizard() {
 
           {/* Buttons */}
           <Button
-            onClick={handlePasscodeSubmit}
+            onClick={() => handlePasscodeSubmit()}
             disabled={isPasscodePending || passcode.length !== 6}
             className="w-full"
             size="lg"
@@ -358,12 +337,12 @@ export function SetupWizard() {
       <Card>
         <CardHeader className="text-center">
           <div className="bg-primary/10 text-primary mx-auto mb-4 flex size-16 items-center justify-center rounded-full">
-            <Fingerprint className="size-8" />
+            <SmartBiometricIcon size={32} />
           </div>
-          <CardTitle>Enable Biometric Login</CardTitle>
+          <CardTitle>Enable {label} Login</CardTitle>
           <CardDescription>
-            Log in faster and more securely using your device's fingerprint or
-            face recognition.
+            Log in faster and more securely using your device&apos;s{" "}
+            {label.toLowerCase()}.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -389,7 +368,7 @@ export function SetupWizard() {
                 Enabling...
               </>
             ) : (
-              "Enable Biometrics"
+              `Enable ${label}`
             )}
           </Button>
 

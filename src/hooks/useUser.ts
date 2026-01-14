@@ -10,7 +10,6 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 // ============= Query Keys =============
 export const userKeys = {
@@ -89,11 +88,9 @@ export const useSetPin = () => {
       queryClient.invalidateQueries({ queryKey: userKeys.profile() });
       // Also invalidate auth user query to update global auth state (hasPin)
       queryClient.invalidateQueries({ queryKey: ["auth", "current-user"] });
-      toast.success("PIN set successfully");
     },
     onError: (error: AxiosError<any>) => {
       console.error("Set PIN failed:", error.response?.data?.message);
-      toast.error("Failed to set PIN");
     },
   });
 };
