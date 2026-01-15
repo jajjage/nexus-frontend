@@ -50,6 +50,30 @@ export function NetworkDetector({
     }
   };
 
+  // Handle paste - clean the pasted value and process it
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+
+    // Strip all non-digit characters (handles spaces, dashes, +234, etc.)
+    let cleanedNumber = pastedText.replace(/\D/g, "");
+
+    // Handle Nigerian country code (234) - convert to local format (0)
+    if (cleanedNumber.startsWith("234") && cleanedNumber.length > 10) {
+      cleanedNumber = "0" + cleanedNumber.slice(3);
+    }
+
+    // Limit to reasonable phone number length
+    cleanedNumber = cleanedNumber.slice(0, 11);
+
+    onPhoneNumberChange(cleanedNumber);
+
+    const network = detectNetworkProvider(cleanedNumber);
+    if (network) {
+      onNetworkDetected(network);
+    }
+  };
+
   // Handle clear input
   const handleClear = () => {
     onPhoneNumberChange("");
@@ -81,6 +105,7 @@ export function NetworkDetector({
           type="tel"
           value={phoneNumber}
           onChange={handleChange}
+          onPaste={handlePaste}
           placeholder="Enter Phone Number (e.g., 0803...)"
           className="focus:ring-primary/20 h-14 rounded-xl px-4 pr-32 text-lg shadow-sm transition-all focus:ring-2"
         />
