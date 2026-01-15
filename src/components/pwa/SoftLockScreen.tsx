@@ -101,7 +101,16 @@ export function SoftLockScreen() {
           // User has biometric enrolled - auto-trigger (only once)
           hasAttemptedBiometric.current = true;
           // Small delay to let UI render first, then trigger biometric
+          // CRITICAL: Only trigger if app is actually visible to prevent the "zombie effect"
+          // where Android forces the app to foreground to show the biometric dialog
           setTimeout(() => {
+            if (document.visibilityState !== "visible") {
+              console.log(
+                "[SoftLockScreen] Skipping auto-biometric - app is not visible"
+              );
+              hasAttemptedBiometric.current = false; // Reset so it triggers when user returns
+              return;
+            }
             verifyBiometric(undefined, {
               onSuccess: () => {
                 console.log("[SoftLockScreen] Biometric unlock successful");
