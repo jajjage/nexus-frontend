@@ -76,11 +76,15 @@ export class WebAuthnService {
    * Sign assertion using WebAuthn
    */
   static async signAssertion(
-    options: AuthenticationOptionsResponse
+    options: AuthenticationOptionsResponse,
+    mediation?: CredentialMediationRequirement,
+    signal?: AbortSignal
   ): Promise<any> {
     // @github/webauthn-json handles the conversion from JSON to binary
     const assertion = await get({
       publicKey: options as any,
+      mediation,
+      signal,
     });
 
     return assertion;

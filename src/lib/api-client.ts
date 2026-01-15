@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ErrorResponse } from "@/types/api.types";
 import axios, {
   AxiosError,
@@ -36,6 +37,7 @@ const BASE_URL =
  * Note: We can read non-httpOnly cookies, but not httpOnly cookies from JavaScript
  * The Authorization header is set from httpOnly cookies by the server middleware
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getCookie = (name: string): string | undefined => {
   if (typeof window === "undefined") return undefined;
 

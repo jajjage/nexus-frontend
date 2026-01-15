@@ -180,7 +180,7 @@ export function ProviderDetailView({ providerId }: ProviderDetailViewProps) {
                     value={editConfig}
                     onChange={(e) => setEditConfig(e.target.value)}
                     placeholder='{"key": "value"}'
-                    className="font-mono text-sm"
+                    className="font-mono text-sm break-all"
                     rows={4}
                   />
                 </div>

@@ -97,7 +97,13 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
   }, [searchParams, setValue, trigger]);
 
   // Handle "Conditional UI" (Browser Autofill hooked to Biometric API)
-  // This waits in the background for the user to select a credential from the browser's dropdown
+  // DEFERRED: Backend endpoint /biometric/auth/options is protected.
+  // Can be re-enabled when a public endpoint is available.
+  /*
+  useEffect(() => {
+    // ... code removed ...
+  }, []);
+  */
 
   const onSubmit = useCallback(
     async (data: LoginFormValues) => {

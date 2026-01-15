@@ -198,7 +198,7 @@ export function ProviderListTable() {
                     value={newConfig}
                     onChange={(e) => setNewConfig(e.target.value)}
                     placeholder='{"key": "value"}'
-                    className="font-mono text-sm"
+                    className="font-mono text-sm break-all"
                   />
                 </div>
                 <div className="flex items-center justify-between rounded-lg border p-3">
