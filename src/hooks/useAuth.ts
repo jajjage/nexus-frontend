@@ -482,8 +482,20 @@ export function useLogin(expectedRole?: "user" | "admin") {
         console.log("[AUTH] Redirecting admin to dashboard");
         window.location.href = "/admin/dashboard";
       } else if (!user?.hasPin) {
-        console.log("[AUTH] User missing PIN - redirecting to setup");
-        window.location.href = "/setup";
+        // Check if we've already done setup on this device
+        const isSetupDone =
+          typeof window !== "undefined" &&
+          localStorage.getItem("is_setup_done") === "true";
+
+        if (isSetupDone) {
+          console.log(
+            "[AUTH] User missing PIN but setup done locally - redirecting to dashboard"
+          );
+          window.location.href = "/dashboard";
+        } else {
+          console.log("[AUTH] User missing PIN - redirecting to setup");
+          window.location.href = "/setup";
+        }
       } else {
         console.log("[AUTH] Redirecting user to dashboard");
         window.location.href = "/dashboard";

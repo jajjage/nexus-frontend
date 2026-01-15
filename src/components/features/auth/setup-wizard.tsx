@@ -17,6 +17,7 @@ import { useBiometricRegistration } from "@/hooks/useBiometric";
 import { useBiometricType } from "@/hooks/useBiometricType";
 import { useSetPasscode } from "@/hooks/usePasscode";
 import { WebAuthnService } from "@/services/webauthn.service";
+import { AxiosError } from "axios";
 import { Loader2, Lock, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -32,8 +33,6 @@ export function SetupWizard() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState<SetupStep>("loading");
-  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
-  const [isPwaMode, setIsPwaMode] = useState(false);
 
   // Passcode state
   const [passcode, setPasscode] = useState("");
@@ -51,25 +50,22 @@ export function SetupWizard() {
     useSetPasscode();
   const { label } = useBiometricType();
 
-  // Check PWA mode (still used for soft lock feature)
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const isPwa =
-        window.matchMedia("(display-mode: standalone)").matches ||
-        (window.navigator as any).standalone === true;
-      setIsPwaMode(isPwa);
-      console.log("[SetupWizard] PWA mode detected:", isPwa);
-    }
-  }, []);
-
   useEffect(() => {
     if (isAuthLoading) return;
 
     const checkStatus = async () => {
+      // Check PWA mode locally to avoid state cascade
+      const isPwa =
+        typeof window !== "undefined"
+          ? window.matchMedia("(display-mode: standalone)").matches ||
+            (window.navigator as unknown as { standalone?: boolean })
+              .standalone === true
+          : false;
+
       console.log("[SetupWizard] Checking status:", {
         hasPin: user?.hasPin,
         hasPasscode: user?.hasPasscode,
-        isPwaMode,
+        isPwaMode: isPwa,
       });
 
       // 1. Check PIN status first
@@ -87,7 +83,8 @@ export function SetupWizard() {
 
       // 3. Check Biometric Support & Status
       const supported = await WebAuthnService.isWebAuthnSupported();
-      setIsBiometricSupported(supported);
+      // Note: isBiometricSupported state would be unused here as we use 'supported' local var
+      // directly to decide the next step.
 
       const promptStatus = localStorage.getItem(BIOMETRIC_PROMPT_KEY);
 
@@ -102,11 +99,16 @@ export function SetupWizard() {
     };
 
     checkStatus();
-  }, [user, isAuthLoading, isPwaMode]);
+  }, [user, isAuthLoading]);
 
   // Handle finish step - redirect to dashboard
   useEffect(() => {
     if (step === "finish") {
+      // Mark setup as done in local storage
+      if (typeof window !== "undefined") {
+        localStorage.setItem("is_setup_done", "true");
+      }
+
       const timer = setTimeout(() => {
         router.replace("/dashboard");
       }, 1000); // Small delay to show the completion state
@@ -171,7 +173,7 @@ export function SetupWizard() {
           toast.success("App passcode set successfully");
           handleFinish(); // Move to biometric or finish
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<{ message: string }>) => {
           setPasscodeError(
             error.response?.data?.message || "Failed to set passcode"
           );
