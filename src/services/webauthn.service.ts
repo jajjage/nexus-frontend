@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { AuthenticationOptionsResponse } from "@/types/biometric.types";
-import { create, get } from "@github/webauthn-json";
+import { create } from "@github/webauthn-json";
 import { biometricService } from "./biometric.service";
 
 /**
@@ -75,25 +75,93 @@ export class WebAuthnService {
 
   /**
    * Sign assertion using WebAuthn
+   * NOTE: Bypassing @github/webauthn-json's get() due to its bug that converts undefined to null
    */
   static async signAssertion(
     options: AuthenticationOptionsResponse,
     mediation?: CredentialMediationRequirement,
     signal?: AbortSignal
   ): Promise<any> {
-    // @github/webauthn-json handles the conversion from JSON to binary
-    const requestOptions: any = {
-      publicKey: options as any,
-      mediation: mediation || "optional",
+    // Convert base64url challenge to ArrayBuffer
+    const challenge = this.base64urlToBuffer(options.challenge);
+
+    // Convert allowCredentials if present
+    const allowCredentials = options.allowCredentials?.map((cred) => ({
+      type: cred.type as PublicKeyCredentialType,
+      id: this.base64urlToBuffer(cred.id),
+      transports: cred.transports as AuthenticatorTransport[] | undefined,
+    }));
+
+    // Build the publicKey options, only including defined properties
+    const publicKeyOptions: PublicKeyCredentialRequestOptions = {
+      challenge,
+      ...(options.rpId && { rpId: options.rpId }),
+      ...(options.timeout && { timeout: options.timeout }),
+      ...(allowCredentials && { allowCredentials }),
+      ...(options.userVerification && {
+        userVerification:
+          options.userVerification as UserVerificationRequirement,
+      }),
     };
 
-    if (signal) {
-      requestOptions.signal = signal;
+    // Build credential request options, only including defined properties
+    const requestOptions: CredentialRequestOptions = {
+      publicKey: publicKeyOptions,
+      mediation: mediation || "optional",
+      ...(signal && { signal }),
+    };
+
+    const credential = (await navigator.credentials.get(
+      requestOptions
+    )) as PublicKeyCredential;
+
+    if (!credential) {
+      throw new Error("No credential returned");
     }
 
-    const assertion = await get(requestOptions);
+    // Convert response to JSON-friendly format
+    const response = credential.response as AuthenticatorAssertionResponse;
+    return {
+      id: credential.id,
+      rawId: this.bufferToBase64url(credential.rawId),
+      type: credential.type,
+      response: {
+        clientDataJSON: this.bufferToBase64url(response.clientDataJSON),
+        authenticatorData: this.bufferToBase64url(response.authenticatorData),
+        signature: this.bufferToBase64url(response.signature),
+        ...(response.userHandle && {
+          userHandle: this.bufferToBase64url(response.userHandle),
+        }),
+      },
+    };
+  }
 
-    return assertion;
+  /**
+   * Convert base64url string to ArrayBuffer
+   */
+  private static base64urlToBuffer(base64url: string): ArrayBuffer {
+    const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+    const padLen = (4 - (base64.length % 4)) % 4;
+    const padded = base64 + "=".repeat(padLen);
+    const binary = atob(padded);
+    const buffer = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      buffer[i] = binary.charCodeAt(i);
+    }
+    return buffer.buffer;
+  }
+
+  /**
+   * Convert ArrayBuffer to base64url string
+   */
+  private static bufferToBase64url(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
+    return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
 
   /**
