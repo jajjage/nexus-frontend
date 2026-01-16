@@ -1,6 +1,11 @@
 import { walletService } from "@/services/wallet.service";
 import { GetTransactionsParams } from "@/types/wallet.types";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { userKeys } from "./useUser";
 
 // ============= Query Keys =============
 export const walletKeys = {
@@ -44,11 +49,19 @@ export const useWalletBalance = () => {
 
 /**
  * Get all transactions with optional filters (for simple, non-paginated lists)
+ * Also invalidates user profile to keep balance in sync
  */
 export const useTransactions = (params?: GetTransactionsParams) => {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: walletKeys.transactions.list(params),
-    queryFn: () => walletService.getTransactions(params),
+    queryFn: async () => {
+      const result = await walletService.getTransactions(params);
+      // Invalidate user profile to refresh balance when transactions update
+      queryClient.invalidateQueries({ queryKey: userKeys.profile() });
+      return result;
+    },
     staleTime: 1000 * 60 * 1, // 1 minute
     retry: 2,
     refetchOnWindowFocus: true,
