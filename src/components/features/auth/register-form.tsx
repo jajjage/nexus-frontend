@@ -32,10 +32,19 @@ const registerSchema = z
       .refine(
         (val) => {
           const digitsOnly = val.replace(/\D/g, "");
-          return digitsOnly.length >= 10 && digitsOnly.length <= 14;
+          // Must be exactly 11 digits
+          if (digitsOnly.length !== 11) return false;
+          // Must start with valid Nigerian prefixes (0 followed by valid network codes)
+          // MTN: 0803, 0806, 0703, 0706, 0813, 0816, 0810, 0814, 0903, 0906, 0913, 0916
+          // Airtel: 0802, 0808, 0701, 0708, 0812, 0902, 0907, 0912, 0901
+          // Glo: 0805, 0807, 0705, 0815, 0811, 0905, 0915
+          // 9mobile: 0809, 0817, 0818, 0909, 0908
+          const validPrefixes = /^0(70[1-9]|80[2-9]|81[0-8]|90[1-9]|91[0-6])/;
+          return validPrefixes.test(digitsOnly);
         },
         {
-          message: "Phone number must be between 10 and 14 digits",
+          message:
+            "Please enter a valid Nigerian phone number (e.g., 08012345678)",
         }
       ),
     referralCode: z.string().optional(),
@@ -68,6 +77,7 @@ export function RegisterForm() {
   const urlCode = searchParams.get("code") || searchParams.get("ref");
 
   const registerMutation = useRegister();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { mutateAsync: validateCode, isPending: isValidating } =
     useValidateReferralCode();
 
@@ -88,8 +98,7 @@ export function RegisterForm() {
     register,
     handleSubmit,
     setValue,
-    setError,
-    formState: { isValid, isSubmitting, errors },
+    formState: { isValid, errors },
   } = form;
 
   // Update referralCode if URL changes
@@ -100,7 +109,7 @@ export function RegisterForm() {
   }, [urlCode, setValue]);
 
   const onSubmit = async (data: RegisterFormValues) => {
-    const { confirmPassword, ...rest } = data;
+    const { confirmPassword: _confirmPassword, ...rest } = data;
 
     // TODO: Re-enable when referrals feature is ready
     // Validate referral code if provided
@@ -167,7 +176,8 @@ export function RegisterForm() {
             <Input
               id="phoneNumber"
               type="tel"
-              placeholder="+1234567890"
+              placeholder="08012345678"
+              maxLength={11}
               {...register("phoneNumber")}
             />
             {errors.phoneNumber && (
