@@ -39,7 +39,7 @@ const registerSchema = z
           // Airtel: 0802, 0808, 0701, 0708, 0812, 0902, 0907, 0912, 0901
           // Glo: 0805, 0807, 0705, 0815, 0811, 0905, 0915
           // 9mobile: 0809, 0817, 0818, 0909, 0908
-          const validPrefixes = /^0(70[1-9]|80[2-9]|81[0-8]|90[1-9]|91[0-6])/;
+          const validPrefixes = /^0(70[1-9]|80[1-9]|81[0-8]|90[1-9]|91[0-6])/;
           return validPrefixes.test(digitsOnly);
         },
         {

@@ -96,7 +96,7 @@ describe("RegisterForm Component", () => {
       });
     });
 
-    it("should show error when phone is too short", async () => {
+    it("should show error when phone is invalid Nigerian number", async () => {
       render(<RegisterForm />, { wrapper: createWrapper() });
 
       const phoneInput = screen.getByLabelText(/Phone Number/i);
@@ -107,7 +107,7 @@ describe("RegisterForm Component", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/Phone number must be between 10 and 14 digits/i)
+          screen.getByText(/Please enter a valid Nigerian phone number/i)
         ).toBeInTheDocument();
       });
     });
