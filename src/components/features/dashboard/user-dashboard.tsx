@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -108,19 +110,17 @@ export function UserDashboard() {
     if (user && user.hasPin && showPinModal) {
       setShowPinModal(false);
     }
-  }, [user?.hasPin, showPinModal]);
+  }, [user?.hasPin, showPinModal, user]);
 
   // If recovery was attempted but still no user, redirect to login
-  if (!isLoading && !user && hasAttemptedRecovery.current) {
-    // Session is truly gone - redirect to login
-    if (typeof window !== "undefined") {
+  useEffect(() => {
+    if (!isLoading && !user && hasAttemptedRecovery.current) {
       console.log(
         "[DASHBOARD] No session after recovery attempt - redirecting to login"
       );
       window.location.href = "/login";
     }
-    return null;
-  }
+  }, [isLoading, user]);
 
   if (isLoading || !user) {
     return (
@@ -166,6 +166,7 @@ export function UserDashboard() {
     await queryClient.invalidateQueries({ queryKey: userKeys.all });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handlePinSetupSuccess = (pin?: string) => {
     toast.success("Transaction PIN set successfully!");
     setShowPinModal(false);
@@ -239,9 +240,9 @@ export function UserDashboard() {
                 balance={parseFloat(user.balance || "0") || 0}
                 isVisible={isBalanceVisible}
                 setIsVisible={setIsBalanceVisible}
-                accountName={user.fullName}
-                accountNumber={user.accountNumber}
-                providerName={user.providerName}
+                virtualAccountNumber={user.virtualAccountNumber}
+                virtualAccountBankName={user.virtualAccountBankName}
+                virtualAccountAccountName={user.virtualAccountAccountName}
                 onAccountCreated={refetchUser}
               />
 

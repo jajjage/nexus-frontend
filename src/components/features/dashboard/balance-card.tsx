@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -23,9 +24,9 @@ interface BalanceCardProps {
   balance: number;
   isVisible: boolean;
   setIsVisible: Dispatch<SetStateAction<boolean>>;
-  accountName?: string;
-  accountNumber?: string;
-  providerName?: string;
+  virtualAccountNumber?: string;
+  virtualAccountBankName?: string;
+  virtualAccountAccountName?: string;
   onAccountCreated?: () => void;
 }
 
@@ -56,16 +57,20 @@ export function BalanceCard({
   balance,
   isVisible,
   setIsVisible,
-  accountName,
-  accountNumber,
-  providerName,
+  virtualAccountNumber,
+  virtualAccountBankName,
+  virtualAccountAccountName,
   onAccountCreated,
 }: BalanceCardProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bvn, setBvn] = useState("");
   const [bvnError, setBvnError] = useState<string | null>(null);
 
-  const hasVirtualAccount = !!(accountNumber && accountName && providerName);
+  const hasVirtualAccount = !!(
+    virtualAccountNumber &&
+    virtualAccountBankName &&
+    virtualAccountAccountName
+  );
 
   const formattedBalance = balance.toLocaleString("en-NG", {
     style: "currency",
@@ -75,12 +80,12 @@ export function BalanceCard({
   });
 
   const accountDetailsText = hasVirtualAccount
-    ? `Account Name: ${accountName}\nAccount Number: ${accountNumber}\nBank: ${providerName}`
+    ? `Account Name: ${virtualAccountAccountName}\nAccount Number: ${virtualAccountNumber}\nBank: ${virtualAccountBankName}`
     : "";
 
   const handleCopy = () => {
-    if (accountNumber) {
-      navigator.clipboard.writeText(accountNumber);
+    if (virtualAccountNumber) {
+      navigator.clipboard.writeText(virtualAccountNumber);
       toast.success("Account number copied to clipboard!");
     }
   };
@@ -197,19 +202,23 @@ export function BalanceCard({
                     <p className="text-muted-foreground text-sm">
                       Account Name
                     </p>
-                    <p className="text-lg font-semibold">{accountName}</p>
+                    <p className="text-lg font-semibold">
+                      {virtualAccountAccountName}
+                    </p>
                   </div>
                   <div className="bg-muted rounded-lg p-4 text-center">
                     <p className="text-muted-foreground text-sm">
                       Account Number
                     </p>
                     <p className="text-2xl font-bold tracking-widest">
-                      {accountNumber}
+                      {virtualAccountNumber}
                     </p>
                   </div>
                   <div className="bg-muted rounded-lg p-4 text-center">
                     <p className="text-muted-foreground text-sm">Bank</p>
-                    <p className="text-lg font-semibold">{providerName}</p>
+                    <p className="text-lg font-semibold">
+                      {virtualAccountBankName}
+                    </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 p-4 pt-0 pb-6">

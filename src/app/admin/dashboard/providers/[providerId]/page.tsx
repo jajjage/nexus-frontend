@@ -1,9 +1,10 @@
 import { ProviderDetailView } from "@/components/features/admin/providers";
 
-export default function ProviderDetailPage({
+export default async function ProviderDetailPage({
   params,
 }: {
-  params: { providerId: string };
+  params: Promise<{ providerId: string }>;
 }) {
-  return <ProviderDetailView providerId={params.providerId} />;
+  const { providerId } = await params;
+  return <ProviderDetailView providerId={providerId} />;
 }

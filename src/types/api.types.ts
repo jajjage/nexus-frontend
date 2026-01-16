@@ -31,8 +31,11 @@ export interface User {
   isSuspended: boolean;
   isVerified: boolean;
   twoFactorEnabled: boolean;
-  accountNumber: string;
-  providerName: string;
+  accountNumber?: string;
+  providerName?: string;
+  virtualAccountNumber?: string;
+  virtualAccountBankName?: string;
+  virtualAccountAccountName?: string;
   balance: string;
   cashback?: {
     availableBalance: number;
