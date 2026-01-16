@@ -82,11 +82,16 @@ export class WebAuthnService {
     signal?: AbortSignal
   ): Promise<any> {
     // @github/webauthn-json handles the conversion from JSON to binary
-    const assertion = await get({
+    const requestOptions: any = {
       publicKey: options as any,
       mediation: mediation || "optional",
-      signal,
-    });
+    };
+
+    if (signal) {
+      requestOptions.signal = signal;
+    }
+
+    const assertion = await get(requestOptions);
 
     return assertion;
   }
