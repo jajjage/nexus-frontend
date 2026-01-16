@@ -22,7 +22,6 @@ declare global {
     readonly name: string;
   }
 
-  // eslint-disable-next-line no-var
   var PasswordCredential: {
     prototype: PasswordCredential;
     new (data: PasswordCredentialData): PasswordCredential;
@@ -97,7 +96,7 @@ class CredentialManagerService {
     try {
       const credential = await navigator.credentials.get({
         password: true,
-        mediation,
+        mediation: mediation || "optional",
       });
 
       if (credential && credential.type === "password") {

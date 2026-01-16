@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AuthenticationOptionsResponse } from "@/types/biometric.types";
 import { create, get } from "@github/webauthn-json";
 import { biometricService } from "./biometric.service";
@@ -83,7 +84,7 @@ export class WebAuthnService {
     // @github/webauthn-json handles the conversion from JSON to binary
     const assertion = await get({
       publicKey: options as any,
-      mediation,
+      mediation: mediation || undefined,
       signal,
     });
 
