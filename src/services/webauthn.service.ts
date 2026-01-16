@@ -84,7 +84,7 @@ export class WebAuthnService {
     // @github/webauthn-json handles the conversion from JSON to binary
     const assertion = await get({
       publicKey: options as any,
-      mediation: mediation || undefined,
+      mediation: mediation || "optional",
       signal,
     });
 
