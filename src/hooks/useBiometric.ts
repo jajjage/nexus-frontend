@@ -144,7 +144,7 @@ export function useBiometricAuthentication() {
       return await WebAuthnService.verifyAssertion(assertion);
     },
     onSuccess: (data) => {
-      toast.success("Biometric authentication successful");
+      // toast.success("Biometric authentication successful");
     },
     onError: (error: any) => {
       console.log("bio error:", error);
