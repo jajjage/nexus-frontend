@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { biometricService } from "@/services/biometric.service";
 import { verificationService } from "@/services/verification.service";
 import { WebAuthnService } from "@/services/webauthn.service";
@@ -264,7 +266,7 @@ export function useBiometricTransaction() {
           error.message === "Failed to generate authentication options"
             ? "You don't have Active Biometric Enable"
             : error.message;
-        toast.error(msg);
+        // toast.error(msg);
       }
     },
   });

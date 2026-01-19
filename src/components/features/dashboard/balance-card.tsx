@@ -11,13 +11,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { userService } from "@/services/user.service";
 import { useMutation } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { Copy, Eye, EyeOff, Loader2, Plus, Share2 } from "lucide-react";
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, SetStateAction, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface BalanceCardProps {
@@ -30,29 +28,6 @@ interface BalanceCardProps {
   onAccountCreated?: () => void;
 }
 
-// BVN Validation: Must be exactly 11 digits and start with "22"
-const validateBvn = (bvn: string): { valid: boolean; error?: string } => {
-  // Remove any whitespace
-  const cleanBvn = bvn.trim();
-
-  // Check if it's only digits
-  if (!/^\d+$/.test(cleanBvn)) {
-    return { valid: false, error: "BVN must contain only numbers" };
-  }
-
-  // Check length - must be exactly 11 digits
-  if (cleanBvn.length !== 11) {
-    return { valid: false, error: "BVN must be exactly 11 digits" };
-  }
-
-  // Check if it starts with "22"
-  if (!cleanBvn.startsWith("22")) {
-    return { valid: false, error: "BVN must start with 22" };
-  }
-
-  return { valid: true };
-};
-
 export function BalanceCard({
   balance,
   isVisible,
@@ -63,14 +38,9 @@ export function BalanceCard({
   onAccountCreated,
 }: BalanceCardProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [bvn, setBvn] = useState("");
-  const [bvnError, setBvnError] = useState<string | null>(null);
 
-  const hasVirtualAccount = !!(
-    virtualAccountNumber &&
-    virtualAccountBankName &&
-    virtualAccountAccountName
-  );
+  // Only check for virtualAccountNumber - bank name and account name might be null/pending
+  const hasVirtualAccount = !!virtualAccountNumber;
 
   const formattedBalance = balance.toLocaleString("en-NG", {
     style: "currency",
@@ -107,17 +77,14 @@ export function BalanceCard({
     }
   };
 
-  // Create virtual account mutation
+  // Create virtual account mutation - now without BVN
   const createAccountMutation = useMutation({
-    mutationFn: (bvnValue: string) =>
-      userService.createVirtualAccount({ bvn: bvnValue }),
+    mutationFn: () => userService.createVirtualAccount({}),
     onSuccess: (response) => {
       toast.success(
         response.message || "Virtual account created successfully!"
       );
-      setBvn("");
-      setBvnError(null);
-      // Call onAccountCreated to refetch user data - dialog stays open
+      // Call onAccountCreated to refetch user data
       // Once user data is refetched, hasVirtualAccount will be true
       // and the dialog will automatically show the account details
       onAccountCreated?.();
@@ -129,25 +96,27 @@ export function BalanceCard({
     },
   });
 
-  const handleBvnChange = (value: string) => {
-    // Only allow digits and limit to 11 characters
-    const cleanValue = value.replace(/\D/g, "").slice(0, 11);
-    setBvn(cleanValue);
+  // Track if we've already attempted to create an account in this dialog session
+  const hasAttemptedCreationRef = useRef(false);
 
-    // Clear error when user starts typing
-    if (bvnError) {
-      setBvnError(null);
+  // Handle dialog open/close - auto-create virtual account when dialog opens
+  const handleDialogChange = (open: boolean) => {
+    setDialogOpen(open);
+
+    if (
+      open &&
+      !hasVirtualAccount &&
+      !hasAttemptedCreationRef.current &&
+      !createAccountMutation.isPending
+    ) {
+      hasAttemptedCreationRef.current = true;
+      createAccountMutation.mutate();
     }
-  };
 
-  const handleSubmitBvn = () => {
-    const validation = validateBvn(bvn);
-    if (!validation.valid) {
-      setBvnError(validation.error || "Invalid BVN");
-      return;
+    // Reset the flag when dialog closes
+    if (!open) {
+      hasAttemptedCreationRef.current = false;
     }
-
-    createAccountMutation.mutate(bvn);
   };
 
   return (
@@ -175,7 +144,7 @@ export function BalanceCard({
           </p>
         </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
           <DialogTrigger asChild>
             <Button className="h-9 gap-1.5 rounded-full bg-white/20 px-3 text-xs backdrop-blur-sm hover:bg-white/30 md:h-10 md:gap-2 md:px-4 md:text-sm">
               <Plus className="size-3.5 md:size-4" />
@@ -185,12 +154,12 @@ export function BalanceCard({
           <DialogContent className="w-[340px] max-w-[95vw] p-0 sm:max-w-md">
             <DialogHeader className="px-4 pt-6 pb-2">
               <DialogTitle className="text-center">
-                {hasVirtualAccount ? "Add Money" : "Create Virtual Account"}
+                {hasVirtualAccount ? "Add Money" : "Creating Virtual Account"}
               </DialogTitle>
               <DialogDescription className="text-center">
                 {hasVirtualAccount
                   ? "Transfer to the account below to fund your wallet."
-                  : "Enter your BVN to create a virtual account for funding your wallet."}
+                  : "Please wait while we set up your virtual account."}
               </DialogDescription>
             </DialogHeader>
 
@@ -198,14 +167,16 @@ export function BalanceCard({
               // Show account details
               <>
                 <div className="space-y-4 p-4 pb-2">
-                  <div className="bg-muted rounded-lg p-4 text-center">
-                    <p className="text-muted-foreground text-sm">
-                      Account Name
-                    </p>
-                    <p className="text-lg font-semibold">
-                      {virtualAccountAccountName}
-                    </p>
-                  </div>
+                  {virtualAccountAccountName && (
+                    <div className="bg-muted rounded-lg p-4 text-center">
+                      <p className="text-muted-foreground text-sm">
+                        Account Name
+                      </p>
+                      <p className="text-lg font-semibold">
+                        {virtualAccountAccountName}
+                      </p>
+                    </div>
+                  )}
                   <div className="bg-muted rounded-lg p-4 text-center">
                     <p className="text-muted-foreground text-sm">
                       Account Number
@@ -214,12 +185,14 @@ export function BalanceCard({
                       {virtualAccountNumber}
                     </p>
                   </div>
-                  <div className="bg-muted rounded-lg p-4 text-center">
-                    <p className="text-muted-foreground text-sm">Bank</p>
-                    <p className="text-lg font-semibold">
-                      {virtualAccountBankName}
-                    </p>
-                  </div>
+                  {virtualAccountBankName && (
+                    <div className="bg-muted rounded-lg p-4 text-center">
+                      <p className="text-muted-foreground text-sm">Bank</p>
+                      <p className="text-lg font-semibold">
+                        {virtualAccountBankName}
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4 p-4 pt-0 pb-6">
                   <Button variant="outline" onClick={handleCopy}>
@@ -231,45 +204,15 @@ export function BalanceCard({
                 </div>
               </>
             ) : (
-              // Show BVN form
-              <div className="space-y-4 p-4 pb-6">
-                <div className="space-y-2">
-                  <Label htmlFor="bvn">Bank Verification Number (BVN)</Label>
-                  <Input
-                    id="bvn"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="22XXXXXXXXX"
-                    value={bvn}
-                    onChange={(e) => handleBvnChange(e.target.value)}
-                    className={bvnError ? "border-destructive" : ""}
-                    maxLength={11}
-                  />
-                  {bvnError && (
-                    <p className="text-destructive text-sm">{bvnError}</p>
-                  )}
-                  <p className="text-muted-foreground text-xs">
-                    Your BVN is 11 digits and starts with 22. We use this to
-                    verify your identity and create your virtual account.
-                  </p>
-                </div>
-
-                <Button
-                  className="w-full"
-                  onClick={handleSubmitBvn}
-                  disabled={
-                    bvn.length !== 11 || createAccountMutation.isPending
-                  }
-                >
-                  {createAccountMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    "Create Virtual Account"
-                  )}
-                </Button>
+              // Show loading state while creating account
+              <div className="flex flex-col items-center justify-center space-y-4 p-8">
+                <Loader2 className="text-primary h-12 w-12 animate-spin" />
+                <p className="text-muted-foreground text-center">
+                  Creating your virtual account...
+                </p>
+                <p className="text-muted-foreground text-center text-sm">
+                  This may take a few seconds
+                </p>
               </div>
             )}
           </DialogContent>

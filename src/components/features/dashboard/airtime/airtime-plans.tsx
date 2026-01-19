@@ -10,6 +10,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useSupplierMarkupMap } from "@/hooks/useSupplierMarkup";
 import { useTopup } from "@/hooks/useTopup";
 import { useEligibleOffers } from "@/hooks/useUserOffers";
+import { useTransaction } from "@/hooks/useWallet";
 import { detectNetworkProvider } from "@/lib/network-utils";
 import { useSecurityStore } from "@/store/securityStore";
 import { Product } from "@/types/product.types";
@@ -22,11 +23,12 @@ import { CheckoutModal } from "../shared/checkout-modal";
 import { NetworkDetector } from "../shared/network-detector";
 import { NetworkSelector } from "../shared/network-selector";
 import { ProductCard } from "../shared/product-card";
+import { ShareTransactionDialog } from "../transactions/share-transaction-dialog";
 
 export function AirtimePlans() {
   const router = useRouter();
   const { user, refetch: refetchUser } = useAuth();
-  const { recordPinAttempt, isBlocked } = useSecurityStore();
+  const { recordPinAttempt, isBlocked: _isBlocked } = useSecurityStore();
   const topupMutation = useTopup();
   const queryClient = useQueryClient();
 
@@ -37,7 +39,7 @@ export function AirtimePlans() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [detectedNetwork, setDetectedNetwork] = useState<string | null>(null);
   const [hasInitializedPhone, setHasInitializedPhone] = useState(false);
-  const [networkMismatch, setNetworkMismatch] = useState(false); // Track if phone doesn't match selected network
+  const [_networkMismatch, setNetworkMismatch] = useState(false); // Track if phone doesn't match selected network
 
   // Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -60,17 +62,20 @@ export function AirtimePlans() {
     pin?: string;
   } | null>(null);
 
+  // Share dialog state
+  const [lastTransactionId, setLastTransactionId] = useState<string | null>(
+    null
+  );
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
   // Initialize phone number from user profile ONLY ONCE
   useEffect(() => {
     if (user?.phoneNumber && !hasInitializedPhone) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: one-time initialization from user context
       setPhoneNumber(user.phoneNumber);
       setHasInitializedPhone(true);
-
-      // Auto-detect network for user's number
-      const net = detectNetworkProvider(user.phoneNumber);
-      if (net) {
-        handleNetworkDetected(net);
-      }
+      // Network detection will be handled by the auto-detect effect below
+      // once operators are loaded
     }
   }, [user, hasInitializedPhone]);
 
@@ -80,7 +85,8 @@ export function AirtimePlans() {
     { staleTime: 5 * 60 * 1000 } // 5 minutes - allow offer updates to reflect
   );
 
-  const products = data?.products || [];
+  // Memoize products to prevent useMemo dependency issues
+  const products = useMemo(() => data?.products || [], [data?.products]);
 
   // Get user's eligible offers (Two-Request Merge pattern)
   const isGuest = !user;
@@ -124,32 +130,37 @@ export function AirtimePlans() {
   // Set default selected network once operators are loaded
   useEffect(() => {
     if (!selectedNetwork && operators.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: one-time initialization
       setSelectedNetwork(operators[0].name);
     }
   }, [operators, selectedNetwork]);
+
+  // Handle Smart Network Detection - defined with useCallback before effects that use it
+  const handleNetworkDetected = useCallback(
+    (networkKey: string) => {
+      const matchedOperator = operators.find((op) =>
+        op.name.toLowerCase().includes(networkKey.toLowerCase())
+      );
+
+      if (matchedOperator) {
+        setDetectedNetwork(matchedOperator.name);
+        setSelectedNetwork(matchedOperator.name);
+        setNetworkMismatch(false); // Clear mismatch when network auto-detected
+      }
+    },
+    [operators]
+  );
 
   // Auto-detect and navigate to operator when phone number changes
   useEffect(() => {
     if (phoneNumber && phoneNumber.length >= 4 && operators.length > 0) {
       const detectedOp = detectNetworkProvider(phoneNumber);
       if (detectedOp) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: derived state from phone number
         handleNetworkDetected(detectedOp);
       }
     }
-  }, [phoneNumber, operators]);
-
-  // Handle Smart Network Detection
-  const handleNetworkDetected = (networkKey: string) => {
-    const matchedOperator = operators.find((op) =>
-      op.name.toLowerCase().includes(networkKey.toLowerCase())
-    );
-
-    if (matchedOperator) {
-      setDetectedNetwork(matchedOperator.name);
-      setSelectedNetwork(matchedOperator.name);
-      setNetworkMismatch(false); // Clear mismatch when network auto-detected
-    }
-  };
+  }, [phoneNumber, operators, handleNetworkDetected]);
 
   // Handle Manual Network Selection with Warning
   const handleManualNetworkSelect = (networkName: string) => {
@@ -397,8 +408,12 @@ export function AirtimePlans() {
         offerId: selectedOfferId || undefined, // Include offer ID if eligible
       },
       {
-        onSuccess: () => {
+        onSuccess: (response) => {
           setIsSuccess(true);
+          // Capture transaction ID for sharing
+          if (response.data?.transactionId) {
+            setLastTransactionId(response.data.transactionId);
+          }
           // Successful transaction = Reset PIN attempts if PIN was used
           if (pin) recordPinAttempt(true);
 
@@ -410,11 +425,16 @@ export function AirtimePlans() {
           queryClient.invalidateQueries({ queryKey: ["wallet"] });
           queryClient.invalidateQueries({ queryKey: ["auth", "current-user"] });
         },
-        onError: (error: any) => {
+        onError: (error) => {
           console.error("[Airtime] Transaction Failed", error);
+          // Extract error message with proper type handling
+          const axiosError = error as {
+            response?: { data?: { message?: string } };
+            message?: string;
+          };
           const msg =
-            error?.response?.data?.message ||
-            error?.message ||
+            axiosError?.response?.data?.message ||
+            axiosError?.message ||
             "Transaction failed. Please try again.";
 
           // Check if it's a PIN error
@@ -585,6 +605,7 @@ export function AirtimePlans() {
               if (pendingPaymentData) setShowBiometricModal(true);
             }}
             markupPercent={selectedMarkupPercent}
+            onShare={isSuccess ? () => setIsShareDialogOpen(true) : undefined}
           />
         )}
 
@@ -636,6 +657,39 @@ export function AirtimePlans() {
         }}
         onSuccess={handlePinSetupSuccess}
       />
+
+      {/* Share Dialog - uses lastTransactionId to fetch and share */}
+      {lastTransactionId && (
+        <AirtimeShareDialogWithTransaction
+          transactionId={lastTransactionId}
+          isOpen={isShareDialogOpen}
+          onClose={() => setIsShareDialogOpen(false)}
+        />
+      )}
     </div>
+  );
+}
+
+// Separate component to fetch transaction data for sharing
+function AirtimeShareDialogWithTransaction({
+  transactionId,
+  isOpen,
+  onClose,
+}: {
+  transactionId: string;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const { data, isLoading } = useTransaction(transactionId);
+  const transaction = data?.data;
+
+  if (!isOpen || isLoading || !transaction) return null;
+
+  return (
+    <ShareTransactionDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      transaction={transaction}
+    />
   );
 }

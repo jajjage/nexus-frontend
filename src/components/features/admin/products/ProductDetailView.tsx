@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +71,10 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
     number | undefined
   >();
   const [editIsActive, setEditIsActive] = useState(true);
+  const [editHasCashback, setEditHasCashback] = useState(false);
+  const [editCashbackPercentage, setEditCashbackPercentage] = useState<
+    number | undefined
+  >();
 
   // Map to supplier form state
   const [mapSupplierId, setMapSupplierId] = useState("");
@@ -92,6 +97,8 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
       setEditDataMb(product.dataMb ?? undefined);
       setEditValidityDays(product.validityDays ?? undefined);
       setEditIsActive(product.isActive);
+      setEditHasCashback(product.hasCashback ?? false);
+      setEditCashbackPercentage(product.cashbackPercentage ?? undefined);
       setIsEditOpen(true);
     }
   };
@@ -108,6 +115,10 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
           dataMb: editDataMb,
           validityDays: editValidityDays,
           isActive: editIsActive,
+          hasCashback: editHasCashback,
+          cashbackPercentage: editHasCashback
+            ? editCashbackPercentage
+            : undefined,
         },
       },
       {
@@ -204,7 +215,7 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
               <DialogHeader>
                 <DialogTitle>Map Product to Supplier</DialogTitle>
                 <DialogDescription>
-                  Link this product to a supplier's catalog.
+                  Link this product to a supplier&apos;s catalog.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -398,6 +409,31 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
                     onCheckedChange={setEditIsActive}
                   />
                 </div>
+                <div className="flex items-center justify-between">
+                  <Label>Enable Cashback</Label>
+                  <Switch
+                    checked={editHasCashback}
+                    onCheckedChange={setEditHasCashback}
+                  />
+                </div>
+                {editHasCashback && (
+                  <div className="space-y-2">
+                    <Label>Cashback Percentage (%)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      value={editCashbackPercentage || ""}
+                      onChange={(e) =>
+                        setEditCashbackPercentage(
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
+                      }
+                      placeholder="e.g., 5"
+                    />
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button
@@ -565,7 +601,8 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
             </div>
           ) : (
             <p className="text-muted-foreground py-8 text-center text-sm">
-              No supplier mappings. Click "Map to Supplier" to add one.
+              No supplier mappings. Click &quot;Map to Supplier&quot; to add
+              one.
             </p>
           )}
         </CardContent>

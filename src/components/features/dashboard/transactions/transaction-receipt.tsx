@@ -23,14 +23,15 @@ interface TransactionReceiptProps {
 }
 
 // Get status icon and color
+// Uses inline hex colors for html2canvas compatibility when sharing receipt
 const getStatusConfig = (status: string, isRefund?: boolean) => {
   // For refund transactions, always show as successful refund
   if (isRefund) {
     return {
       icon: CheckCircle2,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      borderColor: "ring-green-100",
+      color: "#16a34a", // green-600
+      bgColor: "#f0fdf4", // green-50
+      borderColor: "#dcfce7", // green-100
       label: "Refunded",
     };
   }
@@ -42,49 +43,49 @@ const getStatusConfig = (status: string, isRefund?: boolean) => {
     case "success": // Add success status
       return {
         icon: CheckCircle2,
-        color: "text-green-600",
-        bgColor: "bg-green-50",
-        borderColor: "ring-green-100",
+        color: "#16a34a", // green-600
+        bgColor: "#f0fdf4", // green-50
+        borderColor: "#dcfce7", // green-100
         label: "Successful",
       };
     case "pending":
       return {
         icon: Clock,
-        color: "text-amber-600",
-        bgColor: "bg-amber-50",
-        borderColor: "ring-amber-100",
+        color: "#d97706", // amber-600
+        bgColor: "#fffbeb", // amber-50
+        borderColor: "#fef3c7", // amber-100
         label: "Pending",
       };
     case "failed":
       return {
         icon: XCircle,
-        color: "text-red-600",
-        bgColor: "bg-red-50",
-        borderColor: "ring-red-100",
+        color: "#dc2626", // red-600
+        bgColor: "#fef2f2", // red-50
+        borderColor: "#fee2e2", // red-100
         label: "Failed",
       };
     case "cancelled":
       return {
         icon: XCircle,
-        color: "text-gray-600",
-        bgColor: "bg-gray-50",
-        borderColor: "ring-gray-100",
+        color: "#4b5563", // gray-600
+        bgColor: "#f9fafb", // gray-50
+        borderColor: "#f3f4f6", // gray-100
         label: "Cancelled",
       };
     case "reversed":
       return {
         icon: XCircle,
-        color: "text-red-600",
-        bgColor: "bg-red-50",
-        borderColor: "ring-red-100",
+        color: "#dc2626", // red-600
+        bgColor: "#fef2f2", // red-50
+        borderColor: "#fee2e2", // red-100
         label: "Failed",
       };
     default:
       return {
         icon: AlertCircle,
-        color: "text-gray-600",
-        bgColor: "bg-gray-50",
-        borderColor: "ring-gray-100",
+        color: "#4b5563", // gray-600
+        bgColor: "#f9fafb", // gray-50
+        borderColor: "#f3f4f6", // gray-100
         label: status,
       };
   }
@@ -338,16 +339,22 @@ export const TransactionReceipt = React.forwardRef<
           </span>
         </div>
 
-        {/* Status Line */}
+        {/* Status Line - Uses inline styles for html2canvas compatibility */}
         <div
-          className={cn(
-            "mb-2 flex items-center gap-2 rounded-full px-3 py-1 ring-1",
-            statusConfig.bgColor,
-            statusConfig.borderColor
-          )}
+          className="mb-2 flex items-center gap-2 rounded-full px-3 py-1"
+          style={{
+            backgroundColor: statusConfig.bgColor,
+            boxShadow: `inset 0 0 0 1px ${statusConfig.borderColor}`,
+          }}
         >
-          <StatusIcon className={cn("h-4 w-4", statusConfig.color)} />
-          <span className={cn("text-sm font-medium", statusConfig.color)}>
+          <StatusIcon
+            className="h-4 w-4"
+            style={{ color: statusConfig.color }}
+          />
+          <span
+            className="text-sm font-medium"
+            style={{ color: statusConfig.color }}
+          >
             {statusConfig.label}
           </span>
         </div>

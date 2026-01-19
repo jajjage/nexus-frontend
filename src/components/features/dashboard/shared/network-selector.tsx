@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 interface NetworkSelectorProps {
   selectedNetwork: string;
@@ -13,7 +13,7 @@ export function NetworkSelector({
   operators,
 }: NetworkSelectorProps) {
   return (
-    <div className="no-scrollbar flex items-center justify-between gap-2 overflow-x-auto py-4 md:gap-4 lg:gap-6">
+    <div className="no-scrollbar flex items-center justify-start gap-3 overflow-x-auto py-4 md:gap-4 lg:gap-6">
       {operators.map((op) => {
         // Extract a simple ID from the name (e.g., "MTN Nigeria" -> "MTN")
         // or just use the full name if that's what we filter by.

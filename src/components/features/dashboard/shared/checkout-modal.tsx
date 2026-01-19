@@ -13,7 +13,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Product } from "@/types/product.types";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronRight, Info, X, XCircle } from "lucide-react";
+import { Check, ChevronRight, Info, Share2, X, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface CheckoutModalProps {
@@ -31,6 +31,7 @@ interface CheckoutModalProps {
   isFailed?: boolean;
   failureMessage?: string;
   onRetry?: () => void;
+  onShare?: () => void;
   markupPercent?: number;
 }
 
@@ -48,6 +49,7 @@ export function CheckoutModal({
   isFailed = false,
   failureMessage = "Transaction failed. Please try again.",
   onRetry,
+  onShare,
   markupPercent = 0,
 }: CheckoutModalProps) {
   const [useCashback, setUseCashback] = useState(false);
@@ -55,6 +57,7 @@ export function CheckoutModal({
   // Reset useCashback state when the modal closes or when a new product is selected
   useEffect(() => {
     if (!isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: reset state when modal closes
       setUseCashback(false);
     }
   }, [isOpen]);
@@ -193,7 +196,7 @@ export function CheckoutModal({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
-              className="flex flex-col items-center justify-center px-6 py-12 text-center"
+              className="pointer-events-auto flex flex-col items-center justify-center px-6 py-12 text-center"
             >
               <motion.div
                 initial={{ scale: 0 }}
@@ -257,8 +260,30 @@ export function CheckoutModal({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4, duration: 0.3 }}
+                className="pointer-events-auto relative z-10 flex w-full gap-3"
               >
-                <Button size="lg" className="w-full" onClick={onClose}>
+                {onShare && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onShare();
+                    }}
+                  >
+                    <Share2 className="mr-2 size-4" />
+                    Share
+                  </Button>
+                )}
+                <Button
+                  size="lg"
+                  className="flex-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                  }}
+                >
                   Done
                 </Button>
               </motion.div>

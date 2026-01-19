@@ -25,8 +25,17 @@ import { toast } from "sonner";
  * - Backend sets new accessToken cookie in response
  */
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://localhost:3000/api/v1";
+// Use relative path for same-origin requests (works with Next.js rewrites)
+// This avoids cross-origin cookie issues in development
+// In production, you can set NEXT_PUBLIC_USE_PROXY=false to use direct API URL
+const useProxy =
+  typeof window !== "undefined" &&
+  (process.env.NODE_ENV === "development" ||
+    process.env.NEXT_PUBLIC_USE_PROXY === "true");
+
+const BASE_URL = useProxy
+  ? "/api/v1" // Same-origin proxy through Next.js rewrites
+  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
 
 // ============================================================================
 // COOKIE UTILITIES

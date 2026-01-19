@@ -3,6 +3,23 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Enable standalone output for Docker builds
   output: "standalone",
+
+  // Proxy API requests to backend to avoid cross-origin cookie issues
+  // This makes the browser think frontend and API are same-origin
+  async rewrites() {
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+    // Extract base URL without the /api/v1 path
+    const backendUrl = apiUrl.replace(/\/api\/v1\/?$/, "");
+
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: `${backendUrl}/api/v1/:path*`,
+      },
+    ];
+  },
+
   headers: async () => {
     return [
       {

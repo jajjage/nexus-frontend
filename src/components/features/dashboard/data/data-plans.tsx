@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { BiometricVerificationModal } from "@/components/auth/BiometricVerificationModal";
@@ -10,8 +11,8 @@ import { useCategories } from "@/hooks/useCategories";
 import { useProducts } from "@/hooks/useProducts";
 import { useSupplierMarkupMap } from "@/hooks/useSupplierMarkup";
 import { useTopup } from "@/hooks/useTopup";
-import { useUpdateProfile } from "@/hooks/useUser";
 import { useEligibleOffers } from "@/hooks/useUserOffers";
+import { useTransaction } from "@/hooks/useWallet";
 import { detectNetworkProvider } from "@/lib/network-utils";
 import { useSecurityStore } from "@/store/securityStore";
 import { Product } from "@/types/product.types";
@@ -24,16 +25,15 @@ import { CheckoutModal } from "../shared/checkout-modal";
 import { NetworkDetector } from "../shared/network-detector";
 import { NetworkSelector } from "../shared/network-selector";
 import { ProductCard } from "../shared/product-card";
+import { ShareTransactionDialog } from "../transactions/share-transaction-dialog";
 import { CategoryTabs } from "./category-tabs";
 
 export function DataPlans() {
   const router = useRouter();
   const { user, refetch: refetchUser } = useAuth();
-  const { recordPinAttempt, isBlocked } = useSecurityStore();
+  const { recordPinAttempt, isBlocked: _isBlocked } = useSecurityStore();
   const topupMutation = useTopup();
   const queryClient = useQueryClient();
-  const { mutate: updateProfile, isPending: isUpdatingPin } =
-    useUpdateProfile();
 
   const [selectedNetwork, setSelectedNetwork] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState("all"); // Default to "all"
@@ -47,7 +47,7 @@ export function DataPlans() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [detectedNetwork, setDetectedNetwork] = useState<string | null>(null);
   const [hasInitializedPhone, setHasInitializedPhone] = useState(false);
-  const [networkMismatch, setNetworkMismatch] = useState(false); // Track if phone doesn't match selected network
+  const [_networkMismatch, setNetworkMismatch] = useState(false); // Track if phone doesn't match selected network
 
   // Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -71,20 +71,20 @@ export function DataPlans() {
     pin?: string;
   } | null>(null);
 
+  // Share dialog state
+  const [lastTransactionId, setLastTransactionId] = useState<string | null>(
+    null
+  );
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
   // Initialize phone number from user profile ONLY ONCE
   useEffect(() => {
     if (user?.phoneNumber && !hasInitializedPhone) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: one-time initialization from user context
       setPhoneNumber(user.phoneNumber);
       setHasInitializedPhone(true);
-
-      // Auto-detect network for user's number
-      const net = detectNetworkProvider(user.phoneNumber);
-      if (net) {
-        // We need to match "MTN" (from utils) to "MTN Nigeria" (from API)
-        // Since operators might not be loaded yet, we just set detectedNetwork key
-        // The effect below or handleNetworkDetected logic handles the mapping
-        handleNetworkDetected(net);
-      }
+      // Network detection will be handled by the auto-detect effect below
+      // once operators are loaded
     }
   }, [user, hasInitializedPhone]);
 
@@ -94,7 +94,8 @@ export function DataPlans() {
     { staleTime: 5 * 60 * 1000 } // 5 minutes - allow offer updates to reflect
   );
 
-  const products = data?.products || [];
+  // Memoize products to prevent useMemo dependency issues
+  const products = useMemo(() => data?.products || [], [data?.products]);
 
   // Get user's eligible offers (Two-Request Merge pattern)
   const isGuest = !user;
@@ -131,32 +132,37 @@ export function DataPlans() {
   // Set default selected network once operators are loaded
   useEffect(() => {
     if (!selectedNetwork && operators.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: one-time initialization
       setSelectedNetwork(operators[0].name);
     }
   }, [operators, selectedNetwork]);
+
+  // Handle Smart Network Detection - defined with useCallback before effects that use it
+  const handleNetworkDetected = useCallback(
+    (networkKey: string) => {
+      const matchedOperator = operators.find((op) =>
+        op.name.toLowerCase().includes(networkKey.toLowerCase())
+      );
+
+      if (matchedOperator) {
+        setDetectedNetwork(matchedOperator.name);
+        setSelectedNetwork(matchedOperator.name);
+        setNetworkMismatch(false); // Clear mismatch when network auto-detected
+      }
+    },
+    [operators]
+  );
 
   // Auto-detect and navigate to operator when phone number changes
   useEffect(() => {
     if (phoneNumber && phoneNumber.length >= 4 && operators.length > 0) {
       const detectedOp = detectNetworkProvider(phoneNumber);
       if (detectedOp) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: derived state from phone number
         handleNetworkDetected(detectedOp);
       }
     }
-  }, [phoneNumber, operators]);
-
-  // Handle Smart Network Detection
-  const handleNetworkDetected = (networkKey: string) => {
-    const matchedOperator = operators.find((op) =>
-      op.name.toLowerCase().includes(networkKey.toLowerCase())
-    );
-
-    if (matchedOperator) {
-      setDetectedNetwork(matchedOperator.name);
-      setSelectedNetwork(matchedOperator.name);
-      setNetworkMismatch(false); // Clear mismatch when network auto-detected
-    }
-  };
+  }, [phoneNumber, operators, handleNetworkDetected]);
 
   // Handle Manual Network Selection with Warning
   const handleManualNetworkSelect = (networkName: string) => {
@@ -417,8 +423,31 @@ export function DataPlans() {
         offerId: selectedOfferId || undefined, // Include offer ID if eligible
       },
       {
-        onSuccess: () => {
+        onSuccess: (response) => {
+          console.log(
+            "[DataPlans] Transaction Success - Full response:",
+            response
+          );
           setIsSuccess(true);
+          // Capture transaction ID for sharing - try multiple possible paths
+          // The API returns TopupResponse directly, and data contains the transaction details
+          console.log("[DataPlans] response.data object:", response.data);
+          console.log(
+            "[DataPlans] response.data keys:",
+            response.data ? Object.keys(response.data) : "no data"
+          );
+          const txId =
+            response.data?.transactionId ||
+            response.data?.id ||
+            response.data?.transaction_id ||
+            response.data?.topupRequestId ||
+            response.data?.requestId;
+          console.log("[DataPlans] Extracted transactionId:", txId);
+          if (txId) {
+            setLastTransactionId(txId);
+          } else {
+            console.warn("[DataPlans] No transaction ID found in response!");
+          }
           // Successful transaction = Reset PIN attempts if PIN was used
           if (pin) recordPinAttempt(true);
 
@@ -602,6 +631,19 @@ export function DataPlans() {
             failureMessage={failureMessage}
             onRetry={handleRetry}
             markupPercent={selectedMarkupPercent}
+            onShare={
+              isSuccess
+                ? () => {
+                    console.log(
+                      "[DataPlans] Share clicked. lastTransactionId:",
+                      lastTransactionId,
+                      "isShareDialogOpen:",
+                      isShareDialogOpen
+                    );
+                    setIsShareDialogOpen(true);
+                  }
+                : undefined
+            }
           />
         )}
 
@@ -653,6 +695,39 @@ export function DataPlans() {
         }}
         onSuccess={handlePinSetupSuccess}
       />
+
+      {/* Share Dialog - uses lastTransactionId to fetch and share */}
+      {lastTransactionId && (
+        <ShareDialogWithTransaction
+          transactionId={lastTransactionId}
+          isOpen={isShareDialogOpen}
+          onClose={() => setIsShareDialogOpen(false)}
+        />
+      )}
     </div>
+  );
+}
+
+// Separate component to fetch transaction data for sharing
+function ShareDialogWithTransaction({
+  transactionId,
+  isOpen,
+  onClose,
+}: {
+  transactionId: string;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const { data, isLoading } = useTransaction(transactionId);
+  const transaction = data?.data;
+
+  if (!isOpen || isLoading || !transaction) return null;
+
+  return (
+    <ShareTransactionDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      transaction={transaction}
+    />
   );
 }

@@ -36,6 +36,7 @@ import {
   ShieldIcon,
   UsersIcon,
   WalletIcon,
+  WebhookIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -70,6 +71,11 @@ const navItems = [
     title: "Topups",
     href: "/admin/dashboard/topups",
     icon: WalletIcon,
+  },
+  {
+    title: "Webhooks",
+    href: "/admin/dashboard/webhooks",
+    icon: WebhookIcon,
   },
   {
     title: "Jobs",

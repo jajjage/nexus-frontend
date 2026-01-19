@@ -138,7 +138,7 @@ export const userService = {
 
   /**
    * Create virtual account for user
-   * BVN must be 11 digits and start with "22"
+   * BVN is optional - account will be created without it
    */
   createVirtualAccount: async (
     data: CreateVirtualAccountRequest
