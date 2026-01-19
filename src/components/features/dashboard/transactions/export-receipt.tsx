@@ -342,76 +342,21 @@ export const ExportReceipt = React.forwardRef<
           {formattedAmount}
         </h1>
 
-        {/* Status Badge - Pill style */}
+        {/* Status Text Only */}
         <div
           style={{
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "6px",
-            padding: "6px 16px",
-            borderRadius: "20px",
-            border: `1.5px solid ${statusColor}`,
-            backgroundColor: "transparent",
+            marginTop: "4px",
           }}
         >
-          {/* Status Icon - Checkmark in circle for success */}
-          {(["success", "completed", "received"].includes(
-            (transaction.related?.status || "").toLowerCase()
-          ) ||
-            isRefund) && (
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={statusColor}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="9 12 11 14 15 10" />
-            </svg>
-          )}
-          {transaction.related?.status?.toLowerCase() === "pending" && (
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={statusColor}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-          )}
-          {["failed", "reversed"].includes(
-            (transaction.related?.status || "").toLowerCase()
-          ) && (
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={statusColor}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="15" y1="9" x2="9" y2="15" />
-              <line x1="9" y1="9" x2="15" y2="15" />
-            </svg>
-          )}
           <span
             style={{
-              fontSize: "14px",
-              fontWeight: "500",
+              fontSize: "16px",
+              fontWeight: "600",
               color: statusColor,
+              textTransform: "capitalize",
             }}
           >
             {getDisplayStatus()}

@@ -5,14 +5,7 @@ import { Card } from "@/components/ui/card";
 import { useClipboard } from "@/hooks/useClipboard";
 import { cn } from "@/lib/utils";
 import type { Transaction } from "@/types/wallet.types";
-import {
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  Copy,
-  CreditCard,
-  XCircle,
-} from "lucide-react";
+import { Copy, CreditCard } from "lucide-react";
 import React from "react";
 
 interface TransactionReceiptProps {
@@ -25,14 +18,19 @@ interface TransactionReceiptProps {
 // Get status icon and color
 // Uses inline hex colors for html2canvas compatibility when sharing receipt
 const getStatusConfig = (status: string, isRefund?: boolean) => {
+  // Common styles
+  const common = {
+    bgColor: "transparent",
+  };
+
   // For refund transactions, always show as successful refund
   if (isRefund) {
     return {
-      icon: CheckCircle2,
-      color: "#16a34a", // green-600
-      bgColor: "#f0fdf4", // green-50
-      borderColor: "#dcfce7", // green-100
+      ...common,
+      color: "#166534", // green-800
+      borderColor: "#166534",
       label: "Refunded",
+      type: "success",
     };
   }
 
@@ -40,53 +38,46 @@ const getStatusConfig = (status: string, isRefund?: boolean) => {
   switch (statusLower) {
     case "completed":
     case "received":
-    case "success": // Add success status
+    case "success":
       return {
-        icon: CheckCircle2,
-        color: "#16a34a", // green-600
-        bgColor: "#f0fdf4", // green-50
-        borderColor: "#dcfce7", // green-100
+        ...common,
+        color: "#166534", // green-800
+        borderColor: "#166534",
         label: "Successful",
+        type: "success",
       };
     case "pending":
       return {
-        icon: Clock,
-        color: "#d97706", // amber-600
-        bgColor: "#fffbeb", // amber-50
-        borderColor: "#fef3c7", // amber-100
+        ...common,
+        color: "#B45309", // amber-700
+        borderColor: "#B45309",
         label: "Pending",
+        type: "pending",
       };
     case "failed":
+    case "reversed":
       return {
-        icon: XCircle,
-        color: "#dc2626", // red-600
-        bgColor: "#fef2f2", // red-50
-        borderColor: "#fee2e2", // red-100
+        ...common,
+        color: "#991B1B", // red-800
+        borderColor: "#991B1B",
         label: "Failed",
+        type: "failed",
       };
     case "cancelled":
       return {
-        icon: XCircle,
-        color: "#4b5563", // gray-600
-        bgColor: "#f9fafb", // gray-50
-        borderColor: "#f3f4f6", // gray-100
+        ...common,
+        color: "#374151", // gray-700
+        borderColor: "#374151",
         label: "Cancelled",
-      };
-    case "reversed":
-      return {
-        icon: XCircle,
-        color: "#dc2626", // red-600
-        bgColor: "#fef2f2", // red-50
-        borderColor: "#fee2e2", // red-100
-        label: "Failed",
+        type: "cancelled",
       };
     default:
       return {
-        icon: AlertCircle,
-        color: "#4b5563", // gray-600
-        bgColor: "#f9fafb", // gray-50
-        borderColor: "#f3f4f6", // gray-100
+        ...common,
+        color: "#374151", // gray-700
+        borderColor: "#374151",
         label: status,
+        type: "default",
       };
   }
 };
@@ -287,7 +278,7 @@ export const TransactionReceipt = React.forwardRef<
     transaction.related?.status || "pending",
     isRefund
   );
-  const StatusIcon = statusConfig.icon;
+  // Removed StatusIcon definition since we use specific icons or fallback
 
   const operatorName =
     transaction.productCode || transaction.productCode || "N/A";
@@ -339,20 +330,10 @@ export const TransactionReceipt = React.forwardRef<
           </span>
         </div>
 
-        {/* Status Line - Uses inline styles for html2canvas compatibility */}
-        <div
-          className="mb-2 flex items-center gap-2 rounded-full px-3 py-1"
-          style={{
-            backgroundColor: statusConfig.bgColor,
-            boxShadow: `inset 0 0 0 1px ${statusConfig.borderColor}`,
-          }}
-        >
-          <StatusIcon
-            className="h-4 w-4"
-            style={{ color: statusConfig.color }}
-          />
+        {/* Status Text Only matching ExportReceipt */}
+        <div className="mt-1 mb-2 flex items-center justify-center">
           <span
-            className="text-sm font-medium"
+            className="text-base font-semibold capitalize"
             style={{ color: statusConfig.color }}
           >
             {statusConfig.label}
