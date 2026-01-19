@@ -6,6 +6,7 @@ import { useClipboard } from "@/hooks/useClipboard";
 import { cn } from "@/lib/utils";
 import type { Transaction } from "@/types/wallet.types";
 import { Copy, CreditCard } from "lucide-react";
+import Image from "next/image";
 import React from "react";
 
 interface TransactionReceiptProps {
@@ -298,14 +299,16 @@ export const TransactionReceipt = React.forwardRef<
       {/* Receipt Top Section */}
       <div className="flex flex-col items-center p-6 pb-4">
         {/* Logo / Icon */}
-        <div className="mb-4 flex size-16 items-center justify-center overflow-hidden rounded-full bg-slate-50 shadow-sm ring-1 ring-slate-100">
+        <div className="relative mb-4 flex size-16 items-center justify-center overflow-hidden rounded-full bg-slate-50 shadow-sm ring-1 ring-slate-100">
           {showLogo &&
           transaction.relatedType === "topup_request" &&
           logoUrl ? (
-            <img
+            <Image
               src={logoUrl}
               alt="operator"
-              className="size-full object-cover"
+              fill
+              className="object-cover"
+              sizes="64px"
             />
           ) : isCredit ? (
             <div className="flex flex-col items-center justify-center text-green-600">

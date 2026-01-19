@@ -1,6 +1,18 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "upload.wikimedia.org",
+      },
+      {
+        protocol: "https",
+        hostname: "logosandtypes.com",
+      },
+    ],
+  },
   // Enable standalone output for Docker builds
   output: "standalone",
 
