@@ -103,7 +103,7 @@ describe("BalanceCard", () => {
     expect(setIsVisibleMock).toHaveBeenCalled();
   });
 
-  it("shows BVN form when no virtual account exists", () => {
+  it("shows auto-create loading state when no virtual account exists", () => {
     render(
       <BalanceCardWrapper
         balance={5000}
@@ -116,10 +116,10 @@ describe("BalanceCard", () => {
     // Click Add Money button
     fireEvent.click(screen.getByText("Add Money"));
 
-    // Should show BVN input form - there are two elements: dialog title and button
+    // Should show loading state for auto-creating virtual account (no BVN required)
+    expect(screen.getByText("Creating Virtual Account")).toBeInTheDocument();
     expect(
-      screen.getAllByText("Create Virtual Account").length
-    ).toBeGreaterThan(0);
-    expect(screen.getByLabelText(/BVN/i)).toBeInTheDocument();
+      screen.getByText("Creating your virtual account...")
+    ).toBeInTheDocument();
   });
 });
