@@ -158,18 +158,26 @@ export function WebhookListTable() {
                 {webhooks.map((webhook: WebhookReconciliationRecord) => (
                   <TableRow key={webhook.id}>
                     <TableCell className="font-mono text-sm">
-                      {webhook.externalReference?.slice(0, 16)}...
+                      {webhook.externalReference
+                        ? webhook.externalReference.length > 16
+                          ? `${webhook.externalReference.slice(0, 16)}...`
+                          : webhook.externalReference
+                        : "-"}
                     </TableCell>
-                    <TableCell>{webhook.supplierName}</TableCell>
-                    <TableCell>₦{webhook.amount?.toLocaleString()}</TableCell>
+                    <TableCell>{webhook.supplierName || "-"}</TableCell>
+                    <TableCell>
+                      ₦{(webhook.amount ?? 0).toLocaleString()}
+                    </TableCell>
                     <TableCell>{webhook.phoneNumber || "-"}</TableCell>
                     <TableCell>
-                      <Badge className={statusColors[webhook.status]}>
-                        {webhook.status}
+                      <Badge className={statusColors[webhook.status] || ""}>
+                        {webhook.status || "UNKNOWN"}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {format(new Date(webhook.createdAt), "PP")}
+                      {webhook.createdAt
+                        ? format(new Date(webhook.createdAt), "PP")
+                        : "-"}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" asChild>
