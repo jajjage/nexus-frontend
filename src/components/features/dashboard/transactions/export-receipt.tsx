@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import type { Transaction } from "@/types/wallet.types";
@@ -19,6 +20,7 @@ const getStatusColor = (status: string, isRefund?: boolean) => {
   switch (statusLower) {
     case "completed":
     case "received":
+    case "success": // Added success status
       return "#166534"; // green-800
     case "pending":
       return "#B45309"; // amber-700
@@ -329,9 +331,13 @@ export const ExportReceipt = React.forwardRef<
           {formattedAmount}
         </h1>
 
-        {/* Status as Text */}
+        {/* Status with Icon */}
         <div
           style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
             fontSize: "14px",
             fontWeight: "600",
             color: statusColor,
@@ -339,6 +345,57 @@ export const ExportReceipt = React.forwardRef<
             letterSpacing: "0.5px",
           }}
         >
+          {/* Status Icon */}
+          {(["success", "completed", "received"].includes(
+            (transaction.related?.status || "").toLowerCase()
+          ) ||
+            isRefund) && (
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={statusColor}
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
+          {transaction.related?.status?.toLowerCase() === "pending" && (
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={statusColor}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          )}
+          {["failed", "reversed"].includes(
+            (transaction.related?.status || "").toLowerCase()
+          ) && (
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={statusColor}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+          )}
           {getDisplayStatus()}
         </div>
 
