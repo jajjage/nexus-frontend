@@ -228,12 +228,23 @@ export const ExportReceipt = React.forwardRef<
     isRefund
   );
 
-  // Get display status text
+  // Get display status text - Title case for better appearance
   const getDisplayStatus = () => {
-    if (isRefund) return "REFUNDED";
+    if (isRefund) return "Refunded";
     const status = transaction.related?.status?.toLowerCase();
-    if (status === "reversed") return "FAILED";
-    return (transaction.related?.status || "PENDING").toUpperCase();
+    switch (status) {
+      case "success":
+      case "completed":
+      case "received":
+        return "Successful";
+      case "pending":
+        return "Pending";
+      case "failed":
+      case "reversed":
+        return "Failed";
+      default:
+        return "Pending";
+    }
   };
 
   const operatorName =
@@ -331,42 +342,42 @@ export const ExportReceipt = React.forwardRef<
           {formattedAmount}
         </h1>
 
-        {/* Status with Icon */}
+        {/* Status Badge - Pill style */}
         <div
           style={{
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
             gap: "6px",
-            fontSize: "14px",
-            fontWeight: "600",
-            color: statusColor,
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
+            padding: "6px 16px",
+            borderRadius: "20px",
+            border: `1.5px solid ${statusColor}`,
+            backgroundColor: "transparent",
           }}
         >
-          {/* Status Icon */}
+          {/* Status Icon - Checkmark in circle for success */}
           {(["success", "completed", "received"].includes(
             (transaction.related?.status || "").toLowerCase()
           ) ||
             isRefund) && (
             <svg
-              width="16"
-              height="16"
+              width="18"
+              height="18"
               viewBox="0 0 24 24"
               fill="none"
               stroke={statusColor}
-              strokeWidth="3"
+              strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <polyline points="20 6 9 17 4 12" />
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="9 12 11 14 15 10" />
             </svg>
           )}
           {transaction.related?.status?.toLowerCase() === "pending" && (
             <svg
-              width="16"
-              height="16"
+              width="18"
+              height="18"
               viewBox="0 0 24 24"
               fill="none"
               stroke={statusColor}
@@ -382,8 +393,8 @@ export const ExportReceipt = React.forwardRef<
             (transaction.related?.status || "").toLowerCase()
           ) && (
             <svg
-              width="16"
-              height="16"
+              width="18"
+              height="18"
               viewBox="0 0 24 24"
               fill="none"
               stroke={statusColor}
@@ -396,7 +407,15 @@ export const ExportReceipt = React.forwardRef<
               <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
           )}
-          {getDisplayStatus()}
+          <span
+            style={{
+              fontSize: "14px",
+              fontWeight: "500",
+              color: statusColor,
+            }}
+          >
+            {getDisplayStatus()}
+          </span>
         </div>
 
         <p style={{ margin: "8px 0 0 0", fontSize: "12px", color: "#9CA3AF" }}>
