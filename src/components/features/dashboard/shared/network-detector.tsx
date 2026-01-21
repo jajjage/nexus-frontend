@@ -103,7 +103,7 @@ export function NetworkDetector({
       <div className="relative">
         <Input
           type="tel"
-          value={phoneNumber}
+          // value={phoneNumber}
           onChange={handleChange}
           onPaste={handlePaste}
           placeholder="Enter Phone Number (e.g., 0803...)"
