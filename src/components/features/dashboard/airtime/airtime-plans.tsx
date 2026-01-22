@@ -70,17 +70,8 @@ export function AirtimePlans() {
   );
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
-  // Initialize phone number from user profile ONLY ONCE
-  useEffect(() => {
-    if (user?.phoneNumber && !hasInitializedPhone) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: one-time initialization from user context
-      setPhoneNumber(user.phoneNumber);
-      setHasInitializedPhone(true);
-      setIsPhoneNumberExplicitlyEntered(false); // Auto-filled numbers don't count as explicit
-      // Network detection will be handled by the auto-detect effect below
-      // once operators are loaded
-    }
-  }, [user, hasInitializedPhone]);
+  // Phone number is NOT auto-filled - user must enter it manually
+  // This ensures users are intentional about the recipient number
 
   // Fetch all airtime products.
   const { data, isLoading, error } = useProducts(
