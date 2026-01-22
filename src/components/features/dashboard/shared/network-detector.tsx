@@ -24,6 +24,7 @@ interface NetworkDetectorProps {
   phoneNumber: string;
   onPhoneNumberChange: (value: string) => void;
   onNetworkDetected: (network: string) => void;
+  onExplicitEntry?: (isExplicit: boolean) => void;
   selectedNetworkLogo?: string;
   recentNumbers?: RecentNumber[] | string[];
 }
@@ -32,6 +33,7 @@ export function NetworkDetector({
   phoneNumber,
   onPhoneNumberChange,
   onNetworkDetected,
+  onExplicitEntry,
   selectedNetworkLogo,
   recentNumbers = [],
 }: NetworkDetectorProps) {
@@ -43,6 +45,10 @@ export function NetworkDetector({
     if (!/^\d*$/.test(value)) return;
 
     onPhoneNumberChange(value);
+    // Mark as explicitly entered when user types
+    if (value.length > 0) {
+      onExplicitEntry?.(true);
+    }
 
     const network = detectNetworkProvider(value);
     if (network) {
@@ -67,6 +73,10 @@ export function NetworkDetector({
     cleanedNumber = cleanedNumber.slice(0, 11);
 
     onPhoneNumberChange(cleanedNumber);
+    // Mark as explicitly entered when user pastes
+    if (cleanedNumber.length > 0) {
+      onExplicitEntry?.(true);
+    }
 
     const network = detectNetworkProvider(cleanedNumber);
     if (network) {
@@ -77,11 +87,13 @@ export function NetworkDetector({
   // Handle clear input
   const handleClear = () => {
     onPhoneNumberChange("");
+    onExplicitEntry?.(false); // Reset explicit entry when cleared
   };
 
   // Select beneficiary
   const handleSelectNumber = (number: string) => {
     onPhoneNumberChange(number);
+    onExplicitEntry?.(true); // Mark as explicit when selecting from recent
     setOpen(false);
     const network = detectNetworkProvider(number);
     if (network) {
@@ -103,7 +115,7 @@ export function NetworkDetector({
       <div className="relative">
         <Input
           type="tel"
-          // value={phoneNumber}
+          value={phoneNumber}
           onChange={handleChange}
           onPaste={handlePaste}
           placeholder="Enter Phone Number (e.g., 0803...)"

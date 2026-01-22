@@ -48,6 +48,8 @@ export function DataPlans() {
   const [detectedNetwork, setDetectedNetwork] = useState<string | null>(null);
   const [hasInitializedPhone, setHasInitializedPhone] = useState(false);
   const [_networkMismatch, setNetworkMismatch] = useState(false); // Track if phone doesn't match selected network
+  const [isPhoneNumberExplicitlyEntered, setIsPhoneNumberExplicitlyEntered] =
+    useState(false); // Track if user explicitly typed/entered number
 
   // Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -83,6 +85,7 @@ export function DataPlans() {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: one-time initialization from user context
       setPhoneNumber(user.phoneNumber);
       setHasInitializedPhone(true);
+      setIsPhoneNumberExplicitlyEntered(false); // Auto-filled numbers don't count as explicit
       // Network detection will be handled by the auto-detect effect below
       // once operators are loaded
     }
@@ -223,6 +226,17 @@ export function DataPlans() {
 
   // Handle Plan Click
   const handlePlanClick = (product: Product) => {
+    // First, check if user explicitly entered a phone number (not just auto-filled)
+    if (!isPhoneNumberExplicitlyEntered) {
+      toast.error("Please enter a phone number before selecting a product.", {
+        description: "We need a valid number to proceed.",
+        duration: 4000,
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    // Then validate the phone number length
     if (!phoneNumber || phoneNumber.length < 11) {
       toast.error("Please enter a valid phone number first.");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -518,6 +532,7 @@ export function DataPlans() {
         phoneNumber={phoneNumber}
         onPhoneNumberChange={setPhoneNumber}
         onNetworkDetected={handleNetworkDetected}
+        onExplicitEntry={setIsPhoneNumberExplicitlyEntered}
         selectedNetworkLogo={currentLogo}
         recentNumbers={user?.recentlyUsedNumbers || []}
       />
