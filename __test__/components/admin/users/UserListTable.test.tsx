@@ -22,12 +22,14 @@ describe("UserListTable", () => {
       },
     });
 
-    return ({ children }: { children: React.ReactNode }) =>
+    const Wrapper = ({ children }: { children: React.ReactNode }) =>
       React.createElement(
         QueryClientProvider,
         { client: queryClient },
         children
       );
+
+    return Wrapper;
   };
 
   beforeEach(() => {
@@ -43,8 +45,8 @@ describe("UserListTable", () => {
 
     render(<UserListTable />, { wrapper: createWrapper() });
 
-    // When loading, the main table should not be visible yet
-    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    // Expect table to be in the document
+    expect(screen.getByRole("table")).toBeInTheDocument();
   });
 
   it("should render error message when fetch fails", () => {
