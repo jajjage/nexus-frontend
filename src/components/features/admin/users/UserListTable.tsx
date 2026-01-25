@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAdminUsers } from "@/hooks/admin/useAdminUsers";
+import { useDebounce } from "@/hooks/useDebounce";
 import { AdminUser } from "@/types/admin/user.types";
 import { ChevronLeft, ChevronRight, Search, UserPlus } from "lucide-react";
 import Link from "next/link";
@@ -22,70 +23,61 @@ import { useMemo, useState } from "react";
 export function UserListTable() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebounce(searchInput, 500);
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  const limit = 10;
+
+  // Hybrid search strategy:
+  // When searching, fetch more users (100) to increase chances of finding the user
+  // since the backend search might be limited or fuzzy.
+  // We then rely on client-side filtering to ensure exact matches.
+  const limit = debouncedSearch ? 100 : 10;
+
+  const [prevSearch, setPrevSearch] = useState(debouncedSearch);
+
+  // Reset page when search term changes
+  // We use this pattern instead of useEffect to avoid cascading renders
+  // See: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  if (debouncedSearch !== prevSearch) {
+    setPrevSearch(debouncedSearch);
+    setPage(1);
+  }
 
   const { data, isLoading, isError, refetch } = useAdminUsers({
     page,
     limit,
     role: roleFilter === "all" ? undefined : roleFilter,
+    search: debouncedSearch,
   });
 
-  const allUsers = data?.data?.users || [];
   const pagination = data?.data?.pagination;
 
-  // Client-side filtering for search and role (as a fallback or refinement)
+  // Client-side filtering
+  // This acts as a fallback/refinement. Even if backend returns mixed results,
+  // we filter them down to exactly what the user typed.
   const users = useMemo(() => {
+    const allUsers = data?.data?.users || [];
     let filtered = allUsers;
 
-    // Filter by role if backend isn't doing it strict enough or client-side switch is preferred
+    // 1. Filter by role
     if (roleFilter !== "all") {
       filtered = filtered.filter(
         (user) => user.role.toLowerCase() === roleFilter.toLowerCase()
       );
     }
 
-    if (!searchInput.trim()) {
-      return filtered;
+    // 2. Filter by search term (Hybrid approach)
+    if (debouncedSearch) {
+      const searchLower = debouncedSearch.toLowerCase();
+      filtered = filtered.filter(
+        (user) =>
+          user.fullName?.toLowerCase().includes(searchLower) ||
+          user.email?.toLowerCase().includes(searchLower) ||
+          user.phoneNumber?.toLowerCase().includes(searchLower)
+      );
     }
-    const searchLower = searchInput.toLowerCase();
-    return filtered.filter(
-      (user) =>
-        user.fullName?.toLowerCase().includes(searchLower) ||
-        user.email?.toLowerCase().includes(searchLower) ||
-        user.phoneNumber?.toLowerCase().includes(searchLower)
-    );
-  }, [allUsers, searchInput, roleFilter]);
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-8 w-48" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Card>
-        <CardContent className="py-8 text-center">
-          <p className="text-muted-foreground">Failed to load users</p>
-          <Button variant="outline" className="mt-4" onClick={() => refetch()}>
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+    return filtered;
+  }, [data, roleFilter, debouncedSearch]);
 
   const tabs = [
     { id: "all", label: "All Users" },
@@ -150,7 +142,43 @@ export function UserListTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.length === 0 ? (
+              {isLoading ? (
+                // Loading Skeletons for Rows
+                [...Array(5)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-48" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-16" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="ml-auto h-8 w-16" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-8 text-center">
+                    <p className="text-muted-foreground">
+                      Failed to load users
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="mt-4"
+                      onClick={() => refetch()}
+                    >
+                      Retry
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ) : users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-8 text-center">
                     {searchInput
@@ -194,7 +222,7 @@ export function UserListTable() {
         </div>
 
         {/* Pagination */}
-        {pagination && (
+        {!isLoading && !isError && pagination && (
           <div className="mt-4 flex items-center justify-between">
             <p className="text-muted-foreground text-sm">
               Page {pagination.page} of {pagination.totalPages} (
