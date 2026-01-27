@@ -1,10 +1,13 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.example.yourapp",
-      "sha256_cert_fingerprints": ["REPLACE_WITH_YOUR_APP_CERT_FINGERPRINT"]
+      "package_name": "com.nexus.nexusdatasub",
+      "sha256_cert_fingerprints": "92:64:27:B1:4F:4E:6D:27:4B:1A:F0:E1:46:9D:9D:2A:52:5E:27:F4:43:4E:8D:06:24:20:8B:D1:66:9F:E7:C8"
     }
   }
 ]
