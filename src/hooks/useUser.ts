@@ -215,3 +215,26 @@ export const useCreateTopupWithCallback = (
     },
   });
 };
+
+/**
+ * Delete user account
+ */
+export const useDeleteAccount = () => {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: (password: string) => userService.deleteAccount(password),
+    onSuccess: (data) => {
+      // Clear all cached data
+      queryClient.clear();
+
+      // Redirect to home page after account deletion
+      router.push("/");
+    },
+    onError: (error: AxiosError<any>) => {
+      console.error("Account deletion failed:", error.response?.data?.message);
+      throw error; // Re-throw so the calling component can handle the error
+    },
+  });
+};

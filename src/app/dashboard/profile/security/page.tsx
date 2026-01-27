@@ -2,14 +2,24 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight, KeyRound, Lock, Shield } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  KeyRound,
+  Lock,
+  Shield,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import { SmartBiometricIcon } from "@/components/ui/smart-biometric-icon";
+import { DeleteAccountModal } from "@/components/features/dashboard/DeleteAccountModal";
 import { useBiometricType } from "@/hooks/useBiometricType";
 
 export default function SecurityPage() {
   const { label } = useBiometricType();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const authSection = [
     {
@@ -139,6 +149,39 @@ export default function SecurityPage() {
           </div>
         </section>
 
+        {/* Danger Zone Section */}
+        <section className="border-border bg-destructive/10 rounded-lg border p-4 sm:p-5">
+          <div className="mb-3 sm:mb-4">
+            <h2 className="text-destructive text-xs font-semibold tracking-wide uppercase sm:text-sm">
+              Danger Zone
+            </h2>
+            <p className="text-muted-foreground mt-1 text-xs">
+              Irreversible actions that affect your account
+            </p>
+          </div>
+          <div className="space-y-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div className="flex-1">
+                <h3 className="text-foreground text-sm font-semibold">
+                  Delete Account
+                </h3>
+                <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
+                  Permanently delete your account and all associated data
+                </p>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Account
+              </Button>
+            </div>
+          </div>
+        </section>
+
         {/* Security Tips */}
         <section className="border-border bg-muted/50 rounded-lg border p-4 sm:p-5">
           <h3 className="text-foreground mb-3 text-sm font-semibold">
@@ -152,6 +195,11 @@ export default function SecurityPage() {
           </ul>
         </section>
       </div>
+
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+      />
     </div>
   );
 }

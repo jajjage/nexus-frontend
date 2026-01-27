@@ -149,4 +149,14 @@ export const userService = {
     );
     return response.data;
   },
+
+  /**
+   * Delete current user's account
+   */
+  deleteAccount: async (password: string): Promise<ApiResponse> => {
+    const response = await apiClient.delete<ApiResponse>("/user/profile/me", {
+      data: { password },
+    });
+    return response.data;
+  },
 };
