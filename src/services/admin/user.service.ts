@@ -18,6 +18,24 @@ import { ApiResponse } from "@/types/api.types";
 
 const BASE_PATH = "/admin/users";
 
+// Helper to map API response (snake_case) to Frontend type (camelCase)
+const mapFromApiUser = (apiUser: any): AdminUser => {
+  return {
+    id: apiUser.id,
+    userId: apiUser.user_id || apiUser.userId,
+    fullName: apiUser.full_name || apiUser.fullName,
+    email: apiUser.email,
+    phoneNumber: apiUser.phone_number || apiUser.phoneNumber,
+    role: apiUser.role,
+    isVerified: apiUser.is_verified || apiUser.isVerified,
+    isSuspended: apiUser.is_suspended || apiUser.isSuspended,
+    twoFactorEnabled: apiUser.two_factor_enabled || apiUser.twoFactorEnabled,
+    balance: apiUser.balance,
+    createdAt: apiUser.created_at || apiUser.createdAt,
+    updatedAt: apiUser.updated_at || apiUser.updatedAt,
+  };
+};
+
 export const adminUserService = {
   /**
    * Get all users with pagination
@@ -25,10 +43,13 @@ export const adminUserService = {
   getUsers: async (
     params?: AdminUserQueryParams
   ): Promise<ApiResponse<AdminUserListResponse>> => {
-    const response = await apiClient.get<ApiResponse<AdminUserListResponse>>(
-      BASE_PATH,
-      { params }
-    );
+    const response = await apiClient.get<any>(BASE_PATH, { params });
+
+    // Map users in the list
+    if (response.data.success && response.data.data?.users) {
+      response.data.data.users = response.data.data.users.map(mapFromApiUser);
+    }
+
     return response.data;
   },
 
@@ -36,9 +57,13 @@ export const adminUserService = {
    * Get a single user by ID
    */
   getUserById: async (userId: string): Promise<ApiResponse<AdminUser>> => {
-    const response = await apiClient.get<ApiResponse<AdminUser>>(
-      `${BASE_PATH}/${userId}`
-    );
+    const response = await apiClient.get<any>(`${BASE_PATH}/${userId}`);
+
+    if (response.data.success && response.data.data) {
+      const rawData = response.data.data.user || response.data.data;
+      response.data.data = mapFromApiUser(rawData);
+    }
+
     return response.data;
   },
 
@@ -61,10 +86,13 @@ export const adminUserService = {
     userId: string,
     data: UpdateUserRequest
   ): Promise<ApiResponse<AdminUser>> => {
-    const response = await apiClient.put<ApiResponse<AdminUser>>(
-      `${BASE_PATH}/${userId}`,
-      data
-    );
+    const response = await apiClient.put<any>(`${BASE_PATH}/${userId}`, data);
+
+    if (response.data.success && response.data.data) {
+      const rawData = response.data.data.user || response.data.data;
+      response.data.data = mapFromApiUser(rawData);
+    }
+
     return response.data;
   },
 
@@ -72,9 +100,15 @@ export const adminUserService = {
    * Suspend a user
    */
   suspendUser: async (userId: string): Promise<ApiResponse> => {
-    const response = await apiClient.post<ApiResponse>(
+    const response = await apiClient.post<any>(
       `${BASE_PATH}/${userId}/suspend`
     );
+
+    // If the API returns updated user data, map it
+    if (response.data.success && response.data.data?.user) {
+      response.data.data.user = mapFromApiUser(response.data.data.user);
+    }
+
     return response.data;
   },
 
@@ -82,9 +116,15 @@ export const adminUserService = {
    * Unsuspend a user
    */
   unsuspendUser: async (userId: string): Promise<ApiResponse> => {
-    const response = await apiClient.post<ApiResponse>(
+    const response = await apiClient.post<any>(
       `${BASE_PATH}/${userId}/unsuspend`
     );
+
+    // If the API returns updated user data, map it
+    if (response.data.success && response.data.data?.user) {
+      response.data.data.user = mapFromApiUser(response.data.data.user);
+    }
+
     return response.data;
   },
 

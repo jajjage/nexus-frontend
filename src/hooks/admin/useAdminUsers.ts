@@ -127,8 +127,21 @@ export function useSuspendUser() {
     mutationFn: (userId: string) => adminUserService.suspendUser(userId),
     onSuccess: (response, userId) => {
       toast.success(response.message || "User suspended");
+      // Invalidate the specific user detail to update status
       queryClient.invalidateQueries({ queryKey: adminUserKeys.detail(userId) });
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.list() });
+      // Invalidate all list queries to reflect the status change in the user list
+      // This will match all queries that start with ["admin", "users", "list"]
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return (
+            Array.isArray(queryKey) &&
+            queryKey[0] === "admin" &&
+            queryKey[1] === "users" &&
+            queryKey[2] === "list"
+          );
+        },
+      });
     },
     onError: (error: AxiosError<any>) => {
       toast.error(error.response?.data?.message || "Failed to suspend user");
@@ -146,8 +159,21 @@ export function useUnsuspendUser() {
     mutationFn: (userId: string) => adminUserService.unsuspendUser(userId),
     onSuccess: (response, userId) => {
       toast.success(response.message || "User unsuspended");
+      // Invalidate the specific user detail to update status
       queryClient.invalidateQueries({ queryKey: adminUserKeys.detail(userId) });
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.list() });
+      // Invalidate all list queries to reflect the status change in the user list
+      // This will match all queries that start with ["admin", "users", "list"]
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return (
+            Array.isArray(queryKey) &&
+            queryKey[0] === "admin" &&
+            queryKey[1] === "users" &&
+            queryKey[2] === "list"
+          );
+        },
+      });
     },
     onError: (error: AxiosError<any>) => {
       toast.error(error.response?.data?.message || "Failed to unsuspend user");
