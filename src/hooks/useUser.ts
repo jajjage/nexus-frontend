@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { userService } from "@/services/user.service";
 import {
   GetPurchasesParams,
@@ -83,7 +84,7 @@ export const useSetPin = () => {
 
   return useMutation({
     mutationFn: (data: SetPinRequest) => userService.setPin(data),
-    onSuccess: (data) => {
+    onSuccess: (_data) => {
       // Invalidate profile to update hasPin status
       queryClient.invalidateQueries({ queryKey: userKeys.profile() });
       // Also invalidate auth user query to update global auth state (hasPin)
@@ -225,7 +226,7 @@ export const useDeleteAccount = () => {
 
   return useMutation({
     mutationFn: (password: string) => userService.deleteAccount(password),
-    onSuccess: (data) => {
+    onSuccess: (_data) => {
       // Clear all cached data
       queryClient.clear();
 

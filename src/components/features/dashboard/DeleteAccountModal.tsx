@@ -99,7 +99,7 @@ export function DeleteAccountModal({
             >
               {isSubmitting ? (
                 <>
-                  <Spinner className="mr-2" size="sm" />
+                  <Spinner className="mr-2 size-4" />
                   Deleting...
                 </>
               ) : (
