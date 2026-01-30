@@ -1,0 +1,29 @@
+"use client";
+
+import { useEffect } from "react";
+import {
+  startHealthMonitoring,
+  stopHealthMonitoring,
+} from "@/lib/health-check";
+
+interface HealthMonitorProps {
+  children: React.ReactNode;
+}
+
+/**
+ * Health Monitor Component
+ * Monitors backend health and redirects to maintenance page if needed
+ */
+export function HealthMonitor({ children }: HealthMonitorProps) {
+  useEffect(() => {
+    // Start health monitoring when component mounts
+    startHealthMonitoring();
+
+    // Cleanup function to stop monitoring when component unmounts
+    return () => {
+      stopHealthMonitoring();
+    };
+  }, []);
+
+  return <>{children}</>;
+}
