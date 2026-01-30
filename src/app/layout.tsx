@@ -3,7 +3,7 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { ServiceWorkerNavigationListener } from "@/components/ServiceWorkerNavigationListener";
 import { NetworkStatusBanner } from "@/components/layout/network-status-banner";
 import { SoftLockScreen } from "@/components/pwa/SoftLockScreen";
-import { HealthMonitor } from "@/components/HealthMonitor";
+// import { HealthMonitor } from "@/components/HealthMonitor";
 import { AuthProvider } from "@/context/AuthContext";
 import { SoftLockProvider } from "@/context/SoftLockContext";
 import { QueryProvider } from "@/providers/query-provider";
@@ -135,18 +135,18 @@ export default function RootLayout({
           <QueryProvider>
             <AuthProvider>
               <SoftLockProvider>
-                <HealthMonitor>
-                  <div data-app-root>
-                    <NetworkStatusBanner />
-                    <MarkupSyncer />
-                    <ServiceWorkerNavigationListener />
-                    <PWAInstallPrompt />
-                    {/* <FcmSyncer /> */}
-                    <Toaster richColors position="top-right" />
-                    <SoftLockScreen />
-                    {children}
-                  </div>
-                </HealthMonitor>
+                {/* <HealthMonitor> */}
+                <div data-app-root>
+                  <NetworkStatusBanner />
+                  <MarkupSyncer />
+                  <ServiceWorkerNavigationListener />
+                  <PWAInstallPrompt />
+                  {/* <FcmSyncer /> */}
+                  <Toaster richColors position="top-right" />
+                  <SoftLockScreen />
+                  {children}
+                </div>
+                {/* </HealthMonitor> */}
               </SoftLockProvider>
             </AuthProvider>
           </QueryProvider>

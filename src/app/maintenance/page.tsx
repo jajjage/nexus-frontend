@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshCw, WifiOff } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function MaintenancePage() {
   const [isChecking, setIsChecking] = useState(false);
@@ -19,6 +19,7 @@ export default function MaintenancePage() {
         // Backend is back up, redirect to home
         window.location.href = "/";
       }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       // Still down, no need to do anything
       console.log("Backend still unavailable");
@@ -52,8 +53,8 @@ export default function MaintenancePage() {
           </CardHeader>
           <CardContent className="text-center">
             <p className="mb-6 text-gray-600">
-              We're currently experiencing technical difficulties with our
-              backend services. We're working hard to resolve this issue as
+              We&apos;re currently experiencing technical difficulties with our
+              backend services. We&apos;re working hard to resolve this issue as
               quickly as possible.
             </p>
 
