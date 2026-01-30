@@ -5,7 +5,7 @@
 
 // Health check configuration
 const HEALTH_CHECK_CONFIG = {
-  endpoint: "/api/v1/health", // Health check endpoint
+  endpoint: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1", // Health check endpoint
   interval: 30000, // 30 seconds
   timeout: 10000, // 10 seconds timeout
   maxRetries: 3, // Number of failed checks before considering down
