@@ -6,25 +6,7 @@ import { RefreshCw, WifiOff } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function MaintenancePage() {
-  const [timeRemaining, setTimeRemaining] = useState(30); // Countdown timer
   const [isChecking, setIsChecking] = useState(false);
-
-  // Countdown timer effect
-  useEffect(() => {
-    if (timeRemaining <= 0) return;
-
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timeRemaining]);
 
   const handleRetry = async () => {
     setIsChecking(true);
@@ -36,17 +18,25 @@ export default function MaintenancePage() {
       if (response.ok) {
         // Backend is back up, redirect to home
         window.location.href = "/";
-      } else {
-        // Still down, reset timer
-        setTimeRemaining(30);
       }
     } catch (error) {
-      // Still down, reset timer
-      setTimeRemaining(30);
+      // Still down, no need to do anything
+      console.log("Backend still unavailable");
     } finally {
       setIsChecking(false);
     }
   };
+
+  // Calculate the estimated restoration time (24 hours from now)
+  const estimatedRestorationTime = new Date();
+  estimatedRestorationTime.setDate(estimatedRestorationTime.getDate() + 1);
+  const formattedTime = estimatedRestorationTime.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 to-orange-50 p-4">
@@ -89,7 +79,7 @@ export default function MaintenancePage() {
                 <li className="flex items-start">
                   <span className="mr-2 text-blue-500">•</span>
                   <span>
-                    Service should be restored within the next few minutes
+                    Service should be restored within the next 24 hours
                   </span>
                 </li>
               </ul>
@@ -99,10 +89,12 @@ export default function MaintenancePage() {
               <p className="mb-2 font-medium text-gray-700">
                 Estimated time until service restoration:
               </p>
-              <div className="text-3xl font-bold text-orange-600">
-                {Math.floor(timeRemaining / 60)}:
-                {(timeRemaining % 60).toString().padStart(2, "0")}
+              <div className="text-xl font-bold text-orange-600">
+                Within 24 Hours
               </div>
+              <p className="mt-2 text-sm text-gray-600">
+                Expected by: {formattedTime}
+              </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
