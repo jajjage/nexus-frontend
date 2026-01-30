@@ -3,8 +3,6 @@
  * Detects when backend services are down and redirects to maintenance page
  */
 
-import { ApiResponse } from "@/types/api.types";
-
 // Health check configuration
 const HEALTH_CHECK_CONFIG = {
   endpoint: "/api/v1/health", // Health check endpoint
@@ -16,6 +14,7 @@ const HEALTH_CHECK_CONFIG = {
 // Counter for consecutive failed health checks
 let failedHealthChecks = 0;
 let healthCheckInterval: NodeJS.Timeout | null = null;
+let isCheckingInitialStatus = false; // Flag to prevent multiple initial checks
 
 /**
  * Perform a health check on the backend
@@ -52,6 +51,34 @@ async function checkBackendHealth(): Promise<boolean> {
 function redirectToMaintenance() {
   console.log("[Health Check] Redirecting to maintenance page");
   window.location.href = "/maintenance";
+}
+
+/**
+ * Perform an immediate health check on app startup
+ */
+export async function checkInitialHealthStatus() {
+  if (isCheckingInitialStatus) {
+    // Prevent multiple initial checks
+    return;
+  }
+
+  isCheckingInitialStatus = true;
+
+  try {
+    const isHealthy = await checkBackendHealth();
+
+    if (!isHealthy) {
+      failedHealthChecks++;
+      if (failedHealthChecks >= HEALTH_CHECK_CONFIG.maxRetries) {
+        redirectToMaintenance();
+        return;
+      }
+    } else {
+      failedHealthChecks = 0;
+    }
+  } finally {
+    isCheckingInitialStatus = false;
+  }
 }
 
 /**

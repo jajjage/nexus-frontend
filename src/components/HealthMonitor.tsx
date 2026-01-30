@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import {
+  checkInitialHealthStatus,
   startHealthMonitoring,
   stopHealthMonitoring,
 } from "@/lib/health-check";
@@ -16,6 +17,9 @@ interface HealthMonitorProps {
  */
 export function HealthMonitor({ children }: HealthMonitorProps) {
   useEffect(() => {
+    // Perform an immediate health check when component mounts
+    checkInitialHealthStatus();
+
     // Start health monitoring when component mounts
     startHealthMonitoring();
 
