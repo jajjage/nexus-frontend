@@ -236,7 +236,7 @@ describe("LoginForm Component", () => {
 
   describe("Error Handling", () => {
     it("should display error alert when login fails", async () => {
-      const errorMessage = "Invalid credentials";
+      const errorMessage = "Generic Error";
       (useLogin as Mock).mockReturnValue({
         ...mockLoginMutation,
         isError: true,

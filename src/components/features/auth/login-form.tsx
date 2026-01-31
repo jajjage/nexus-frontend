@@ -259,10 +259,18 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
                     Note: This is a temporary notice that will be removed within
                     a week.
                   </p>
-                  <p>
+                  <div className="pt-1">
                     If you have any concerns or need to recover specific data,
-                    please contact the maintainer at <p>07033776056</p>.
-                  </p>
+                    please contact the maintainer at{" "}
+                    <span className="font-bold underline">07033776056</span> or{" "}
+                    <a
+                      href="mailto:support@nexusdatasub.com"
+                      className="font-bold underline"
+                    >
+                      mustaphajajjage@gmail.com
+                    </a>
+                    .
+                  </div>
                 </div>
               </AlertDescription>
             </Alert>
