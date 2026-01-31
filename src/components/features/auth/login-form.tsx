@@ -209,8 +209,12 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
     loginMutation.error?.response?.data?.require2fa ||
     loginMutation.error?.response?.data?.twoFactor;
 
+  const errorMessage = loginMutation.error?.response?.data?.message || "";
   const isMigrationError =
-    loginMutation.error?.response?.data?.message === "Account Update Required";
+    errorMessage === "Account Update Required" ||
+    errorMessage.toLowerCase().includes("invalid credentials") ||
+    errorMessage.toLowerCase().includes("user not found") ||
+    errorMessage.toLowerCase().includes("incorrect password");
 
   const showError = loginMutation.isError && !is2faError && !isMigrationError;
 
