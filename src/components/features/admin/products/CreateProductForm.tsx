@@ -79,43 +79,42 @@ export function CreateProductForm() {
       }
     }
 
-    createMutation.mutate(
-      {
-        operatorId,
-        productCode,
-        name,
-        productType,
-        denomAmount: typeof denomAmount === "number" ? denomAmount : 0,
-        dataMb,
-        validityDays,
-        isActive,
-        hasCashback,
-        cashbackPercentage:
-          hasCashback && cashbackPercentage
-            ? parseFloat(cashbackPercentage)
-            : undefined,
-        metadata: parsedMetadata,
-        categoryId: categoryId || undefined,
-        // Include supplier mapping if enabled
-        ...(includeMapping && supplierId
-          ? {
-              supplierId,
-              supplierProductCode,
-              supplierPrice:
-                typeof supplierPrice === "number" ? supplierPrice : undefined,
-              minOrderAmount,
-              maxOrderAmount,
-              leadTimeSeconds,
-              mappingIsActive,
-            }
-          : {}),
+    const payload = {
+      operatorId,
+      productCode,
+      name,
+      productType,
+      denomAmount: typeof denomAmount === "number" ? denomAmount : 0,
+      dataMb,
+      validityDays,
+      isActive,
+      has_cashback: hasCashback,
+      cashback_percentage:
+        hasCashback && cashbackPercentage
+          ? parseFloat(cashbackPercentage)
+          : undefined,
+      metadata: parsedMetadata,
+      categoryId: categoryId || undefined,
+      // Include supplier mapping if enabled
+      ...(includeMapping && supplierId
+        ? {
+            supplierId,
+            supplierProductCode,
+            supplierPrice:
+              typeof supplierPrice === "number" ? supplierPrice : undefined,
+            minOrderAmount,
+            maxOrderAmount,
+            leadTimeSeconds,
+            mappingIsActive,
+          }
+        : {}),
+    };
+
+    createMutation.mutate(payload, {
+      onSuccess: () => {
+        router.push("/admin/dashboard/products");
       },
-      {
-        onSuccess: () => {
-          router.push("/admin/dashboard/products");
-        },
-      }
-    );
+    });
   };
 
   return (

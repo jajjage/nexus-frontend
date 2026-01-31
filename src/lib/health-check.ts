@@ -1,6 +1,6 @@
 /**
- * Health Check and Maintenance Detection Service
- * Detects when backend services are down and redirects to maintenance page
+ * Health Check Service
+ * Detects when backend services are down
  */
 
 // Health check configuration
@@ -46,14 +46,6 @@ async function checkBackendHealth(): Promise<boolean> {
 }
 
 /**
- * Redirect to maintenance page
- */
-function redirectToMaintenance() {
-  console.log("[Health Check] Redirecting to maintenance page");
-  window.location.href = "/maintenance";
-}
-
-/**
  * Perform an immediate health check on app startup
  */
 export async function checkInitialHealthStatus() {
@@ -69,10 +61,6 @@ export async function checkInitialHealthStatus() {
 
     if (!isHealthy) {
       failedHealthChecks++;
-      if (failedHealthChecks >= HEALTH_CHECK_CONFIG.maxRetries) {
-        redirectToMaintenance();
-        return;
-      }
     } else {
       failedHealthChecks = 0;
     }
@@ -99,11 +87,6 @@ export function startHealthMonitoring() {
     } else {
       // Backend is down, increment counter
       failedHealthChecks++;
-
-      // If we've exceeded max retries, redirect to maintenance page
-      if (failedHealthChecks >= HEALTH_CHECK_CONFIG.maxRetries) {
-        redirectToMaintenance();
-      }
     }
   }, HEALTH_CHECK_CONFIG.interval);
 }
@@ -115,38 +98,5 @@ export function stopHealthMonitoring() {
   if (healthCheckInterval) {
     clearInterval(healthCheckInterval);
     healthCheckInterval = null;
-  }
-}
-
-/**
- * Manual health check - can be called from anywhere to immediately check status
- */
-export async function manualHealthCheck(): Promise<boolean> {
-  const isHealthy = await checkBackendHealth();
-
-  if (!isHealthy) {
-    failedHealthChecks++;
-    if (failedHealthChecks >= HEALTH_CHECK_CONFIG.maxRetries) {
-      redirectToMaintenance();
-    }
-  } else {
-    failedHealthChecks = 0;
-  }
-
-  return isHealthy;
-}
-
-/**
- * Check if we should redirect to maintenance page based on current health status
- */
-export async function shouldRedirectToMaintenance(): Promise<boolean> {
-  const isHealthy = await checkBackendHealth();
-
-  if (!isHealthy) {
-    failedHealthChecks++;
-    return failedHealthChecks >= HEALTH_CHECK_CONFIG.maxRetries;
-  } else {
-    failedHealthChecks = 0;
-    return false;
   }
 }

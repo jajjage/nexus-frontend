@@ -18,7 +18,9 @@ export interface Product {
   validityDays?: number | null;
   isActive: boolean;
   hasCashback?: boolean;
+  has_cashback?: boolean;
   cashbackPercentage?: number;
+  cashback_percentage?: number;
   metadata?: Record<string, unknown>;
   slug?: string | null;
   createdAt?: string;
@@ -70,8 +72,8 @@ export interface CreateProductRequest {
   isActive?: boolean;
   metadata?: Record<string, unknown>;
   // Cashback fields
-  hasCashback?: boolean;
-  cashbackPercentage?: number;
+  has_cashback?: boolean;
+  cashback_percentage?: number;
   // Category
   categoryId?: string;
   // Optional supplier mapping fields (creates mapping if provided)
@@ -92,8 +94,8 @@ export interface UpdateProductRequest {
   dataMb?: number;
   validityDays?: number;
   isActive?: boolean;
-  hasCashback?: boolean;
-  cashbackPercentage?: number;
+  has_cashback?: boolean;
+  cashback_percentage?: number;
   metadata?: Record<string, unknown>;
   // Category
   categoryId?: string;

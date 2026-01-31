@@ -59,6 +59,32 @@ const getCookie = (name: string): string | undefined => {
 };
 
 // ============================================================================
+// DEBUG CONFIG
+// ============================================================================
+
+const AUTH_DEBUG = {
+  enabled:
+    typeof window !== "undefined" &&
+    (localStorage.getItem("debug_auth") === "true" ||
+      process.env.NODE_ENV === "development"),
+  log: (message: string, data?: any) => {
+    if (AUTH_DEBUG.enabled) {
+      console.log(`[AUTH] ${message}`, data || "");
+    }
+  },
+  error: (message: string, data?: any) => {
+    if (AUTH_DEBUG.enabled) {
+      console.error(`[AUTH] ${message}`, data || "");
+    }
+  },
+  warn: (message: string, data?: any) => {
+    if (AUTH_DEBUG.enabled) {
+      console.warn(`[AUTH] ${message}`, data || "");
+    }
+  },
+};
+
+// ============================================================================
 // API CLIENT SETUP
 // ============================================================================
 
@@ -533,7 +559,7 @@ apiClient.interceptors.response.use(
           !isWebAuthnBusinessError &&
           authFailureKeywords.some((k) => normalized.includes(k));
 
-        console.error("[AUTH] Verification endpoint error", {
+        AUTH_DEBUG.error("Verification endpoint error", {
           status: error.response.status,
           url: originalRequest.url,
           message,
@@ -549,8 +575,8 @@ apiClient.interceptors.response.use(
           clearSessionCookies();
         } else {
           // Business logic 401 - do not expire session; let caller handle it
-          console.log(
-            "[AUTH] Verification endpoint returned business 401 - not expiring session",
+          AUTH_DEBUG.log(
+            "Verification endpoint returned business 401 - not expiring session",
             { url: originalRequest.url, message }
           );
         }

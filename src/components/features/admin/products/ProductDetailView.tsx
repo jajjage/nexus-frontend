@@ -97,29 +97,33 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
       setEditDataMb(product.dataMb ?? undefined);
       setEditValidityDays(product.validityDays ?? undefined);
       setEditIsActive(product.isActive);
-      setEditHasCashback(product.hasCashback ?? false);
-      setEditCashbackPercentage(product.cashbackPercentage ?? undefined);
+      setEditHasCashback(product.has_cashback ?? product.hasCashback ?? false);
+      setEditCashbackPercentage(
+        product.cashback_percentage ?? product.cashbackPercentage ?? undefined
+      );
       setIsEditOpen(true);
     }
   };
 
   const handleSaveEdit = () => {
+    const payload = {
+      name: editName,
+      productCode: editProductCode,
+      productType: editProductType,
+      denomAmount: editDenomAmount,
+      dataMb: editDataMb,
+      validityDays: editValidityDays,
+      isActive: editIsActive,
+      has_cashback: editHasCashback,
+      cashback_percentage: editHasCashback ? editCashbackPercentage : undefined,
+    };
+
+    console.log("[ProductDetailView] Updating payload:", payload);
+
     updateMutation.mutate(
       {
         productId,
-        data: {
-          name: editName,
-          productCode: editProductCode,
-          productType: editProductType,
-          denomAmount: editDenomAmount,
-          dataMb: editDataMb,
-          validityDays: editValidityDays,
-          isActive: editIsActive,
-          hasCashback: editHasCashback,
-          cashbackPercentage: editHasCashback
-            ? editCashbackPercentage
-            : undefined,
-        },
+        data: payload,
       },
       {
         onSuccess: () => setIsEditOpen(false),

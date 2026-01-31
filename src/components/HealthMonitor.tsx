@@ -13,7 +13,7 @@ interface HealthMonitorProps {
 
 /**
  * Health Monitor Component
- * Monitors backend health and redirects to maintenance page if needed
+ * Monitors backend health
  */
 export function HealthMonitor({ children }: HealthMonitorProps) {
   useEffect(() => {
