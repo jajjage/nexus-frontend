@@ -261,14 +261,7 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
                   </p>
                   <p>
                     If you have any concerns or need to recover specific data,
-                    please contact the maintainer at{" "}
-                    <a
-                      href="mailto:support@nexusdatasub.com"
-                      className="font-bold underline"
-                    >
-                      support@nexusdatasub.com
-                    </a>
-                    .
+                    please contact the maintainer at <p>07033776056</p>.
                   </p>
                 </div>
               </AlertDescription>
