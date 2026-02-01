@@ -41,6 +41,8 @@ export interface Product {
   name: string;
   productType: "airtime" | "data" | string;
   denomAmount: string;
+  minAmount?: number;
+  maxAmount?: number;
   dataMb: number | null;
   validityDays: number | null;
   isActive: boolean;

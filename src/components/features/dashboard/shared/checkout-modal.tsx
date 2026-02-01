@@ -77,6 +77,7 @@ export function CheckoutModal({
   // Check for active offer discount
   // If product.discountedPrice is provided and less than base price, use it
   const hasOfferDiscount =
+    !!product.activeOffer &&
     product.discountedPrice !== undefined &&
     product.discountedPrice !== null &&
     product.discountedPrice < baseSellingPrice;
