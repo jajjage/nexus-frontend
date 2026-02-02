@@ -76,7 +76,22 @@ function storeUserRole(role: string | undefined) {
 function getStoredLoginUrl(): string {
   if (typeof window === "undefined") return "/login";
   const role = localStorage.getItem("auth_user_role");
-  return role === "admin" || role === "staff" ? "/admin/login" : "/login";
+  const baseUrl =
+    role === "admin" || role === "staff" ? "/admin/login" : "/login";
+
+  // Capture current path for redirect back
+  const currentPath = window.location.pathname + window.location.search;
+  if (
+    currentPath &&
+    currentPath !== "/" &&
+    !currentPath.startsWith("/login") &&
+    !currentPath.startsWith("/admin/login") &&
+    !currentPath.startsWith("/register")
+  ) {
+    return `${baseUrl}?returnUrl=${encodeURIComponent(currentPath)}`;
+  }
+
+  return baseUrl;
 }
 
 // ============================================================================
@@ -478,9 +493,15 @@ export function useLogin(expectedRole?: "user" | "admin") {
       // iOS Safari may not persist localStorage before page unload otherwise
       await new Promise((resolve) => setTimeout(resolve, 150));
 
+      // Check for returnUrl
+      const searchParams = new URLSearchParams(window.location.search);
+      const returnUrl = searchParams.get("returnUrl");
+      const safeReturnUrl =
+        returnUrl && returnUrl.startsWith("/") ? returnUrl : null;
+
       if (user?.role === "admin") {
         console.log("[AUTH] Redirecting admin to dashboard");
-        window.location.href = "/admin/dashboard";
+        window.location.href = safeReturnUrl || "/admin/dashboard";
       } else if (!user?.hasPin) {
         // Check if we've already done setup on this device
         const isSetupDone =
@@ -491,14 +512,14 @@ export function useLogin(expectedRole?: "user" | "admin") {
           console.log(
             "[AUTH] User missing PIN but setup done locally - redirecting to dashboard"
           );
-          window.location.href = "/dashboard";
+          window.location.href = safeReturnUrl || "/dashboard";
         } else {
           console.log("[AUTH] User missing PIN - redirecting to setup");
           window.location.href = "/setup";
         }
       } else {
         console.log("[AUTH] Redirecting user to dashboard");
-        window.location.href = "/dashboard";
+        window.location.href = safeReturnUrl || "/dashboard";
       }
     },
 
