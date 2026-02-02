@@ -1,13 +1,13 @@
 "use client";
 
-import { Send, Phone, Wifi, Receipt } from "lucide-react";
+import { Phone, Wifi, Receipt, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 
 const actions = [
-  { label: "Transfer", icon: Send, href: "/dashboard/transfer" },
-  { label: "Airtime", icon: Phone, href: "/dashboard/airtime" },
   { label: "Data", icon: Wifi, href: "/dashboard/data" },
+  { label: "Airtime", icon: Phone, href: "/dashboard/airtime" },
   { label: "Pay Bills", icon: Receipt, href: "/dashboard/bills" },
+  { label: "More Services", icon: LayoutGrid, href: "/dashboard/more" },
 ];
 
 export function ActionButtons() {

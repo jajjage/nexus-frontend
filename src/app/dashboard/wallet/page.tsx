@@ -13,7 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import {
   ArrowDownLeft,
-  ArrowUpRight,
   Copy,
   CreditCard,
   History,
@@ -88,7 +87,7 @@ export default function WalletPage() {
       </Card>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <Card className="cursor-pointer transition-shadow hover:shadow-md">
           <CardContent className="flex flex-col items-center justify-center p-4 text-center">
             <div className="mb-2 rounded-full bg-green-100 p-3 dark:bg-green-900/20">
@@ -97,16 +96,6 @@ export default function WalletPage() {
             <p className="text-sm font-medium">Add Money</p>
           </CardContent>
         </Card>
-        <Link href="/dashboard/transfer">
-          <Card className="cursor-pointer transition-shadow hover:shadow-md">
-            <CardContent className="flex flex-col items-center justify-center p-4 text-center">
-              <div className="mb-2 rounded-full bg-blue-100 p-3 dark:bg-blue-900/20">
-                <ArrowUpRight className="size-5 text-blue-600" />
-              </div>
-              <p className="text-sm font-medium">Transfer</p>
-            </CardContent>
-          </Card>
-        </Link>
       </div>
 
       {/* Virtual Account */}
