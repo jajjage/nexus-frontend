@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -7,30 +8,31 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 
 const pricingData = {
   mtn: [
-    { plan: "1.5 GB", validity: "30 Days", price: "₦1,000" },
-    { plan: "2.5 GB", validity: "30 Days", price: "₦1,500" },
-    { plan: "5 GB", validity: "30 Days", price: "₦2,500" },
-    { plan: "10 GB", validity: "30 Days", price: "₦3,500" },
-    { plan: "20 GB", validity: "30 Days", price: "₦5,000" },
+    { plan: "75 MB", validity: "1 Days", price: "₦75" },
+    { plan: "110MB", validity: "1 Days", price: "₦110" },
+    { plan: "500 MB", validity: "30 Days", price: "340" },
+    { plan: "1 GB", validity: "30 Days", price: "₦450" },
+    { plan: "2 GB", validity: "30 Days", price: "₦950" },
+    { plan: "3 GB", validity: "30 Days", price: "1,300" },
+    { plan: "5 GB", validity: "30 Days", price: "₦1,600" },
   ],
-  glo: [
-    { plan: "1.8 GB", validity: "30 Days", price: "₦1,000" },
-    { plan: "3.6 GB", validity: "30 Days", price: "₦1,500" },
-    { plan: "7.5 GB", validity: "30 Days", price: "₦2,500" },
-    { plan: "12.5 GB", validity: "30 Days", price: "₦3,500" },
-    { plan: "25 GB", validity: "30 Days", price: "₦5,000" },
-  ],
-  airtel: [
-    { plan: "1.5 GB", validity: "30 Days", price: "₦1,000" },
-    { plan: "3 GB", validity: "30 Days", price: "₦1,500" },
-    { plan: "6 GB", validity: "30 Days", price: "₦2,500" },
-    { plan: "11 GB", validity: "30 Days", price: "₦3,500" },
-    { plan: "22 GB", validity: "30 Days", price: "₦5,000" },
-  ],
+  // glo: [
+  //   { plan: "1 GB", validity: "30 Days", price: "₦1,000" },
+  //   { plan: "3.6 GB", validity: "30 Days", price: "₦1,500" },
+  //   { plan: "7.5 GB", validity: "30 Days", price: "₦2,500" },
+  //   { plan: "12.5 GB", validity: "30 Days", price: "₦3,500" },
+  //   { plan: "25 GB", validity: "30 Days", price: "₦5,000" },
+  // ],
+  // airtel: [
+  //   { plan: "1.5 GB", validity: "30 Days", price: "₦1,000" },
+  //   { plan: "3 GB", validity: "30 Days", price: "₦1,500" },
+  //   { plan: "6 GB", validity: "30 Days", price: "₦2,500" },
+  //   { plan: "11 GB", validity: "30 Days", price: "₦3,500" },
+  //   { plan: "22 GB", validity: "30 Days", price: "₦5,000" },
+  // ],
 };
 
 function PricingTable({
@@ -80,12 +82,12 @@ export function Pricing() {
         <TabsContent value="mtn">
           <PricingTable plans={pricingData.mtn} />
         </TabsContent>
-        <TabsContent value="glo">
+        {/* <TabsContent value="glo">
           <PricingTable plans={pricingData.glo} />
         </TabsContent>
         <TabsContent value="airtel">
           <PricingTable plans={pricingData.airtel} />
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
       <div className="mt-8 text-center">
         <Button>See All Plans & Prices</Button>
