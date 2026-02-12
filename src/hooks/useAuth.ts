@@ -426,7 +426,6 @@ export function useAuth(): {
 // ============================================================================
 
 export function useLogin(expectedRole?: "user" | "admin") {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { setUser, setIsLoading, setIsSessionExpired } = useAuthContext();
 
@@ -628,9 +627,7 @@ export function useLogout() {
 // ============================================================================
 
 export function useRegister() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const { setUser, setIsLoading, setIsSessionExpired } = useAuthContext();
+  const { setIsLoading } = useAuthContext();
 
   return useMutation({
     mutationFn: (data: RegisterRequest) => authService.register(data),
@@ -646,31 +643,79 @@ export function useRegister() {
     },
 
     onError: (error: AxiosError<any>) => {
-      // Extract message from various possible error structures
       const errorData = error.response?.data;
       let errorMsg = "Registration failed. Please try again.";
 
-      if (typeof errorData?.message === "string") {
-        errorMsg = errorData.message;
-      } else if (typeof errorData?.error === "string") {
-        errorMsg = errorData.error;
-      } else if (errorData?.error?.message) {
-        errorMsg = errorData.error.message;
-      } else if (
-        Array.isArray(errorData?.errors) &&
-        errorData.errors.length > 0
-      ) {
-        // Handle array of validation errors
-        errorMsg = errorData.errors
-          .map((e: any) => e.message || e.msg || e)
-          .join(", ");
+      try {
+        if (
+          typeof errorData?.message === "string" &&
+          errorData.message.trim()
+        ) {
+          errorMsg = errorData.message;
+        } else if (
+          typeof errorData?.error === "string" &&
+          errorData.error.trim()
+        ) {
+          errorMsg = errorData.error;
+        } else if (
+          typeof errorData?.error?.message === "string" &&
+          errorData.error.message.trim()
+        ) {
+          errorMsg = errorData.error.message;
+        } else if (
+          Array.isArray(errorData?.errors) &&
+          errorData.errors.length > 0
+        ) {
+          const extractedErrors = errorData.errors
+            .map((e: any) => {
+              try {
+                if (typeof e === "string") return e;
+                return (
+                  String(e.message || e.msg || e.field || JSON.stringify(e)) ||
+                  ""
+                );
+              } catch {
+                return "";
+              }
+            })
+            .filter(
+              (msg: string) => msg && typeof msg === "string" && msg.trim()
+            );
+
+          if (extractedErrors.length > 0) {
+            errorMsg = extractedErrors.join(", ");
+          }
+        } else if (
+          errorData?.details &&
+          typeof errorData.details === "object"
+        ) {
+          const details = Object.entries(errorData.details)
+            .map(([field, msg]) => `${field}: ${String(msg)}`)
+            .filter((s) => s && s.trim())
+            .join(", ");
+          if (details) errorMsg = details;
+        } else if (typeof errorData === "string" && errorData.trim()) {
+          errorMsg = errorData;
+        }
+      } catch (extractionError) {
+        console.error(
+          "[AUTH] Error extracting registration error message",
+          extractionError
+        );
       }
 
-      console.error("[AUTH] Registration failed", {
-        message: errorMsg,
-        rawError: errorData,
-      });
-      toast.error(errorMsg);
+      // If server returned field-level validation, surface it via toast
+      if (errorMsg && errorMsg !== "Registration failed. Please try again.") {
+        toast.error(errorMsg);
+      } else {
+        // Generic fallback
+        toast.error("Registration failed. Please try again.");
+        console.error(
+          "[AUTH] Registration failed - raw error:",
+          errorData || error
+        );
+      }
+
       setIsLoading(false);
     },
   });
@@ -711,11 +756,28 @@ export function useVerifyEmail() {
 
   // Get returnUrl from URL params if available
   const getReturnUrl = () => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("returnUrl") || "/dashboard";
+    if (typeof window === "undefined") return "/dashboard";
+
+    try {
+      const search =
+        window.location && typeof window.location.search === "string"
+          ? window.location.search
+          : "";
+
+      if (!search) return "/dashboard";
+
+      // Ensure the search string starts with ? for URLSearchParams
+      const normalized = search.startsWith("?") ? search : `?${search}`;
+      const params = new URLSearchParams(normalized);
+      const returnUrl = params.get("returnUrl");
+
+      // Only allow internal paths to avoid open redirect vectors
+      if (returnUrl && returnUrl.startsWith("/")) return returnUrl;
+      return "/dashboard";
+    } catch (err) {
+      console.error("[AUTH] getReturnUrl parsing failed", err);
+      return "/dashboard";
     }
-    return "/dashboard";
   };
 
   return useMutation({

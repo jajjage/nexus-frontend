@@ -43,6 +43,7 @@ const createWrapper = () => {
 describe("RegisterForm Component", () => {
   const mockRegisterMutation = {
     mutate: vi.fn(),
+    mutateAsync: vi.fn(async () => ({ data: { user: { id: "1" } } })),
     isSuccess: false,
     isError: false,
     isPending: false,
@@ -51,6 +52,9 @@ describe("RegisterForm Component", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRegisterMutation.mutateAsync = vi.fn(async () => ({
+      data: { user: { id: "1" } },
+    }));
     (useRegister as Mock).mockReturnValue(mockRegisterMutation);
   });
 
@@ -147,7 +151,7 @@ describe("RegisterForm Component", () => {
 
       await waitFor(
         () => {
-          expect(mockRegisterMutation.mutate).toHaveBeenCalledWith({
+          expect(mockRegisterMutation.mutateAsync).toHaveBeenCalledWith({
             fullName: "John Doe",
             email: "john@example.com",
             phoneNumber: "08012345678",

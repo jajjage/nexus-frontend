@@ -15,12 +15,14 @@ import { useRegister } from "@/hooks/useAuth";
 import { useValidateReferralCode } from "@/hooks/useReferrals";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { z } from "zod";
 
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
+import { AxiosError } from "axios";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const registerSchema = z
   .object({
@@ -48,20 +50,28 @@ const registerSchema = z
         }
       ),
     referralCode: z.string().optional(),
-    password: z
-      .string()
-      .min(8, { message: "Password must be at least 8 characters long" })
-      .regex(/[A-Z]/, {
-        message: "Password must contain at least one uppercase letter",
-      })
-      .regex(/[a-z]/, {
-        message: "Password must contain at least one lowercase letter",
-      })
-      .regex(/[0-9]/, { message: "Password must contain at least one number" })
-      .regex(/[^A-Za-z0-9]/, {
-        message: "Password must contain at least one special character",
-      }),
-    confirmPassword: z.string(),
+    password: z.preprocess(
+      (val) => (typeof val === "string" ? val.trim() : val),
+      z
+        .string()
+        .min(8, { message: "Password must be at least 8 characters long" })
+        .regex(/[A-Z]/, {
+          message: "Password must contain at least one uppercase letter",
+        })
+        .regex(/[a-z]/, {
+          message: "Password must contain at least one lowercase letter",
+        })
+        .regex(/[0-9]/, {
+          message: "Password must contain at least one number",
+        })
+        .regex(/[^A-Za-z0-9]/, {
+          message: "Password must contain at least one special character",
+        })
+    ),
+    confirmPassword: z.preprocess(
+      (val) => (typeof val === "string" ? val.trim() : val),
+      z.string()
+    ),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -82,7 +92,9 @@ export function RegisterForm() {
     useValidateReferralCode();
 
   const form = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
+    resolver: zodResolver(
+      registerSchema
+    ) as unknown as Resolver<RegisterFormValues>,
     mode: "onChange",
     defaultValues: {
       fullName: "",
@@ -139,8 +151,173 @@ export function RegisterForm() {
     sessionStorage.setItem("registrationPassword", rest.password);
     sessionStorage.setItem("registrationEmail", rest.email);
 
-    registerMutation.mutate(dataToSend);
+    try {
+      await registerMutation.mutateAsync(dataToSend);
+    } catch (err: any) {
+      // Defensive parsing of server validation errors and surface them in the form
+      const error = err as AxiosError<any>;
+      const errorData = error.response?.data;
+
+      console.error("[RegisterForm] Registration error", errorData || error);
+
+      // If server returned details as object mapping fields to messages
+      if (errorData?.details && typeof errorData.details === "object") {
+        Object.entries(errorData.details).forEach(([field, msg]) => {
+          try {
+            // Only set known fields
+            if (field === "password" || field === "confirmPassword") {
+              form.setError("password", { message: String(msg) });
+            } else if (field === "email") {
+              form.setError("email", { message: String(msg) });
+            } else if (field === "phoneNumber") {
+              form.setError("phoneNumber", { message: String(msg) });
+            } else if (field === "fullName") {
+              form.setError("fullName", { message: String(msg) });
+            } else {
+              // set generic form-level toast for unknown fields
+              toast.error(`${field}: ${msg}`);
+            }
+          } catch (e) {
+            // ignore
+          }
+        });
+        try {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem(
+              "registrationLastError",
+              JSON.stringify(errorData)
+            );
+          }
+        } catch {}
+        return;
+      }
+
+      // If server returned an array of errors
+      if (Array.isArray(errorData?.errors) && errorData.errors.length > 0) {
+        errorData.errors.forEach((e: any) => {
+          const msg = typeof e === "string" ? e : e.message || e.msg || e;
+          // Heuristic field assignment
+          if (/(password)/i.test(msg)) {
+            form.setError("password", { message: String(msg) });
+          } else if (/(email)/i.test(msg)) {
+            form.setError("email", { message: String(msg) });
+          } else if (/(phone|phoneNumber)/i.test(msg)) {
+            form.setError("phoneNumber", { message: String(msg) });
+          } else {
+            toast.error(String(msg));
+          }
+        });
+        return;
+      }
+
+      // If server returned a single message string
+      const singleMessage =
+        errorData?.message ||
+        errorData?.error ||
+        (typeof errorData === "string" ? errorData : null);
+      if (singleMessage) {
+        // Try to attach to password if it mentions password, else show toast
+        if (/(password)/i.test(String(singleMessage))) {
+          form.setError("password", { message: String(singleMessage) });
+        } else {
+          toast.error(String(singleMessage));
+        }
+        return;
+      }
+
+      // Persist last registration error so it can be shown after a page refresh
+      try {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(
+            "registrationLastError",
+            JSON.stringify(errorData || { message: String(error?.message) })
+          );
+        }
+      } catch (e) {
+        /* ignore storage errors */
+      }
+
+      // Fallback: generic toast
+      toast.error("Registration failed. Please try again.");
+    }
   };
+
+  // On mount, rehydrate last registration error (if any) to show after refresh
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = sessionStorage.getItem("registrationLastError");
+    if (!raw) return;
+
+    try {
+      const errorData = JSON.parse(raw);
+
+      if (errorData?.details && typeof errorData.details === "object") {
+        Object.entries(errorData.details).forEach(([field, msg]) => {
+          try {
+            if (field === "password" || field === "confirmPassword") {
+              form.setError("password", { message: String(msg) });
+            } else if (field === "email") {
+              form.setError("email", { message: String(msg) });
+            } else if (field === "phoneNumber") {
+              form.setError("phoneNumber", { message: String(msg) });
+            } else if (field === "fullName") {
+              form.setError("fullName", { message: String(msg) });
+            } else {
+              toast.error(`${field}: ${msg}`);
+            }
+          } catch (e) {
+            /* ignore */
+          }
+        });
+      } else if (
+        Array.isArray(errorData?.errors) &&
+        errorData.errors.length > 0
+      ) {
+        errorData.errors.forEach((e: any) => {
+          const msg = typeof e === "string" ? e : e.message || e.msg || e;
+          if (/(password)/i.test(msg)) {
+            form.setError("password", { message: String(msg) });
+          } else if (/(email)/i.test(msg)) {
+            form.setError("email", { message: String(msg) });
+          } else if (/(phone|phoneNumber)/i.test(msg)) {
+            form.setError("phoneNumber", { message: String(msg) });
+          } else {
+            toast.error(String(msg));
+          }
+        });
+      } else if (errorData?.message || errorData?.error) {
+        const singleMessage = errorData.message || errorData.error;
+        if (/(password)/i.test(String(singleMessage))) {
+          form.setError("password", { message: String(singleMessage) });
+        } else {
+          toast.error(String(singleMessage));
+        }
+      }
+    } catch (e) {
+      console.error(
+        "[RegisterForm] Failed to parse persisted registration error",
+        e
+      );
+    }
+    // do not clear here; clear when user starts editing
+  }, [form]);
+
+  // Clear persisted error when user starts typing to avoid stale messages
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = () => {
+      try {
+        if (sessionStorage.getItem("registrationLastError")) {
+          sessionStorage.removeItem("registrationLastError");
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    document.addEventListener("input", handler);
+    return () => document.removeEventListener("input", handler);
+  }, []);
 
   return (
     <Card className="mx-auto w-full max-w-sm sm:max-w-md md:max-w-lg">

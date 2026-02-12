@@ -25,6 +25,7 @@
     "appinstalled",
     "beforeinstallprompt",
     "COOLDOWN",
+    "JOHND",
     "notif",
     "partialize",
     "Syncer",

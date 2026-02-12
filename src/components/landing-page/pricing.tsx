@@ -13,10 +13,10 @@ const pricingData = {
   mtn: [
     { plan: "75 MB", validity: "1 Days", price: "₦75" },
     { plan: "110MB", validity: "1 Days", price: "₦110" },
-    { plan: "500 MB", validity: "30 Days", price: "340" },
+    { plan: "500 MB", validity: "30 Days", price: "₦340" },
     { plan: "1 GB", validity: "30 Days", price: "₦450" },
     { plan: "2 GB", validity: "30 Days", price: "₦950" },
-    { plan: "3 GB", validity: "30 Days", price: "1,300" },
+    { plan: "3 GB", validity: "30 Days", price: "₦1,300" },
     { plan: "5 GB", validity: "30 Days", price: "₦1,600" },
   ],
   // glo: [
