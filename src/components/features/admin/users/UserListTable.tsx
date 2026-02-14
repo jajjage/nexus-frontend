@@ -76,12 +76,9 @@ export function UserListTable() {
       );
     }
 
-    // 3. Sort by created date (newest first)
-    return [...filtered].sort((a, b) => {
-      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return bTime - aTime;
-    });
+    // NOTE: Backend should return users sorted by createdAt DESC (newest first)
+    // Client-side sorting only sorts within the current page, so we rely on server-side sorting
+    return filtered;
   }, [data, roleFilter, debouncedSearch]);
 
   const tabs = [
