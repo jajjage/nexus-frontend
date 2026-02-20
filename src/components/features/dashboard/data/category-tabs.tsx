@@ -40,19 +40,6 @@ export function CategoryTabs({
   return (
     <ScrollArea className="w-full pb-4 whitespace-nowrap">
       <div className="flex w-max space-x-2 px-1">
-        {/* All tab */}
-        <button
-          onClick={() => onSelect("all")}
-          className={cn(
-            "rounded-full px-6 py-2 text-sm font-medium transition-all",
-            selectedCategory === "all"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          )}
-        >
-          All
-        </button>
-
         {/* Dynamic category tabs */}
         {sortedCategories.map((category) => {
           const isActive = selectedCategory === category.slug;

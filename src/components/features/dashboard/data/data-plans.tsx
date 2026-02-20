@@ -183,7 +183,7 @@ export function DataPlans() {
     }
   };
 
-  // Filter products based on selection with deduplication
+  // Filter products based on selection with deduplication and sorting
   const filteredProducts = useMemo(() => {
     if (!selectedNetwork) return [];
 
@@ -212,7 +212,14 @@ export function DataPlans() {
       return true;
     });
 
-    return deduplicated;
+    // Sort by data size from small to large (MB to GB)
+    const sorted = [...deduplicated].sort((a, b) => {
+      const sizeMbA = a.dataMb || 0;
+      const sizeMbB = b.dataMb || 0;
+      return sizeMbA - sizeMbB;
+    });
+
+    return sorted;
   }, [products, selectedNetwork, selectedCategory]);
 
   // Handle Plan Click
