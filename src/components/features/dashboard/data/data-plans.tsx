@@ -36,7 +36,7 @@ export function DataPlans() {
   const queryClient = useQueryClient();
 
   const [selectedNetwork, setSelectedNetwork] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState("all"); // Default to "all"
+  const [selectedCategory, setSelectedCategory] = useState<string>(""); // Will be set to first category from DB
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // Fetch categories from API
@@ -131,6 +131,14 @@ export function DataPlans() {
     }
   }, [operators, selectedNetwork]);
 
+  // Set default selected category to first category from DB
+  useEffect(() => {
+    if (selectedCategory === null && categories.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: one-time initialization
+      setSelectedCategory(categories[0].slug);
+    }
+  }, [categories, selectedCategory]);
+
   // Handle Smart Network Detection - defined with useCallback before effects that use it
   const handleNetworkDetected = useCallback(
     (networkKey: string) => {
@@ -195,12 +203,9 @@ export function DataPlans() {
     });
 
     // Apply category filter using category.slug
-    const categoryFiltered =
-      selectedCategory === "all"
-        ? networkProducts
-        : networkProducts.filter(
-            (product: Product) => product.category?.slug === selectedCategory
-          );
+    const categoryFiltered = networkProducts.filter(
+      (product: Product) => product.category?.slug === selectedCategory
+    );
 
     // CRITICAL: Deduplicate by product ID to prevent duplicates
     const seen = new Set<string>();
@@ -576,7 +581,7 @@ export function DataPlans() {
       {/* Category Tabs */}
       <CategoryTabs
         categories={categories}
-        selectedCategory={selectedCategory}
+        selectedCategory={selectedCategory || ""}
         onSelect={setSelectedCategory}
         isLoading={isCategoriesLoading}
       />
