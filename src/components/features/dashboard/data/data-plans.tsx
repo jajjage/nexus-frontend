@@ -133,7 +133,7 @@ export function DataPlans() {
 
   // Set default selected category to first category from DB
   useEffect(() => {
-    if (selectedCategory === null && categories.length > 0) {
+    if (!selectedCategory && categories.length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: one-time initialization
       setSelectedCategory(categories[0].slug);
     }
