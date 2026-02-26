@@ -474,13 +474,13 @@ export function useLogin(expectedRole?: "user" | "admin") {
       // Reset session expiration flag since user just logged in
       setIsSessionExpired(false);
 
-      // Don't set loading to false yet - let the query fetch handle it
-      // The useCurrentUserQuery will set loading to false when data arrives
+      // CRITICAL: Set the query data directly instead of invalidating
+      // This prevents an unnecessary refetch right after login
+      // The fresh user data from login response is already reliable
+      await queryClient.setQueryData(authKeys.currentUser(), user ?? null);
 
-      // Invalidate user query to refetch fresh data
-      await queryClient.invalidateQueries({
-        queryKey: authKeys.currentUser(),
-      });
+      // Don't set loading to false yet - let the page load handle it
+      // The subsequent page will manage loading state appropriately
 
       // Redirect logic:
       // 1. Admin -> /admin/dashboard
