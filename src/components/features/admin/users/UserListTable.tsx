@@ -27,10 +27,10 @@ export function UserListTable() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
 
   // Hybrid search strategy:
-  // When searching, fetch more users (100) to increase chances of finding the user
-  // since the backend search might be limited or fuzzy.
+  // When searching, fetch a very high limit (10000) to get ALL matching users
+  // since we need to search through the entire database, not just paginated results.
   // We then rely on client-side filtering to ensure exact matches.
-  const limit = debouncedSearch ? 100 : 10;
+  const limit = debouncedSearch ? 10000 : 10;
 
   const [prevSearch, setPrevSearch] = useState(debouncedSearch);
 
