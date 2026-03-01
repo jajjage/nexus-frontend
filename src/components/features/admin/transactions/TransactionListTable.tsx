@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 // Method display names
 const methodLabels: Record<string, string> = {
@@ -52,20 +53,36 @@ const relatedTypeLabels: Record<string, string> = {
 export function TransactionListTable() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
-  const [direction, setDirection] = useState<string>("all");
-  const limit = 15;
+  const debouncedSearch = useDebounce(searchInput, 500);
+  const [direction, setDirection] = useState<"all" | "credit" | "debit">("all");
+
+  // Hybrid search strategy:
+  // When searching, fetch a large page to allow searching across records
+  // instead of just the currently paginated slice.
+  const limit = debouncedSearch ? 10000 : 15;
+
+  const [prevSearch, setPrevSearch] = useState(debouncedSearch);
+  const [prevDirection, setPrevDirection] = useState(direction);
+
+  if (debouncedSearch !== prevSearch || direction !== prevDirection) {
+    setPrevSearch(debouncedSearch);
+    setPrevDirection(direction);
+    if (page !== 1) {
+      setPage(1);
+    }
+  }
 
   const { data, isLoading, isError, refetch } = useAdminTransactions({
     page,
     limit,
+    direction: direction === "all" ? undefined : direction,
   });
 
-  const allTransactions = data?.data?.transactions || [];
   const pagination = data?.data?.pagination;
 
   // Client-side filtering for direction and search
   const transactions = useMemo(() => {
-    let filtered = allTransactions;
+    let filtered = data?.data?.transactions || [];
 
     // Filter by direction
     if (direction !== "all") {
@@ -73,8 +90,8 @@ export function TransactionListTable() {
     }
 
     // Filter by search (user name, email, product code, reference)
-    if (searchInput.trim()) {
-      const searchLower = searchInput.toLowerCase();
+    if (debouncedSearch.trim()) {
+      const searchLower = debouncedSearch.toLowerCase();
       filtered = filtered.filter(
         (tx) =>
           tx.user?.fullName?.toLowerCase().includes(searchLower) ||
@@ -86,7 +103,7 @@ export function TransactionListTable() {
     }
 
     return filtered;
-  }, [allTransactions, direction, searchInput]);
+  }, [data, direction, debouncedSearch]);
 
   if (isLoading) {
     return (

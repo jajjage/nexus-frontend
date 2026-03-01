@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const statusColors: Record<
   string,
@@ -57,19 +58,31 @@ const operatorColors: Record<string, string> = {
 export function TopupListTable() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebounce(searchInput, 500);
   const [status, setStatus] = useState<string>("all");
   const [operator, setOperator] = useState<string>("all");
-  const limit = 15;
+
+  // Hybrid search strategy:
+  // When searching, fetch a large page to allow searching across records
+  // instead of just the currently paginated slice.
+  const limit = debouncedSearch ? 10000 : 15;
+
+  const [prevSearch, setPrevSearch] = useState(debouncedSearch);
+
+  if (debouncedSearch !== prevSearch) {
+    setPrevSearch(debouncedSearch);
+    if (page !== 1) {
+      setPage(1);
+    }
+  }
 
   // Filter change handlers that reset page
   const handleStatusChange = (value: string) => {
-    console.log("Selected status:", value);
     setStatus(value);
     setPage(1);
   };
 
   const handleOperatorChange = (value: string) => {
-    console.log("Selected operator:", value);
     setOperator(value);
     setPage(1);
   };
@@ -82,28 +95,26 @@ export function TopupListTable() {
     operator: operator !== "all" ? operator : undefined,
   });
 
-  // Debug log to see actual API response
-  console.log("Topup API Response:", data);
-
   // Data access
-  const allRequests = data?.data?.requests || [];
   const pagination = data?.data?.pagination;
 
   // Client-side search filtering
   const requests = useMemo(() => {
-    if (!searchInput.trim()) {
+    const allRequests = data?.data?.requests || [];
+
+    if (!debouncedSearch.trim()) {
       return allRequests;
     }
-    const searchLower = searchInput.toLowerCase();
+    const searchLower = debouncedSearch.toLowerCase();
     return allRequests.filter(
       (req: AdminTopupRequest) =>
         req.user?.fullName?.toLowerCase().includes(searchLower) ||
         req.user?.email?.toLowerCase().includes(searchLower) ||
-        req.recipientPhone?.includes(searchInput) ||
+        req.recipientPhone?.includes(debouncedSearch) ||
         req.operator?.code?.toLowerCase().includes(searchLower) ||
         req.operator?.name?.toLowerCase().includes(searchLower)
     );
-  }, [allRequests, searchInput]);
+  }, [data, debouncedSearch]);
 
   if (isLoading) {
     return (
