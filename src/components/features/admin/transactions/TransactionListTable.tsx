@@ -21,9 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAdminTransactions } from "@/hooks/admin/useAdminTransactions";
-import { adminTransactionService } from "@/services/admin/transaction.service";
 import { AdminTransaction } from "@/types/admin/transaction.types";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   ArrowDownRight,
@@ -78,69 +76,16 @@ export function TransactionListTable() {
     }
   }
 
-  const { data, isLoading, isError, refetch } = useAdminTransactions({
-    page,
-    limit,
-    search: debouncedSearch || undefined,
-    direction: direction === "all" ? undefined : direction,
-  });
-
-  const {
-    data: searchResults,
-    isFetching: isSearchFetching,
-    isError: isSearchError,
-    refetch: refetchSearch,
-  } = useQuery({
-    queryKey: [
-      "admin",
-      "transactions",
-      "search-scan",
-      debouncedSearch,
-      direction,
-    ],
-    enabled: isSearchActive,
-    placeholderData: keepPreviousData,
-    queryFn: async () => {
-      const searchLower = debouncedSearch.toLowerCase();
-      const perPage = 100;
-      const maxPages = 60;
-      let currentPage = 1;
-      let totalPages = 1;
-      const matches: AdminTransaction[] = [];
-
-      while (currentPage <= totalPages && currentPage <= maxPages) {
-        const response = await adminTransactionService.getTransactions({
-          page: currentPage,
-          limit: perPage,
-          direction: direction === "all" ? undefined : direction,
-        });
-
-        const rows = response?.data?.transactions || [];
-        rows.forEach((tx) => {
-          const isMatch =
-            tx.user?.fullName?.toLowerCase().includes(searchLower) ||
-            tx.user?.email?.toLowerCase().includes(searchLower) ||
-            tx.productCode?.toLowerCase().includes(searchLower) ||
-            tx.reference?.toLowerCase().includes(searchLower) ||
-            tx.related?.operatorCode?.toLowerCase().includes(searchLower);
-
-          if (isMatch) {
-            matches.push(tx);
-          }
-        });
-
-        totalPages = response?.data?.pagination?.totalPages || currentPage;
-        currentPage += 1;
-      }
-
-      return matches;
-    },
-  });
-
-  const serverPagination = data?.data?.pagination;
+  const { data, isLoading, isFetching, isError, refetch } =
+    useAdminTransactions({
+      page,
+      limit,
+      search: debouncedSearch || undefined,
+      direction: direction === "all" ? undefined : direction,
+    });
 
   // Client-side filtering for direction and search
-  const baseTransactions = useMemo(() => {
+  const transactions = useMemo(() => {
     let filtered = data?.data?.transactions || [];
 
     // Filter by direction
@@ -151,36 +96,7 @@ export function TransactionListTable() {
     return filtered;
   }, [data, direction]);
 
-  const paginatedSearchTransactions = useMemo(() => {
-    if (!isSearchActive) return [];
-
-    const allMatches = searchResults || [];
-    const start = (page - 1) * limit;
-    const end = start + limit;
-    return allMatches.slice(start, end);
-  }, [isSearchActive, searchResults, page, limit]);
-
-  const transactions = isSearchActive
-    ? paginatedSearchTransactions
-    : baseTransactions;
-
-  const pagination = useMemo(() => {
-    if (!isSearchActive) {
-      return serverPagination;
-    }
-
-    const total = searchResults?.length || 0;
-    const totalPages = Math.max(1, Math.ceil(total / limit));
-
-    return {
-      page,
-      limit,
-      total,
-      totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
-    };
-  }, [isSearchActive, serverPagination, searchResults, limit, page]);
+  const pagination = data?.data?.pagination;
 
   const showInitialLoading = !data && isLoading;
   if (showInitialLoading) {
@@ -200,17 +116,12 @@ export function TransactionListTable() {
     );
   }
 
-  const activeError = isSearchActive ? isSearchError : isError;
-  if (activeError) {
+  if (isError) {
     return (
       <Card>
         <CardContent className="py-8 text-center">
           <p className="text-muted-foreground">Failed to load transactions</p>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => (isSearchActive ? refetchSearch() : refetch())}
-          >
+          <Button variant="outline" className="mt-4" onClick={() => refetch()}>
             Retry
           </Button>
         </CardContent>
@@ -246,10 +157,8 @@ export function TransactionListTable() {
             </SelectContent>
           </Select>
         </div>
-        {isSearchActive && isSearchFetching && (
-          <p className="text-muted-foreground mb-3 text-xs">
-            Searching across pages...
-          </p>
+        {isSearchActive && isFetching && (
+          <p className="text-muted-foreground mb-3 text-xs">Searching...</p>
         )}
 
         {/* Table */}

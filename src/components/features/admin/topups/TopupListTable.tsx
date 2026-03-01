@@ -21,9 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAdminTopups } from "@/hooks/admin/useAdminTopups";
-import { adminTopupService } from "@/services/admin/topup.service";
 import { AdminTopupRequest, TopupStatus } from "@/types/admin/topup.types";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   ChevronLeft,
@@ -87,105 +85,17 @@ export function TopupListTable() {
   };
 
   // Use filters that API supports
-  const { data, isLoading, isError, refetch } = useAdminTopups({
+  const { data, isLoading, isFetching, isError, refetch } = useAdminTopups({
     page,
     limit,
     search: debouncedSearch || undefined,
     status: status !== "all" ? (status as TopupStatus) : undefined,
     operator: operator !== "all" ? operator : undefined,
   });
+  const pagination = data?.data?.pagination;
 
-  const {
-    data: searchResults,
-    isFetching: isSearchFetching,
-    isError: isSearchError,
-    refetch: refetchSearch,
-  } = useQuery({
-    queryKey: [
-      "admin",
-      "topups",
-      "search-scan",
-      debouncedSearch,
-      status,
-      operator,
-    ],
-    enabled: isSearchActive,
-    placeholderData: keepPreviousData,
-    queryFn: async () => {
-      const searchLower = debouncedSearch.toLowerCase();
-      const perPage = 100;
-      const maxPages = 60;
-      let currentPage = 1;
-      let totalPages = 1;
-      const matches: AdminTopupRequest[] = [];
-
-      while (currentPage <= totalPages && currentPage <= maxPages) {
-        const response = await adminTopupService.getTopupRequests({
-          page: currentPage,
-          limit: perPage,
-          status: status !== "all" ? (status as TopupStatus) : undefined,
-          operator: operator !== "all" ? operator : undefined,
-        });
-
-        const rows = response?.data?.requests || [];
-        rows.forEach((req) => {
-          const isMatch =
-            req.user?.fullName?.toLowerCase().includes(searchLower) ||
-            req.user?.email?.toLowerCase().includes(searchLower) ||
-            req.recipientPhone?.includes(debouncedSearch) ||
-            req.operator?.code?.toLowerCase().includes(searchLower) ||
-            req.operator?.name?.toLowerCase().includes(searchLower);
-
-          if (isMatch) {
-            matches.push(req);
-          }
-        });
-
-        totalPages = response?.data?.pagination?.totalPages || currentPage;
-        currentPage += 1;
-      }
-
-      return matches;
-    },
-  });
-
-  const serverPagination = data?.data?.pagination;
-
-  // Client-side search filtering
-  const baseRequests = useMemo(() => {
-    const allRequests = data?.data?.requests || [];
-
-    return allRequests;
-  }, [data]);
-
-  const paginatedSearchRequests = useMemo(() => {
-    if (!isSearchActive) return [];
-
-    const allMatches = searchResults || [];
-    const start = (page - 1) * limit;
-    const end = start + limit;
-    return allMatches.slice(start, end);
-  }, [isSearchActive, searchResults, page, limit]);
-
-  const requests = isSearchActive ? paginatedSearchRequests : baseRequests;
-
-  const pagination = useMemo(() => {
-    if (!isSearchActive) {
-      return serverPagination;
-    }
-
-    const total = searchResults?.length || 0;
-    const totalPages = Math.max(1, Math.ceil(total / limit));
-
-    return {
-      page,
-      limit,
-      total,
-      totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
-    };
-  }, [isSearchActive, serverPagination, searchResults, limit, page]);
+  // Data from server (search/filter already applied by backend)
+  const requests = useMemo(() => data?.data?.requests || [], [data]);
 
   const showInitialLoading = !data && isLoading;
   if (showInitialLoading) {
@@ -205,17 +115,12 @@ export function TopupListTable() {
     );
   }
 
-  const activeError = isSearchActive ? isSearchError : isError;
-  if (activeError) {
+  if (isError) {
     return (
       <Card>
         <CardContent className="py-8 text-center">
           <p className="text-muted-foreground">Failed to load topup requests</p>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => (isSearchActive ? refetchSearch() : refetch())}
-          >
+          <Button variant="outline" className="mt-4" onClick={() => refetch()}>
             Retry
           </Button>
         </CardContent>
@@ -270,10 +175,8 @@ export function TopupListTable() {
             </SelectContent>
           </Select>
         </div>
-        {isSearchActive && isSearchFetching && (
-          <p className="text-muted-foreground mb-3 text-xs">
-            Searching across pages...
-          </p>
+        {isSearchActive && isFetching && (
+          <p className="text-muted-foreground mb-3 text-xs">Searching...</p>
         )}
 
         {/* Table */}

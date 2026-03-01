@@ -30,7 +30,24 @@ const topupKeys = {
 export function useAdminTopups(params?: AdminTopupQueryParams) {
   return useQuery({
     queryKey: topupKeys.list(params),
-    queryFn: () => adminTopupService.getTopupRequests(params),
+    queryFn: async () => {
+      const response = await adminTopupService.getTopupRequests(params);
+      const search = params?.search?.trim();
+
+      if (process.env.NODE_ENV !== "production" && search) {
+        const pagination = response.data?.pagination;
+        const rows = response.data?.requests || [];
+        console.info("[admin.topups.search]", {
+          search,
+          page: pagination?.page ?? params?.page ?? 1,
+          limit: pagination?.limit ?? params?.limit ?? 10,
+          total: pagination?.total ?? 0,
+          returned: rows.length,
+        });
+      }
+
+      return response;
+    },
     placeholderData: keepPreviousData,
     staleTime: 1 * 60 * 1000, // 1 minute
   });
