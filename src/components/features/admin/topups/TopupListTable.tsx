@@ -61,11 +61,7 @@ export function TopupListTable() {
   const debouncedSearch = useDebounce(searchInput, 500);
   const [status, setStatus] = useState<string>("all");
   const [operator, setOperator] = useState<string>("all");
-
-  // Hybrid search strategy:
-  // When searching, fetch a large page to allow searching across records
-  // instead of just the currently paginated slice.
-  const limit = debouncedSearch ? 10000 : 15;
+  const limit = 15;
 
   const [prevSearch, setPrevSearch] = useState(debouncedSearch);
 
@@ -91,6 +87,7 @@ export function TopupListTable() {
   const { data, isLoading, isError, refetch } = useAdminTopups({
     page,
     limit,
+    search: debouncedSearch || undefined,
     status: status !== "all" ? (status as TopupStatus) : undefined,
     operator: operator !== "all" ? operator : undefined,
   });

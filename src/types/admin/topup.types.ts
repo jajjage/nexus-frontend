@@ -82,6 +82,7 @@ export interface TopupPagination {
 
 export interface AdminTopupQueryParams {
   userId?: string;
+  search?: string;
   status?: TopupStatus;
   operator?: string;
   dateFrom?: string;

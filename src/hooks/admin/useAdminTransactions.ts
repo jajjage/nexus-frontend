@@ -7,7 +7,7 @@
 
 import { adminTransactionService } from "@/services/admin/transaction.service";
 import { AdminTransactionQueryParams } from "@/types/admin/transaction.types";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 // Query keys for cache management
 const transactionKeys = {
@@ -25,6 +25,7 @@ export function useAdminTransactions(params?: AdminTransactionQueryParams) {
   return useQuery({
     queryKey: transactionKeys.list(params),
     queryFn: () => adminTransactionService.getTransactions(params),
+    placeholderData: keepPreviousData,
     staleTime: 1 * 60 * 1000, // 1 minute
   });
 }

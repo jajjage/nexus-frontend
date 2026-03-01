@@ -80,6 +80,7 @@ export interface TransactionPagination {
 
 export interface AdminTransactionQueryParams {
   userId?: string;
+  search?: string;
   dateFrom?: string;
   dateTo?: string;
   direction?: "debit" | "credit";

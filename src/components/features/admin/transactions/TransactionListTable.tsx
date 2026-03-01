@@ -62,10 +62,7 @@ export function TransactionListTable() {
     }
   };
 
-  // Hybrid search strategy:
-  // When searching, fetch a large page to allow searching across records
-  // instead of just the currently paginated slice.
-  const limit = debouncedSearch ? 10000 : 15;
+  const limit = 15;
 
   const [prevSearch, setPrevSearch] = useState(debouncedSearch);
   const [prevDirection, setPrevDirection] = useState(direction);
@@ -81,6 +78,7 @@ export function TransactionListTable() {
   const { data, isLoading, isError, refetch } = useAdminTransactions({
     page,
     limit,
+    search: debouncedSearch || undefined,
     direction: direction === "all" ? undefined : direction,
   });
 

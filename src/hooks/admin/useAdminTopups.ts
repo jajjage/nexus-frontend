@@ -7,7 +7,12 @@
 
 import { adminTopupService } from "@/services/admin/topup.service";
 import { AdminTopupQueryParams } from "@/types/admin/topup.types";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 
 // Query keys for cache management
@@ -26,6 +31,7 @@ export function useAdminTopups(params?: AdminTopupQueryParams) {
   return useQuery({
     queryKey: topupKeys.list(params),
     queryFn: () => adminTopupService.getTopupRequests(params),
+    placeholderData: keepPreviousData,
     staleTime: 1 * 60 * 1000, // 1 minute
   });
 }
