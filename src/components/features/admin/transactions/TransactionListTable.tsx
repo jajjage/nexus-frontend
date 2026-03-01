@@ -56,6 +56,12 @@ export function TransactionListTable() {
   const debouncedSearch = useDebounce(searchInput, 500);
   const [direction, setDirection] = useState<"all" | "credit" | "debit">("all");
 
+  const handleDirectionChange = (value: string) => {
+    if (value === "all" || value === "credit" || value === "debit") {
+      setDirection(value);
+    }
+  };
+
   // Hybrid search strategy:
   // When searching, fetch a large page to allow searching across records
   // instead of just the currently paginated slice.
@@ -152,7 +158,7 @@ export function TransactionListTable() {
               className="pl-9"
             />
           </div>
-          <Select value={direction} onValueChange={setDirection}>
+          <Select value={direction} onValueChange={handleDirectionChange}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Direction" />
             </SelectTrigger>
