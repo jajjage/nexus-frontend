@@ -529,14 +529,6 @@ export function useLogin(expectedRole?: "user" | "admin") {
       if (error.response?.data?.error === "2FA code is required") {
         console.log("[AUTH] 2FA required - transitioning to 2FA step");
         // setStep("2fa");
-      } else if (
-        errorMsg === "Account Update Required" ||
-        errorMsg.toLowerCase().includes("invalid credentials") ||
-        errorMsg.toLowerCase().includes("user not found") ||
-        errorMsg.toLowerCase().includes("incorrect password")
-      ) {
-        // Skip toast for migration error as it's handled inline in the form
-        console.log("[AUTH] Migration error detected - handled by UI");
       } else {
         toast.error(errorMsg);
       }

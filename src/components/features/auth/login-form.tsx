@@ -209,14 +209,7 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
     loginMutation.error?.response?.data?.require2fa ||
     loginMutation.error?.response?.data?.twoFactor;
 
-  const errorMessage = loginMutation.error?.response?.data?.message || "";
-  const isMigrationError =
-    errorMessage === "Account Update Required" ||
-    errorMessage.toLowerCase().includes("invalid credentials") ||
-    errorMessage.toLowerCase().includes("user not found") ||
-    errorMessage.toLowerCase().includes("incorrect password");
-
-  const showError = loginMutation.isError && !is2faError && !isMigrationError;
+  const showError = loginMutation.isError && !is2faError;
 
   return (
     <Card className="mx-auto w-full max-w-sm sm:max-w-md md:max-w-lg">
@@ -230,52 +223,6 @@ export function LoginForm({ role = "user" }: LoginFormProps) {
           className="grid gap-4"
           autoComplete="on"
         >
-          {isMigrationError && (
-            <Alert
-              variant="destructive"
-              className="border-red-200 bg-red-50 dark:bg-red-900/10"
-            >
-              <AlertDescription className="text-sm leading-relaxed text-red-800 dark:text-red-200">
-                <div className="space-y-3">
-                  <p className="text-base font-bold">Account Update Required</p>
-                  <p>
-                    We recently migrated our servers to a new platform to
-                    improve performance. During this transition, some user
-                    accounts could not be automatically transferred.
-                  </p>
-                  <p>
-                    If you think this is wrong, please check your credentials
-                    and try again. If the issue persists, it looks like your
-                    account was affected.
-                  </p>
-                  <p>
-                    We sincerely apologize for this inconvenience. Please{" "}
-                    <Link href="/register" className="font-bold underline">
-                      Create a New Account
-                    </Link>{" "}
-                    to regain access immediately.
-                  </p>
-                  <p className="text-xs opacity-80">
-                    Note: This is a temporary notice that will be removed within
-                    a week.
-                  </p>
-                  <div className="pt-1">
-                    If you have any concerns or need to recover specific data,
-                    please contact the maintainer at{" "}
-                    <span className="font-bold underline">07033776056</span> or{" "}
-                    <a
-                      href="mailto:support@nexusdatasub.com"
-                      className="font-bold underline"
-                    >
-                      mustaphajajjage@gmail.com
-                    </a>
-                    .
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
           {showError && loginMutation.error?.response?.data?.message && (
             <Alert variant="destructive">
               <AlertDescription>
