@@ -18,19 +18,16 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { AdminUser } from "@/types/admin/user.types";
 import { ChevronLeft, ChevronRight, Search, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 export function UserListTable() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebounce(searchInput, 500);
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const isSearchActive = !!debouncedSearch.trim();
 
-  // Hybrid search strategy:
-  // When searching, fetch a very high limit (10000) to get ALL matching users
-  // since we need to search through the entire database, not just paginated results.
-  // We then rely on client-side filtering to ensure exact matches.
-  const limit = debouncedSearch ? 10000 : 10;
+  const limit = 10;
 
   const [prevSearch, setPrevSearch] = useState(debouncedSearch);
 
@@ -42,7 +39,7 @@ export function UserListTable() {
     setPage(1);
   }
 
-  const { data, isLoading, isError, refetch } = useAdminUsers({
+  const { data, isLoading, isFetching, isError, refetch } = useAdminUsers({
     page,
     limit,
     role: roleFilter === "all" ? undefined : roleFilter,
@@ -51,35 +48,8 @@ export function UserListTable() {
 
   const pagination = data?.data?.pagination;
 
-  // Client-side filtering
-  // This acts as a fallback/refinement. Even if backend returns mixed results,
-  // we filter them down to exactly what the user typed.
-  const users = useMemo(() => {
-    const allUsers = data?.data?.users || [];
-    let filtered = allUsers;
-
-    // 1. Filter by role
-    if (roleFilter !== "all") {
-      filtered = filtered.filter(
-        (user) => user.role.toLowerCase() === roleFilter.toLowerCase()
-      );
-    }
-
-    // 2. Filter by search term (Hybrid approach)
-    if (debouncedSearch) {
-      const searchLower = debouncedSearch.toLowerCase();
-      filtered = filtered.filter(
-        (user) =>
-          user.fullName?.toLowerCase().includes(searchLower) ||
-          user.email?.toLowerCase().includes(searchLower) ||
-          user.phoneNumber?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // NOTE: Backend should return users sorted by createdAt DESC (newest first)
-    // Client-side sorting only sorts within the current page, so we rely on server-side sorting
-    return filtered;
-  }, [data, roleFilter, debouncedSearch]);
+  // Server is source of truth for search/filter/pagination.
+  const users = data?.data?.users || [];
 
   const tabs = [
     { id: "all", label: "All Users" },
@@ -144,7 +114,7 @@ export function UserListTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {!data && isLoading ? (
                 // Loading Skeletons for Rows
                 [...Array(5)].map((_, i) => (
                   <TableRow key={i}>
@@ -222,9 +192,12 @@ export function UserListTable() {
             </TableBody>
           </Table>
         </div>
+        {isSearchActive && isFetching && (
+          <p className="text-muted-foreground mt-3 text-xs">Searching...</p>
+        )}
 
         {/* Pagination */}
-        {!isLoading && !isError && pagination && (
+        {!!data && !isError && pagination && (
           <div className="mt-4 flex items-center justify-between">
             <p className="text-muted-foreground text-sm">
               Page {pagination.page} of {pagination.totalPages} (

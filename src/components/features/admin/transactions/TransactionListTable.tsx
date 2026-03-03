@@ -84,17 +84,10 @@ export function TransactionListTable() {
       direction: direction === "all" ? undefined : direction,
     });
 
-  // Client-side filtering for direction and search
+  // Server is source of truth for search/filter/pagination.
   const transactions = useMemo(() => {
-    let filtered = data?.data?.transactions || [];
-
-    // Filter by direction
-    if (direction !== "all") {
-      filtered = filtered.filter((tx) => tx.direction === direction);
-    }
-
-    return filtered;
-  }, [data, direction]);
+    return data?.data?.transactions || [];
+  }, [data]);
 
   const pagination = data?.data?.pagination;
 

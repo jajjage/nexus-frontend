@@ -12,7 +12,12 @@ import {
   UpdateUserRequest,
   WalletTransactionRequest,
 } from "@/types/admin/user.types";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 
@@ -35,6 +40,7 @@ export function useAdminUsers(params?: AdminUserQueryParams) {
   return useQuery({
     queryKey: adminUserKeys.list({ page, limit, search, role }),
     queryFn: () => adminUserService.getUsers({ page, limit, search, role }),
+    placeholderData: keepPreviousData,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }

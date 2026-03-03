@@ -94,8 +94,10 @@ export function TopupListTable() {
   });
   const pagination = data?.data?.pagination;
 
-  // Data from server (search/filter already applied by backend)
-  const requests = useMemo(() => data?.data?.requests || [], [data]);
+  // Server is source of truth for search/filter/pagination.
+  const requests = useMemo(() => {
+    return data?.data?.requests || [];
+  }, [data]);
 
   const showInitialLoading = !data && isLoading;
   if (showInitialLoading) {
