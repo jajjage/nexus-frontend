@@ -13,11 +13,10 @@ import {
   Clock,
   FileUp,
   Home,
-  Link2,
   Key,
+  Link2,
   LogOut,
   Sparkles,
-  Store,
   TerminalSquare,
   Trophy,
   User,
@@ -36,7 +35,7 @@ const navItems = [
 ];
 
 const resellerItems = [
-  { label: "Reseller Hub", icon: Store, href: "/dashboard/reseller" },
+  // { label: "Reseller Hub", icon: Store, href: "/dashboard/reseller" },
   { label: "Bulk Topup", icon: FileUp, href: "/dashboard/reseller/bulk-topup" },
 ];
 
