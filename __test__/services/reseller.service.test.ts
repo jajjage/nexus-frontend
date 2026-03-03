@@ -11,6 +11,7 @@ vi.mock("@/lib/api-client", () => ({
   default: {
     get: vi.fn(),
     post: vi.fn(),
+    put: vi.fn(),
     delete: vi.fn(),
   },
 }));
@@ -128,6 +129,182 @@ describe("resellerService", () => {
 
       expect(apiClient.delete).toHaveBeenCalledWith(`/reseller/keys/${keyId}`);
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe("getWebhookConfig", () => {
+    it("should fetch and normalize webhook config", async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          data: {
+            callback_url: "https://example.com/callback",
+            is_active: true,
+            callback_secret_configured: true,
+          },
+        },
+      };
+      vi.mocked(apiClient.get).mockResolvedValue(mockResponse as any);
+
+      const result = await resellerService.getWebhookConfig();
+
+      expect(apiClient.get).toHaveBeenCalledWith(
+        "/reseller/api/webhook-config"
+      );
+      expect(result.data).toEqual({
+        callbackUrl: "https://example.com/callback",
+        isActive: true,
+        callbackSecretConfigured: true,
+        callbackSecretLastRotatedAt: undefined,
+        createdAt: undefined,
+        updatedAt: undefined,
+      });
+    });
+  });
+
+  describe("updateWebhookConfig", () => {
+    it("should update webhook config", async () => {
+      const payload = {
+        callbackUrl: "https://example.com/hook",
+        isActive: true,
+      };
+      const mockResponse = {
+        data: {
+          success: true,
+          data: {
+            callback_url: payload.callbackUrl,
+            is_active: payload.isActive,
+          },
+        },
+      };
+      vi.mocked(apiClient.put as any).mockResolvedValue(mockResponse);
+
+      const result = await resellerService.updateWebhookConfig(payload);
+
+      expect(apiClient.put).toHaveBeenCalledWith(
+        "/reseller/api/webhook-config",
+        payload
+      );
+      expect(result.data?.callbackUrl).toBe(payload.callbackUrl);
+      expect(result.data?.isActive).toBe(true);
+    });
+  });
+
+  describe("rotateWebhookSecret", () => {
+    it("should rotate and return one-time secret", async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          data: {
+            secret: "whsec_123",
+            rotated_at: "2026-03-03T00:00:00.000Z",
+          },
+        },
+      };
+      vi.mocked(apiClient.post).mockResolvedValue(mockResponse as any);
+
+      const result = await resellerService.rotateWebhookSecret();
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        "/reseller/api/webhook-config/rotate-secret"
+      );
+      expect(result.data?.secret).toBe("whsec_123");
+      expect(result.data?.rotatedAt).toBe("2026-03-03T00:00:00.000Z");
+    });
+  });
+
+  describe("createApiPurchase", () => {
+    it("should send purchase with API key and idempotency headers", async () => {
+      const mockResponse = {
+        status: 202,
+        data: {
+          success: true,
+          data: {
+            purchase: {
+              request_id: "req_1",
+              topup_request_id: null,
+              status: "pending",
+              is_final: false,
+              idempotency_key: "idem_1",
+              client_reference: null,
+              callback_configured: true,
+              callback_url: "https://example.com/callback",
+              amount: 1000,
+              product_code: "MTN-DATA-1GB",
+              recipient_phone: "08012345678",
+              created_at: "2026-03-03T00:00:00.000Z",
+              updated_at: "2026-03-03T00:00:00.000Z",
+            },
+          },
+        },
+      };
+      vi.mocked(apiClient.post).mockResolvedValue(mockResponse as any);
+
+      const result = await resellerService.createApiPurchase(
+        {
+          productCode: "MTN-DATA-1GB",
+          amount: 1000,
+          recipientPhone: "08012345678",
+        },
+        {
+          apiKey: "nx_live_abc",
+          idempotencyKey: "idem_1",
+        }
+      );
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        "/reseller/api/purchases",
+        {
+          productCode: "MTN-DATA-1GB",
+          amount: 1000,
+          recipientPhone: "08012345678",
+        },
+        {
+          headers: {
+            "X-API-KEY": "nx_live_abc",
+            "X-Idempotency-Key": "idem_1",
+          },
+        }
+      );
+
+      expect(result.data?.httpStatus).toBe(202);
+      expect(result.data?.purchase.requestId).toBe("req_1");
+      expect(result.data?.purchase.isFinal).toBe(false);
+    });
+  });
+
+  describe("getApiPurchaseStatus", () => {
+    it("should fetch and normalize purchase status by request id", async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          data: {
+            request_id: "req_123",
+            topup_request_id: "topup_123",
+            status: "completed",
+            is_final: true,
+            idempotency_key: "idem_123",
+            client_reference: "client_1",
+            callback_configured: true,
+            callback_url: "https://example.com/callback",
+            amount: 2000,
+            product_code: "MTN-DATA-2GB",
+            recipient_phone: "08011111111",
+            created_at: "2026-03-03T00:00:00.000Z",
+            updated_at: "2026-03-03T00:01:00.000Z",
+          },
+        },
+      };
+      vi.mocked(apiClient.get).mockResolvedValue(mockResponse as any);
+
+      const result = await resellerService.getApiPurchaseStatus("req_123");
+
+      expect(apiClient.get).toHaveBeenCalledWith(
+        "/reseller/api/purchases/req_123"
+      );
+      expect(result.data?.purchase.requestId).toBe("req_123");
+      expect(result.data?.purchase.topupRequestId).toBe("topup_123");
+      expect(result.data?.purchase.isFinal).toBe(true);
     });
   });
 });

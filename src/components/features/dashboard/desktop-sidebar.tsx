@@ -4,16 +4,21 @@ import { BecomeResellerModal } from "@/components/features/reseller/BecomeResell
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useLogout } from "@/hooks/useAuth";
-import { useResellerUpgradeStatus } from "@/hooks/useReseller";
+import {
+  useResellerApiAccess,
+  useResellerUpgradeStatus,
+} from "@/hooks/useReseller";
 import { cn } from "@/lib/utils";
 import {
   Clock,
   FileUp,
   Home,
+  Link2,
   Key,
   LogOut,
   Sparkles,
   Store,
+  TerminalSquare,
   Trophy,
   User,
   Users,
@@ -33,30 +38,40 @@ const navItems = [
 const resellerItems = [
   { label: "Reseller Hub", icon: Store, href: "/dashboard/reseller" },
   { label: "Bulk Topup", icon: FileUp, href: "/dashboard/reseller/bulk-topup" },
+];
+
+const resellerApiItems = [
   { label: "API Keys", icon: Key, href: "/dashboard/reseller/api-keys" },
+  {
+    label: "Webhook Config",
+    icon: Link2,
+    href: "/dashboard/reseller/webhook-config",
+  },
+  {
+    label: "API Console",
+    icon: TerminalSquare,
+    href: "/dashboard/reseller/purchase-console",
+  },
 ];
 
 export function DesktopSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { canAccessApi } = useResellerApiAccess();
   const logoutMutation = useLogout();
   const [showResellerModal, setShowResellerModal] = useState(false);
   const { getStatus, clearPending } = useResellerUpgradeStatus();
-  const [hasPendingUpgrade, setHasPendingUpgrade] = useState(false);
 
   const isReseller = user?.role === "reseller";
   const showBecomeReseller = user?.role === "user";
+  const hasPendingUpgrade = !isReseller && getStatus().pending;
 
-  // Check pending status on mount and clear if user is now reseller
+  // If user became reseller, remove stale "pending" local flag.
   useEffect(() => {
     if (isReseller) {
       clearPending();
-      setHasPendingUpgrade(false);
-    } else {
-      const status = getStatus();
-      setHasPendingUpgrade(status.pending);
     }
-  }, [isReseller, getStatus, clearPending]);
+  }, [isReseller, clearPending]);
 
   return (
     <>
@@ -118,6 +133,28 @@ export function DesktopSidebar({ className }: { className?: string }) {
                   <span>{item.label}</span>
                 </Link>
               ))}
+              {canAccessApi ? (
+                resellerApiItems.map((item) => (
+                  <Link
+                    href={item.href}
+                    key={item.label}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors",
+                      pathname === item.href ||
+                        pathname.startsWith(item.href + "/")
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <item.icon className="size-5" />
+                    <span>{item.label}</span>
+                  </Link>
+                ))
+              ) : (
+                <p className="text-muted-foreground px-3 text-xs">
+                  Contact support to enable reseller API access.
+                </p>
+              )}
             </>
           )}
 
@@ -134,7 +171,7 @@ export function DesktopSidebar({ className }: { className?: string }) {
                       Upgrade Pending
                     </span>
                     <span className="text-xs text-zinc-500">
-                      We're reviewing your request
+                      We&apos;re reviewing your request
                     </span>
                   </div>
                 </div>
@@ -169,14 +206,7 @@ export function DesktopSidebar({ className }: { className?: string }) {
       {/* Become a Reseller Modal */}
       <BecomeResellerModal
         open={showResellerModal}
-        onOpenChange={(open) => {
-          setShowResellerModal(open);
-          // Refresh pending status when modal closes
-          if (!open) {
-            const status = getStatus();
-            setHasPendingUpgrade(status.pending);
-          }
-        }}
+        onOpenChange={(open) => setShowResellerModal(open)}
       />
     </>
   );

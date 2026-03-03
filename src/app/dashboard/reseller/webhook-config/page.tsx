@@ -2,8 +2,8 @@
 
 import { BottomNav } from "@/components/features/dashboard/bottom-nav";
 import {
-  ApiKeyList,
   ResellerApiAccessFallback,
+  WebhookConfigCard,
 } from "@/components/features/reseller";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -13,15 +13,10 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-/**
- * API Keys Management Page
- * Create, view, and revoke API keys
- */
-export default function ApiKeysPage() {
+export default function WebhookConfigPage() {
   const { user, isLoading } = useAuth();
   const { canAccessApi, shouldShowProvisionWarning } = useResellerApiAccess();
 
-  // Check if user is a reseller
   if (!isLoading && user?.role !== "reseller") {
     redirect("/dashboard");
   }
@@ -29,7 +24,6 @@ export default function ApiKeysPage() {
   return (
     <>
       <div className="container mx-auto max-w-4xl px-4 py-8 pb-24">
-        {/* Header */}
         <div className="mb-6 flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/dashboard/reseller">
@@ -37,9 +31,9 @@ export default function ApiKeysPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">API Keys</h1>
+            <h1 className="text-2xl font-bold">Webhook Config</h1>
             <p className="text-muted-foreground text-sm">
-              Manage keys for your integrations
+              Manage callback URL and secret rotation.
             </p>
           </div>
         </div>
@@ -57,7 +51,7 @@ export default function ApiKeysPage() {
                 </AlertDescription>
               </Alert>
             ) : null}
-            <ApiKeyList />
+            <WebhookConfigCard />
           </div>
         )}
       </div>

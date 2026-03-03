@@ -83,6 +83,78 @@ export interface ApiKeysListData {
   keys: ApiKey[];
 }
 
+// ============= Webhook Config Types =============
+
+export interface WebhookConfig {
+  callbackUrl: string | null;
+  isActive: boolean;
+  callbackSecretConfigured?: boolean;
+  callbackSecretLastRotatedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UpdateWebhookConfigRequest {
+  callbackUrl: string;
+  isActive: boolean;
+}
+
+export interface RotateWebhookSecretResponse {
+  secret: string;
+  rotatedAt?: string;
+}
+
+// ============= API Purchase Types =============
+
+export interface CreateApiPurchaseRequest {
+  productCode: string;
+  amount: number;
+  recipientPhone: string;
+  clientReference?: string;
+  callbackUrl?: string;
+  waitForFinal?: boolean;
+  waitTimeoutMs?: number;
+}
+
+export interface CreateApiPurchaseHeaders {
+  apiKey: string;
+  idempotencyKey: string;
+}
+
+export interface PurchaseStatus {
+  requestId: string;
+  topupRequestId: string | null;
+  status: string;
+  isFinal: boolean;
+  idempotencyKey: string;
+  clientReference: string | null;
+  callbackConfigured: boolean;
+  callbackUrl: string | null;
+  amount: number;
+  productCode: string;
+  recipientPhone: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateApiPurchaseTerminalResult {
+  httpStatus: 200;
+  purchase: PurchaseStatus;
+}
+
+export interface CreateApiPurchasePendingResult {
+  httpStatus: 202;
+  purchase: PurchaseStatus;
+}
+
+export type CreateApiPurchaseResult =
+  | CreateApiPurchaseTerminalResult
+  | CreateApiPurchasePendingResult;
+
+export interface ApiPurchaseStatusResponseData {
+  purchase: PurchaseStatus;
+}
+
 // ============= CSV Import Types =============
 
 /**

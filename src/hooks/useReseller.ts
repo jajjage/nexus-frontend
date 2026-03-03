@@ -5,12 +5,21 @@
 
 "use client";
 
+import { useAuth } from "@/hooks/useAuth";
 import { resellerService } from "@/services/reseller.service";
 import type {
+  CreateApiPurchaseHeaders,
+  CreateApiPurchaseRequest,
   BulkTopupRequest,
   CreateApiKeyRequest,
+  UpdateWebhookConfigRequest,
 } from "@/types/reseller.types";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 
@@ -19,7 +28,109 @@ const resellerKeys = {
   all: ["reseller"] as const,
   apiKeys: () => [...resellerKeys.all, "api-keys"] as const,
   bulkTopups: () => [...resellerKeys.all, "bulk-topups"] as const,
+  webhookConfig: () => [...resellerKeys.all, "webhook-config"] as const,
+  purchaseStatus: (requestId: string) =>
+    [...resellerKeys.all, "purchase-status", requestId] as const,
 };
+
+export interface ResellerApiErrorInfo {
+  status?: number;
+  code?: string;
+  message: string;
+  fieldErrors?: string[];
+  retryAfterSeconds?: number;
+}
+
+export function mapResellerApiError(
+  error: AxiosError<any>
+): ResellerApiErrorInfo {
+  const status = error.response?.status;
+  const code = error.response?.data?.code;
+  const retryAfterHeader = error.response?.headers?.["retry-after"];
+  const retryAfterSeconds = retryAfterHeader
+    ? Number.parseInt(retryAfterHeader, 10)
+    : undefined;
+  const serverMessage =
+    error.response?.data?.message || error.message || "Request failed";
+
+  if (status === 503 && code === "CIRCUIT_OPEN") {
+    return {
+      status,
+      code,
+      message: "Supplier temporarily unavailable, retry later.",
+    };
+  }
+
+  if (status === 429) {
+    return {
+      status,
+      code,
+      retryAfterSeconds,
+      message: retryAfterSeconds
+        ? `Rate limit exceeded. Retry in ${retryAfterSeconds}s.`
+        : "Rate limit exceeded. Please retry shortly.",
+    };
+  }
+
+  if (status === 404) {
+    return { status, code, message: "Request not found." };
+  }
+
+  if (status === 403) {
+    return {
+      status,
+      code,
+      message: "You don't have access to reseller API features.",
+    };
+  }
+
+  if (status === 401) {
+    return {
+      status,
+      code,
+      message: "Authentication failed. Update credentials and try again.",
+    };
+  }
+
+  if (status === 400) {
+    const errors = error.response?.data?.errors;
+    const fieldErrors = Array.isArray(errors)
+      ? errors
+          .map((e: any) => e?.message)
+          .filter((message: string | undefined): message is string => !!message)
+      : errors && typeof errors === "object"
+        ? Object.entries(errors).map(
+            ([field, message]) => `${field}: ${message}`
+          )
+        : undefined;
+
+    return {
+      status,
+      code,
+      message: "Invalid request. Check the submitted fields.",
+      fieldErrors,
+    };
+  }
+
+  return { status, code, message: serverMessage };
+}
+
+export function useResellerApiAccess() {
+  const { user } = useAuth();
+
+  const isReseller = user?.role === "reseller";
+  const hasApiPermission = Boolean(
+    user?.permissions?.includes("reseller.api_access")
+  );
+
+  return {
+    canAccessApi: isReseller,
+    isReseller,
+    hasApiPermission,
+    isPermissionFallback: false,
+    shouldShowProvisionWarning: false,
+  };
+}
 
 // ============= API Keys Hooks =============
 
@@ -111,6 +222,83 @@ export function useBulkTopup() {
         toast.error(message || "Bulk topup failed");
       }
     },
+  });
+}
+
+// ============= Webhook Config Hooks =============
+
+export function useWebhookConfig() {
+  return useQuery({
+    queryKey: resellerKeys.webhookConfig(),
+    queryFn: () => resellerService.getWebhookConfig(),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useUpdateWebhookConfig() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UpdateWebhookConfigRequest) =>
+      resellerService.updateWebhookConfig(data),
+    onSuccess: () => {
+      toast.success("Webhook configuration updated");
+      queryClient.invalidateQueries({ queryKey: resellerKeys.webhookConfig() });
+    },
+    onError: (error: AxiosError<any>) => {
+      const mapped = mapResellerApiError(error);
+      toast.error(mapped.message);
+    },
+  });
+}
+
+export function useRotateWebhookSecret() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => resellerService.rotateWebhookSecret(),
+    onSuccess: () => {
+      toast.success("Webhook secret rotated");
+      queryClient.invalidateQueries({ queryKey: resellerKeys.webhookConfig() });
+    },
+    onError: (error: AxiosError<any>) => {
+      const mapped = mapResellerApiError(error);
+      toast.error(mapped.message);
+    },
+  });
+}
+
+// ============= API Purchase Hooks =============
+
+export function useCreateApiPurchase() {
+  return useMutation({
+    mutationFn: ({
+      payload,
+      headers,
+    }: {
+      payload: CreateApiPurchaseRequest;
+      headers: CreateApiPurchaseHeaders;
+    }) => resellerService.createApiPurchase(payload, headers),
+    onError: (error: AxiosError<any>) => {
+      const mapped = mapResellerApiError(error);
+      toast.error(mapped.message);
+    },
+  });
+}
+
+export function useApiPurchaseStatus(
+  requestId: string,
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number | false;
+  }
+) {
+  return useQuery({
+    queryKey: resellerKeys.purchaseStatus(requestId),
+    queryFn: () => resellerService.getApiPurchaseStatus(requestId),
+    enabled: Boolean(requestId) && (options?.enabled ?? true),
+    refetchInterval: options?.refetchInterval,
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useCreateApiKey } from "@/hooks/useReseller";
-import { AlertTriangle, Check, Copy, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, Copy, Download, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -30,6 +30,7 @@ export function ApiKeyCreateModal({
   const [isLive, setIsLive] = useState(true);
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [hasSavedSecret, setHasSavedSecret] = useState(false);
 
   const createKeyMutation = useCreateApiKey();
 
@@ -55,6 +56,7 @@ export function ApiKeyCreateModal({
     try {
       await navigator.clipboard.writeText(generatedKey);
       setCopied(true);
+      setHasSavedSecret(true);
       toast.success("API key copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -62,17 +64,66 @@ export function ApiKeyCreateModal({
     }
   };
 
+  const handleDownload = () => {
+    if (!generatedKey) return;
+
+    const content = `Nexus Data API Key\n\n${generatedKey}\n\nCreated: ${new Date().toISOString()}\n`;
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `nexus-api-key-${Date.now()}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setHasSavedSecret(true);
+    toast.success("API key downloaded");
+  };
+
   const handleClose = () => {
     setName("");
     setIsLive(true);
     setGeneratedKey(null);
     setCopied(false);
+    setHasSavedSecret(false);
     onOpenChange(false);
   };
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    const canDismiss = !generatedKey || hasSavedSecret;
+
+    if (!nextOpen && !canDismiss) {
+      toast.error("Copy or download this key before closing");
+      return;
+    }
+
+    if (!nextOpen) {
+      handleClose();
+      return;
+    }
+
+    onOpenChange(nextOpen);
+  };
+
+  const canDismiss = !generatedKey || hasSavedSecret;
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent
+        className="sm:max-w-md"
+        showCloseButton={canDismiss}
+        onInteractOutside={(event) => {
+          if (!canDismiss) {
+            event.preventDefault();
+            toast.error("Copy or download this key before closing");
+          }
+        }}
+        onEscapeKeyDown={(event) => {
+          if (!canDismiss) {
+            event.preventDefault();
+            toast.error("Copy or download this key before closing");
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Create API Key</DialogTitle>
           <DialogDescription>
@@ -169,11 +220,23 @@ export function ApiKeyCreateModal({
                     <Copy className="size-4" />
                   )}
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleDownload}
+                  className="shrink-0"
+                >
+                  <Download className="mr-2 size-4" />
+                  .txt
+                </Button>
               </div>
             </div>
 
             <DialogFooter>
-              <Button onClick={handleClose} className="w-full">
+              <Button
+                onClick={handleClose}
+                className="w-full"
+                disabled={!hasSavedSecret}
+              >
                 I&apos;ve Saved My Key
               </Button>
             </DialogFooter>

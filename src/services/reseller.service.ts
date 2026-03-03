@@ -7,11 +7,49 @@ import apiClient from "@/lib/api-client";
 import type { ApiResponse } from "@/types/api.types";
 import type {
   ApiKeysListData,
+  ApiPurchaseStatusResponseData,
   BulkTopupRequest,
   BulkTopupResponseData,
+  CreateApiPurchaseHeaders,
+  CreateApiPurchaseRequest,
+  CreateApiPurchaseResult,
   CreateApiKeyRequest,
   CreateApiKeyResponseData,
+  PurchaseStatus,
+  RotateWebhookSecretResponse,
+  UpdateWebhookConfigRequest,
+  WebhookConfig,
 } from "@/types/reseller.types";
+
+const normalizePurchaseStatus = (raw: any): PurchaseStatus => ({
+  requestId: raw?.requestId ?? raw?.request_id ?? "",
+  topupRequestId: raw?.topupRequestId ?? raw?.topup_request_id ?? null,
+  status: raw?.status ?? "pending",
+  isFinal: Boolean(raw?.isFinal ?? raw?.is_final ?? false),
+  idempotencyKey: raw?.idempotencyKey ?? raw?.idempotency_key ?? "",
+  clientReference: raw?.clientReference ?? raw?.client_reference ?? null,
+  callbackConfigured: Boolean(
+    raw?.callbackConfigured ?? raw?.callback_configured ?? false
+  ),
+  callbackUrl: raw?.callbackUrl ?? raw?.callback_url ?? null,
+  amount: Number(raw?.amount ?? 0),
+  productCode: raw?.productCode ?? raw?.product_code ?? "",
+  recipientPhone: raw?.recipientPhone ?? raw?.recipient_phone ?? "",
+  createdAt: raw?.createdAt ?? raw?.created_at ?? new Date(0).toISOString(),
+  updatedAt: raw?.updatedAt ?? raw?.updated_at ?? new Date(0).toISOString(),
+});
+
+const normalizeWebhookConfig = (raw: any): WebhookConfig => ({
+  callbackUrl: raw?.callbackUrl ?? raw?.callback_url ?? null,
+  isActive: Boolean(raw?.isActive ?? raw?.is_active ?? false),
+  callbackSecretConfigured: Boolean(
+    raw?.callbackSecretConfigured ?? raw?.callback_secret_configured ?? false
+  ),
+  callbackSecretLastRotatedAt:
+    raw?.callbackSecretLastRotatedAt ?? raw?.callback_secret_last_rotated_at,
+  createdAt: raw?.createdAt ?? raw?.created_at,
+  updatedAt: raw?.updatedAt ?? raw?.updated_at,
+});
 
 export const resellerService = {
   // ============= Bulk Topup =============
@@ -67,6 +105,113 @@ export const resellerService = {
       `/reseller/keys/${keyId}`
     );
     return response.data;
+  },
+
+  // ============= Webhook Config =============
+
+  /**
+   * Get reseller webhook callback configuration
+   */
+  getWebhookConfig: async (): Promise<ApiResponse<WebhookConfig>> => {
+    const response = await apiClient.get<ApiResponse<any>>(
+      "/reseller/api/webhook-config"
+    );
+
+    const rawConfig = response.data?.data?.webhookConfig ?? response.data?.data;
+    return {
+      ...response.data,
+      data: normalizeWebhookConfig(rawConfig),
+    };
+  },
+
+  /**
+   * Update reseller webhook callback URL and active state
+   */
+  updateWebhookConfig: async (
+    data: UpdateWebhookConfigRequest
+  ): Promise<ApiResponse<WebhookConfig>> => {
+    const response = await apiClient.put<ApiResponse<any>>(
+      "/reseller/api/webhook-config",
+      data
+    );
+
+    const rawConfig = response.data?.data?.webhookConfig ?? response.data?.data;
+    return {
+      ...response.data,
+      data: normalizeWebhookConfig(rawConfig),
+    };
+  },
+
+  /**
+   * Rotate reseller webhook callback secret
+   */
+  rotateWebhookSecret: async (): Promise<
+    ApiResponse<RotateWebhookSecretResponse>
+  > => {
+    const response = await apiClient.post<ApiResponse<any>>(
+      "/reseller/api/webhook-config/rotate-secret"
+    );
+    const secretData = response.data?.data ?? {};
+
+    return {
+      ...response.data,
+      data: {
+        secret: secretData.secret ?? secretData.callbackSecret ?? "",
+        rotatedAt: secretData.rotatedAt ?? secretData.rotated_at,
+      },
+    };
+  },
+
+  // ============= Reseller API Purchases =============
+
+  /**
+   * Create/test a purchase using reseller API credentials
+   */
+  createApiPurchase: async (
+    data: CreateApiPurchaseRequest,
+    headers: CreateApiPurchaseHeaders
+  ): Promise<ApiResponse<CreateApiPurchaseResult>> => {
+    const response = await apiClient.post<ApiResponse<any>>(
+      "/reseller/api/purchases",
+      data,
+      {
+        headers: {
+          "X-API-KEY": headers.apiKey,
+          "X-Idempotency-Key": headers.idempotencyKey,
+        },
+      }
+    );
+
+    const rawPurchase = response.data?.data?.purchase ?? response.data?.data;
+    const httpStatus = response.status === 202 ? 202 : 200;
+
+    return {
+      ...response.data,
+      data: {
+        httpStatus,
+        purchase: normalizePurchaseStatus(rawPurchase),
+      } as CreateApiPurchaseResult,
+    };
+  },
+
+  /**
+   * Get purchase status by request id
+   */
+  getApiPurchaseStatus: async (
+    requestId: string
+  ): Promise<ApiResponse<ApiPurchaseStatusResponseData>> => {
+    const response = await apiClient.get<ApiResponse<any>>(
+      `/reseller/api/purchases/${requestId}`
+    );
+
+    const rawPurchase = response.data?.data?.purchase ?? response.data?.data;
+
+    return {
+      ...response.data,
+      data: {
+        purchase: normalizePurchaseStatus(rawPurchase),
+      },
+    };
   },
 
   // ============= Upgrade Request =============

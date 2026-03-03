@@ -78,6 +78,11 @@ const navItems = [
     icon: WebhookIcon,
   },
   {
+    title: "Reseller API",
+    href: "/admin/dashboard/reseller-api",
+    icon: WebhookIcon,
+  },
+  {
     title: "Jobs",
     href: "/admin/dashboard/jobs",
     icon: BriefcaseIcon,
