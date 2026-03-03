@@ -155,6 +155,45 @@ export interface ApiPurchaseStatusResponseData {
   purchase: PurchaseStatus;
 }
 
+// ============= Purchase Analytics Types =============
+
+export type PurchaseAnalyticsStatus =
+  | "success"
+  | "failed"
+  | "pending"
+  | "reversed";
+
+export interface ResellerPurchaseAnalyticsStatusMap {
+  success: number;
+  failed: number;
+  pending: number;
+  reversed: number;
+}
+
+export interface ResellerPurchaseAnalytics {
+  period: {
+    fromDate: string | null;
+    toDate: string | null;
+  };
+  scope: {
+    userId: string | null;
+  };
+  totals: {
+    totalRequests: number;
+    totalAmount: number;
+  };
+  breakdownByStatus: ResellerPurchaseAnalyticsStatusMap;
+  amountByStatus: ResellerPurchaseAnalyticsStatusMap;
+  derived: {
+    successRate: string;
+  };
+}
+
+export interface ResellerPurchaseAnalyticsQueryParams {
+  fromDate?: string;
+  toDate?: string;
+}
+
 // ============= CSV Import Types =============
 
 /**

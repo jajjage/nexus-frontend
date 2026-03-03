@@ -12,6 +12,7 @@ import type {
   CreateApiPurchaseRequest,
   BulkTopupRequest,
   CreateApiKeyRequest,
+  ResellerPurchaseAnalyticsQueryParams,
   UpdateWebhookConfigRequest,
 } from "@/types/reseller.types";
 import {
@@ -31,6 +32,8 @@ const resellerKeys = {
   webhookConfig: () => [...resellerKeys.all, "webhook-config"] as const,
   purchaseStatus: (requestId: string) =>
     [...resellerKeys.all, "purchase-status", requestId] as const,
+  purchaseAnalyticsOverview: (params?: ResellerPurchaseAnalyticsQueryParams) =>
+    [...resellerKeys.all, "purchase-analytics-overview", params] as const,
 };
 
 export interface ResellerApiErrorInfo {
@@ -299,6 +302,17 @@ export function useApiPurchaseStatus(
     enabled: Boolean(requestId) && (options?.enabled ?? true),
     refetchInterval: options?.refetchInterval,
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useResellerPurchaseAnalyticsOverview(
+  params?: ResellerPurchaseAnalyticsQueryParams
+) {
+  return useQuery({
+    queryKey: resellerKeys.purchaseAnalyticsOverview(params),
+    queryFn: () => resellerService.getPurchaseAnalyticsOverview(params),
+    placeholderData: keepPreviousData,
+    staleTime: 30 * 1000,
   });
 }
 

@@ -125,4 +125,86 @@ describe("adminResellerApiService", () => {
       nextAttemptAt: null,
     });
   });
+
+  it("fetches reseller purchase analytics overview with filters", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: {
+        success: true,
+        data: {
+          period: {
+            fromDate: "2026-03-01",
+            toDate: "2026-03-31",
+          },
+          scope: {
+            userId: "reseller_42",
+          },
+          totals: {
+            totalRequests: 250,
+            totalAmount: 188000,
+          },
+          breakdownByStatus: {
+            success: 200,
+            failed: 20,
+            pending: 25,
+            reversed: 5,
+          },
+          amountByStatus: {
+            success: 160000,
+            failed: 15000,
+            pending: 10000,
+            reversed: 3000,
+          },
+          derived: {
+            successRate: "80.0%",
+          },
+        },
+      },
+    } as any);
+
+    const result = await adminResellerApiService.getPurchaseAnalyticsOverview({
+      fromDate: "2026-03-01",
+      toDate: "2026-03-31",
+      userId: "reseller_42",
+    });
+
+    expect(apiClient.get).toHaveBeenCalledWith(
+      "/admin/analytics/reseller-api/purchases/overview",
+      {
+        params: {
+          fromDate: "2026-03-01",
+          toDate: "2026-03-31",
+          userId: "reseller_42",
+        },
+      }
+    );
+
+    expect(result.data).toEqual({
+      period: {
+        fromDate: "2026-03-01",
+        toDate: "2026-03-31",
+      },
+      scope: {
+        userId: "reseller_42",
+      },
+      totals: {
+        totalRequests: 250,
+        totalAmount: 188000,
+      },
+      breakdownByStatus: {
+        success: 200,
+        failed: 20,
+        pending: 25,
+        reversed: 5,
+      },
+      amountByStatus: {
+        success: 160000,
+        failed: 15000,
+        pending: 10000,
+        reversed: 3000,
+      },
+      derived: {
+        successRate: "80.0%",
+      },
+    });
+  });
 });

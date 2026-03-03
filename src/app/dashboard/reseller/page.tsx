@@ -12,7 +12,14 @@ import {
 } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { useResellerApiAccess } from "@/hooks/useReseller";
-import { FileUp, Key, Link2, TerminalSquare, TrendingUp } from "lucide-react";
+import {
+  BarChart3,
+  FileUp,
+  Key,
+  Link2,
+  TerminalSquare,
+  TrendingUp,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -67,6 +74,13 @@ export default function ResellerHubPage() {
       icon: TerminalSquare,
       href: "/dashboard/reseller/purchase-console",
       color: "text-emerald-500",
+    },
+    {
+      title: "API Analytics",
+      description: "Analyze request outcomes and amount distribution",
+      icon: BarChart3,
+      href: "/dashboard/reseller/analytics",
+      color: "text-rose-500",
     },
   ];
 

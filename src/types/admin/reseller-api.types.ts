@@ -64,3 +64,35 @@ export interface ResellerApiCircuitBreaker {
 export interface ResellerApiCircuitBreakersResponse {
   breakers: ResellerApiCircuitBreaker[];
 }
+
+export interface AdminResellerPurchaseAnalyticsQueryParams {
+  fromDate?: string;
+  toDate?: string;
+  userId?: string;
+}
+
+export interface AdminResellerPurchaseAnalyticsStatusMap {
+  success: number;
+  failed: number;
+  pending: number;
+  reversed: number;
+}
+
+export interface AdminResellerPurchaseAnalytics {
+  period: {
+    fromDate: string | null;
+    toDate: string | null;
+  };
+  scope: {
+    userId: string | null;
+  };
+  totals: {
+    totalRequests: number;
+    totalAmount: number;
+  };
+  breakdownByStatus: AdminResellerPurchaseAnalyticsStatusMap;
+  amountByStatus: AdminResellerPurchaseAnalyticsStatusMap;
+  derived: {
+    successRate: string;
+  };
+}

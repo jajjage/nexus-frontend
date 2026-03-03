@@ -307,4 +307,89 @@ describe("resellerService", () => {
       expect(result.data?.purchase.isFinal).toBe(true);
     });
   });
+
+  describe("getPurchaseAnalyticsOverview", () => {
+    it("should fetch reseller purchase analytics with date params", async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          message: "ok",
+          data: {
+            period: {
+              from_date: "2026-03-01",
+              to_date: "2026-03-31",
+            },
+            scope: {
+              user_id: "reseller_123",
+            },
+            totals: {
+              total_requests: 120,
+              total_amount: 450000,
+            },
+            breakdown_by_status: {
+              success: 90,
+              failed: 10,
+              pending: 15,
+              reversed: 5,
+            },
+            amount_by_status: {
+              success: 380000,
+              failed: 25000,
+              pending: 30000,
+              reversed: 15000,
+            },
+            derived: {
+              success_rate: "75.0%",
+            },
+          },
+        },
+      };
+
+      vi.mocked(apiClient.get).mockResolvedValue(mockResponse as any);
+
+      const result = await resellerService.getPurchaseAnalyticsOverview({
+        fromDate: "2026-03-01",
+        toDate: "2026-03-31",
+      });
+
+      expect(apiClient.get).toHaveBeenCalledWith(
+        "/reseller/api/purchases/analytics/overview",
+        {
+          params: {
+            fromDate: "2026-03-01",
+            toDate: "2026-03-31",
+          },
+        }
+      );
+
+      expect(result.data).toEqual({
+        period: {
+          fromDate: "2026-03-01",
+          toDate: "2026-03-31",
+        },
+        scope: {
+          userId: "reseller_123",
+        },
+        totals: {
+          totalRequests: 120,
+          totalAmount: 450000,
+        },
+        breakdownByStatus: {
+          success: 90,
+          failed: 10,
+          pending: 15,
+          reversed: 5,
+        },
+        amountByStatus: {
+          success: 380000,
+          failed: 25000,
+          pending: 30000,
+          reversed: 15000,
+        },
+        derived: {
+          successRate: "75.0%",
+        },
+      });
+    });
+  });
 });

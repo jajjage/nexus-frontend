@@ -1,7 +1,10 @@
 "use client";
 
 import { adminResellerApiService } from "@/services/admin/reseller-api.service";
-import { ResellerApiCallbackDeliveriesQueryParams } from "@/types/admin/reseller-api.types";
+import {
+  AdminResellerPurchaseAnalyticsQueryParams,
+  ResellerApiCallbackDeliveriesQueryParams,
+} from "@/types/admin/reseller-api.types";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 const resellerApiKeys = {
@@ -11,6 +14,9 @@ const resellerApiKeys = {
   callbackDeliveries: (params?: ResellerApiCallbackDeliveriesQueryParams) =>
     [...resellerApiKeys.all, "callback-deliveries", params] as const,
   circuitBreakers: () => [...resellerApiKeys.all, "circuit-breakers"] as const,
+  purchaseAnalyticsOverview: (
+    params?: AdminResellerPurchaseAnalyticsQueryParams
+  ) => [...resellerApiKeys.all, "purchase-analytics-overview", params] as const,
 };
 
 export function useResellerApiCallbacksOverview() {
@@ -36,6 +42,17 @@ export function useResellerApiCircuitBreakers() {
   return useQuery({
     queryKey: resellerApiKeys.circuitBreakers(),
     queryFn: () => adminResellerApiService.getCircuitBreakers(),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useAdminResellerPurchaseAnalyticsOverview(
+  params?: AdminResellerPurchaseAnalyticsQueryParams
+) {
+  return useQuery({
+    queryKey: resellerApiKeys.purchaseAnalyticsOverview(params),
+    queryFn: () => adminResellerApiService.getPurchaseAnalyticsOverview(params),
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
 }

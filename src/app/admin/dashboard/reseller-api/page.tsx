@@ -1,3 +1,4 @@
+import { ResellerApiPurchaseAnalyticsSection } from "@/components/features/admin/reseller-api/ResellerApiPurchaseAnalyticsSection";
 import { ResellerApiCircuitBreakersPanel } from "@/components/features/admin/reseller-api/ResellerApiCircuitBreakersPanel";
 import { ResellerApiDeliveriesTable } from "@/components/features/admin/reseller-api/ResellerApiDeliveriesTable";
 import { ResellerApiOverviewCards } from "@/components/features/admin/reseller-api/ResellerApiOverviewCards";
@@ -12,6 +13,7 @@ export default function AdminResellerApiPage() {
         </p>
       </div>
 
+      <ResellerApiPurchaseAnalyticsSection />
       <ResellerApiOverviewCards />
       <ResellerApiDeliveriesTable />
       <ResellerApiCircuitBreakersPanel />

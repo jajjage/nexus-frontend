@@ -10,6 +10,7 @@ import {
 } from "@/hooks/useReseller";
 import { cn } from "@/lib/utils";
 import {
+  BarChart3,
   Clock,
   FileUp,
   Home,
@@ -50,6 +51,11 @@ const resellerApiItems = [
     label: "API Console",
     icon: TerminalSquare,
     href: "/dashboard/reseller/purchase-console",
+  },
+  {
+    label: "API Analytics",
+    icon: BarChart3,
+    href: "/dashboard/reseller/analytics",
   },
 ];
 

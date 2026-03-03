@@ -16,6 +16,8 @@ import type {
   CreateApiKeyRequest,
   CreateApiKeyResponseData,
   PurchaseStatus,
+  ResellerPurchaseAnalytics,
+  ResellerPurchaseAnalyticsQueryParams,
   RotateWebhookSecretResponse,
   UpdateWebhookConfigRequest,
   WebhookConfig,
@@ -49,6 +51,44 @@ const normalizeWebhookConfig = (raw: any): WebhookConfig => ({
     raw?.callbackSecretLastRotatedAt ?? raw?.callback_secret_last_rotated_at,
   createdAt: raw?.createdAt ?? raw?.created_at,
   updatedAt: raw?.updatedAt ?? raw?.updated_at,
+});
+
+const normalizeAnalyticsStatusMap = (
+  raw: any
+): ResellerPurchaseAnalytics["breakdownByStatus"] => ({
+  success: Number(raw?.success ?? 0),
+  failed: Number(raw?.failed ?? 0),
+  pending: Number(raw?.pending ?? 0),
+  reversed: Number(raw?.reversed ?? 0),
+});
+
+const normalizePurchaseAnalytics = (raw: any): ResellerPurchaseAnalytics => ({
+  period: {
+    fromDate: raw?.period?.fromDate ?? raw?.period?.from_date ?? null,
+    toDate: raw?.period?.toDate ?? raw?.period?.to_date ?? null,
+  },
+  scope: {
+    userId: raw?.scope?.userId ?? raw?.scope?.user_id ?? null,
+  },
+  totals: {
+    totalRequests: Number(
+      raw?.totals?.totalRequests ?? raw?.totals?.total_requests ?? 0
+    ),
+    totalAmount: Number(
+      raw?.totals?.totalAmount ?? raw?.totals?.total_amount ?? 0
+    ),
+  },
+  breakdownByStatus: normalizeAnalyticsStatusMap(
+    raw?.breakdownByStatus ?? raw?.breakdown_by_status
+  ),
+  amountByStatus: normalizeAnalyticsStatusMap(
+    raw?.amountByStatus ?? raw?.amount_by_status
+  ),
+  derived: {
+    successRate: String(
+      raw?.derived?.successRate ?? raw?.derived?.success_rate ?? "0%"
+    ),
+  },
 });
 
 export const resellerService = {
@@ -211,6 +251,23 @@ export const resellerService = {
       data: {
         purchase: normalizePurchaseStatus(rawPurchase),
       },
+    };
+  },
+
+  /**
+   * Get reseller purchase analytics overview for authenticated reseller scope
+   */
+  getPurchaseAnalyticsOverview: async (
+    params?: ResellerPurchaseAnalyticsQueryParams
+  ): Promise<ApiResponse<ResellerPurchaseAnalytics>> => {
+    const response = await apiClient.get<ApiResponse<any>>(
+      "/reseller/api/purchases/analytics/overview",
+      { params }
+    );
+
+    return {
+      ...response.data,
+      data: normalizePurchaseAnalytics(response.data?.data ?? {}),
     };
   },
 
