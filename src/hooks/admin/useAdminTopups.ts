@@ -6,13 +6,17 @@
 "use client";
 
 import { adminTopupService } from "@/services/admin/topup.service";
-import { AdminTopupQueryParams } from "@/types/admin/topup.types";
+import {
+  AdminTopupQueryParams,
+  AdminUpdateTopupStatusRequest,
+} from "@/types/admin/topup.types";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { AxiosError } from "axios";
 import { toast } from "sonner";
 
 // Query keys for cache management
@@ -79,6 +83,32 @@ export function useRetryTopup() {
     },
     onError: () => {
       toast.error("Failed to retry topup request");
+    },
+  });
+}
+
+/**
+ * Update a topup request status
+ */
+export function useUpdateTopupStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      requestId,
+      data,
+    }: {
+      requestId: string;
+      data: AdminUpdateTopupStatusRequest;
+    }) => adminTopupService.updateTopupRequestStatus(requestId, data),
+    onSuccess: (response) => {
+      toast.success(response.message || "Topup status updated successfully");
+      queryClient.invalidateQueries({ queryKey: topupKeys.all });
+    },
+    onError: (error: AxiosError<{ message?: string }>) => {
+      toast.error(
+        error.response?.data?.message || "Failed to update topup status"
+      );
     },
   });
 }

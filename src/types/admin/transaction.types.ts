@@ -33,6 +33,8 @@ export interface Related {
   operatorCode?: string;
 }
 
+export type TransactionStatus = "pending" | "completed" | "failed";
+
 // ============= Transaction Types =============
 
 export interface AdminTransaction {
@@ -57,7 +59,7 @@ export interface AdminTransaction {
   note?: string | null;
   type?: string;
   description?: string;
-  status?: "pending" | "completed" | "failed";
+  status?: TransactionStatus;
   createdAt: string;
   updatedAt?: string;
 }
@@ -84,7 +86,7 @@ export interface AdminTransactionQueryParams {
   dateFrom?: string;
   dateTo?: string;
   direction?: "debit" | "credit";
-  status?: "pending" | "completed" | "failed";
+  status?: TransactionStatus;
   page?: number;
   limit?: number;
 }

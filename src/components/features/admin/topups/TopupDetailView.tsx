@@ -3,14 +3,37 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAdminTopup, useRetryTopup } from "@/hooks/admin/useAdminTopups";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  useAdminTopup,
+  useRetryTopup,
+  useUpdateTopupStatus,
+} from "@/hooks/admin/useAdminTopups";
+import { TopupStatus } from "@/types/admin/topup.types";
 import { format } from "date-fns";
 import {
   ArrowLeft,
   Hash,
   Loader2,
+  Pencil,
   Phone,
   Radio,
   RefreshCw,
@@ -18,6 +41,8 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface TopupDetailViewProps {
   requestId: string;
@@ -47,8 +72,23 @@ const operatorColors: Record<string, string> = {
 export function TopupDetailView({ requestId }: TopupDetailViewProps) {
   const { data, isLoading, isError, refetch } = useAdminTopup(requestId);
   const retryMutation = useRetryTopup();
+  const updateStatusMutation = useUpdateTopupStatus();
+  const [isEditStatusOpen, setIsEditStatusOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<TopupStatus | "">("");
+  const [statusReason, setStatusReason] = useState("");
 
   const request = data?.data;
+
+  useEffect(() => {
+    if (request?.status) {
+      setSelectedStatus(request.status);
+    }
+  }, [request?.status]);
+
+  const isValidUuid = (value: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    );
 
   if (isLoading) {
     return (
@@ -86,6 +126,36 @@ export function TopupDetailView({ requestId }: TopupDetailViewProps) {
     return isNaN(num) ? amount : num.toLocaleString();
   };
 
+  const handleUpdateStatus = () => {
+    if (!selectedStatus || selectedStatus === request.status) {
+      return;
+    }
+
+    const trimmedReason = statusReason.trim();
+    if (trimmedReason.length < 1 || trimmedReason.length > 500) {
+      toast.error("Reason must be between 1 and 500 characters");
+      return;
+    }
+
+    if (!isValidUuid(requestId)) {
+      toast.error("Invalid topup request ID");
+      return;
+    }
+
+    updateStatusMutation.mutate(
+      {
+        requestId,
+        data: { status: selectedStatus, reason: trimmedReason },
+      },
+      {
+        onSuccess: () => {
+          setIsEditStatusOpen(false);
+          setStatusReason("");
+        },
+      }
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -107,6 +177,102 @@ export function TopupDetailView({ requestId }: TopupDetailViewProps) {
           </div>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <Dialog
+            open={isEditStatusOpen}
+            onOpenChange={(open) => {
+              setIsEditStatusOpen(open);
+              if (open) {
+                setSelectedStatus(request.status);
+                setStatusReason("");
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Update Topup Status</DialogTitle>
+                <DialogDescription>
+                  Select a new status for this topup request.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label>Current Status</Label>
+                  <Badge
+                    variant={statusColors[request.status] || "secondary"}
+                    className="capitalize"
+                  >
+                    {request.status}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="topupStatus">New Status</Label>
+                  <Select
+                    value={selectedStatus}
+                    onValueChange={(value) =>
+                      setSelectedStatus(value as TopupStatus)
+                    }
+                  >
+                    <SelectTrigger id="topupStatus">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="success">Success</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="failed">Failed</SelectItem>
+                      <SelectItem value="reversed">Reversed</SelectItem>
+                      <SelectItem value="retry">Retry</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="topupStatusReason">Reason</Label>
+                  <Textarea
+                    id="topupStatusReason"
+                    placeholder="Why are you manually updating this status?"
+                    value={statusReason}
+                    onChange={(event) => setStatusReason(event.target.value)}
+                    maxLength={500}
+                    rows={4}
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    {statusReason.trim().length}/500
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsEditStatusOpen(false)}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpdateStatus}
+                  disabled={
+                    updateStatusMutation.isPending ||
+                    !selectedStatus ||
+                    selectedStatus === request.status ||
+                    statusReason.trim().length < 1 ||
+                    statusReason.trim().length > 500
+                  }
+                >
+                  {updateStatusMutation.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Update Status
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <Badge
             variant={statusColors[request.status] || "secondary"}
             className="text-sm capitalize"

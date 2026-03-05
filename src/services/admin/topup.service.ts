@@ -8,6 +8,7 @@ import {
   AdminTopupListResponse,
   AdminTopupQueryParams,
   AdminTopupRequest,
+  AdminUpdateTopupStatusRequest,
 } from "@/types/admin/topup.types";
 import { ApiResponse } from "@/types/api.types";
 
@@ -45,6 +46,20 @@ export const adminTopupService = {
   retryTopupRequest: async (requestId: string): Promise<ApiResponse> => {
     const response = await apiClient.post<ApiResponse>(
       `${BASE_PATH}/${requestId}/retry`
+    );
+    return response.data;
+  },
+
+  /**
+   * Update topup request status
+   */
+  updateTopupRequestStatus: async (
+    requestId: string,
+    data: AdminUpdateTopupStatusRequest
+  ): Promise<ApiResponse> => {
+    const response = await apiClient.put<ApiResponse>(
+      `${BASE_PATH}/${requestId}/status`,
+      data
     );
     return response.data;
   },

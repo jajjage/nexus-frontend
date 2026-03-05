@@ -78,6 +78,17 @@ export interface TopupPagination {
   hasPrevPage: boolean;
 }
 
+export interface AdminUpdateTopupStatusRequest {
+  status: TopupStatus;
+  reason: string;
+}
+
+export interface AdminUpdateTopupStatusResponse {
+  requestId?: string;
+  status: TopupStatus;
+  updatedAt?: string;
+}
+
 // ============= Query Params =============
 
 export interface AdminTopupQueryParams {

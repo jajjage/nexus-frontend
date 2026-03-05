@@ -89,4 +89,25 @@ describe("adminTopupService", () => {
       );
     });
   });
+
+  describe("updateTopupRequestStatus", () => {
+    it("should call PUT /admin/topup-requests/:requestId/status with payload", async () => {
+      mockApiClient.put.mockResolvedValueOnce({
+        data: { success: true, message: "Topup status updated" },
+      });
+
+      await adminTopupService.updateTopupRequestStatus("req-123", {
+        status: "failed",
+        reason: "Provider confirmed the topup failed",
+      });
+
+      expect(mockApiClient.put).toHaveBeenCalledWith(
+        "/admin/topup-requests/req-123/status",
+        {
+          status: "failed",
+          reason: "Provider confirmed the topup failed",
+        }
+      );
+    });
+  });
 });
