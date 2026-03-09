@@ -68,18 +68,26 @@ export default function NotificationDetailPage() {
   const params = useParams();
   const rawId = params?.id;
   const notificationId = Array.isArray(rawId) ? rawId[0] : rawId;
+  const normalizedNotificationId = notificationId ?? "";
   const [resendMode, setResendMode] = useState<"now" | "later" | null>(null);
   const [isRecurrenceOpen, setIsRecurrenceOpen] = useState(false);
   const [isDispatchHistoryOpen, setIsDispatchHistoryOpen] = useState(false);
 
-  const { data, isLoading, isError } = useAdminNotification(notificationId);
+  const { data, isLoading, isError } = useAdminNotification(
+    normalizedNotificationId
+  );
   const { data: analyticsData, isLoading: isAnalyticsLoading } =
-    useNotificationAnalytics(notificationId);
-  const { data: recurrenceData } = useNotificationRecurrence(notificationId);
-  const { data: dispatchData } = useNotificationDispatches(notificationId, {
-    limit: 1,
-    offset: 0,
-  });
+    useNotificationAnalytics(normalizedNotificationId);
+  const { data: recurrenceData } = useNotificationRecurrence(
+    normalizedNotificationId
+  );
+  const { data: dispatchData } = useNotificationDispatches(
+    normalizedNotificationId,
+    {
+      limit: 1,
+      offset: 0,
+    }
+  );
 
   const notification = data?.data?.notification;
   const analytics = analyticsData?.data;
@@ -104,9 +112,27 @@ export default function NotificationDetailPage() {
     );
   }
 
-  const hasValidNotification = Boolean(notification?.id || notification?.title);
+  if (!normalizedNotificationId) {
+    return (
+      <div className="mx-auto max-w-4xl p-6">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground mb-4">
+              Invalid notification ID.
+            </p>
+            <Button asChild variant="outline">
+              <Link href="/admin/dashboard/notifications">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Notifications
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  if (isError || !hasValidNotification) {
+  if (isError || !notification || (!notification.id && !notification.title)) {
     return (
       <div className="mx-auto max-w-4xl p-6">
         <Card>
