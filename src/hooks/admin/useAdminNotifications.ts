@@ -7,14 +7,21 @@
 
 import { adminNotificationService } from "@/services/admin/notification.service";
 import {
-  CreateFromTemplateRequest,
+  CreateFromTemplateWithScheduleRequest,
   CreateNotificationRequest,
   CreateTemplateRequest,
+  NotificationDispatchQueryParams,
   NotificationQueryParams,
   ScheduleNotificationRequest,
+  UpsertNotificationRecurrenceRequest,
   UpdateNotificationRequest,
 } from "@/types/admin/notification.types";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 
@@ -26,6 +33,12 @@ export const notificationKeys = {
   detail: (id: string) => [...notificationKeys.all, "detail", id] as const,
   analytics: (id: string) =>
     [...notificationKeys.all, "analytics", id] as const,
+  dispatchesBase: (id: string) =>
+    [...notificationKeys.all, "dispatches", id] as const,
+  dispatches: (id: string, params?: NotificationDispatchQueryParams) =>
+    [...notificationKeys.dispatchesBase(id), params] as const,
+  recurrence: (id: string) =>
+    [...notificationKeys.all, "recurrence", id] as const,
   templates: ["admin", "notification-templates"] as const,
   template: (id: string) => [...notificationKeys.all, "template", id] as const,
 };
@@ -83,6 +96,50 @@ export function useNotificationTemplate(templateId: string) {
     queryKey: notificationKeys.template(templateId),
     queryFn: () => adminNotificationService.getTemplateById(templateId),
     enabled: !!templateId,
+  });
+}
+
+/**
+ * Fetch notification dispatch history
+ */
+export function useNotificationDispatches(
+  notificationId: string,
+  params?: NotificationDispatchQueryParams
+) {
+  return useQuery({
+    queryKey: notificationKeys.dispatches(notificationId, params),
+    queryFn: () =>
+      adminNotificationService.getNotificationDispatches(notificationId, params),
+    enabled: !!notificationId,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * Fetch notification daily recurrence config
+ * 404 means "not configured" and is treated as empty state.
+ */
+export function useNotificationRecurrence(notificationId: string) {
+  return useQuery({
+    queryKey: notificationKeys.recurrence(notificationId),
+    queryFn: async () => {
+      try {
+        return await adminNotificationService.getNotificationRecurrence(
+          notificationId
+        );
+      } catch (error) {
+        const axiosError = error as AxiosError<any>;
+        if (axiosError.response?.status === 404) {
+          return {
+            success: true,
+            message: "Notification recurrence not configured",
+            data: null,
+          };
+        }
+        throw error;
+      }
+    },
+    enabled: !!notificationId,
   });
 }
 
@@ -182,7 +239,7 @@ export function useCreateFromTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateFromTemplateRequest) =>
+    mutationFn: (data: CreateFromTemplateWithScheduleRequest) =>
       adminNotificationService.createFromTemplate(data),
     onSuccess: (response) => {
       toast.success(response.message || "Notification created from template");
@@ -192,6 +249,71 @@ export function useCreateFromTemplate() {
       toast.error(
         error.response?.data?.message ||
           "Failed to create notification from template"
+      );
+    },
+  });
+}
+
+/**
+ * Resend an existing notification now or schedule resend.
+ */
+export function useResendNotification() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      notificationId,
+      data,
+    }: {
+      notificationId: string;
+      data?: { publish_at?: string };
+    }) => adminNotificationService.resendNotification(notificationId, data),
+    onSuccess: (response, { notificationId }) => {
+      toast.success(response.message || "Notification resend queued");
+      queryClient.invalidateQueries({ queryKey: notificationKeys.list() });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.detail(notificationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.dispatchesBase(notificationId),
+      });
+    },
+    onError: (error: AxiosError<any>) => {
+      toast.error(error.response?.data?.message || "Failed to resend");
+    },
+  });
+}
+
+/**
+ * Upsert daily recurrence configuration.
+ */
+export function useUpsertNotificationRecurrence() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      notificationId,
+      data,
+    }: {
+      notificationId: string;
+      data: UpsertNotificationRecurrenceRequest;
+    }) =>
+      adminNotificationService.upsertNotificationRecurrence(notificationId, data),
+    onSuccess: (response, { notificationId }) => {
+      toast.success(response.message || "Daily recurrence updated");
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.recurrence(notificationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.detail(notificationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.dispatchesBase(notificationId),
+      });
+    },
+    onError: (error: AxiosError<any>) => {
+      toast.error(
+        error.response?.data?.message || "Failed to update daily recurrence"
       );
     },
   });

@@ -21,7 +21,7 @@ import {
 import type { PurchaseStatus } from "@/types/reseller.types";
 import { AxiosError } from "axios";
 import { Copy, Loader2, RefreshCcw } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const POLLING_INTERVAL_MS = 2500;
@@ -31,12 +31,14 @@ const createUuid = () =>
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
+const createCustomerReference = () => `order-${Date.now()}`;
+
 export function PurchaseConsole() {
   const [productCode, setProductCode] = useState("");
-  const [amount, setAmount] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
-  const [clientReference, setClientReference] = useState("");
-  const [callbackUrl, setCallbackUrl] = useState("");
+  const [customerReference, setCustomerReference] = useState(
+    createCustomerReference
+  );
   const [waitForFinal, setWaitForFinal] = useState(false);
   const [waitTimeoutMs, setWaitTimeoutMs] = useState("10000");
 
@@ -46,6 +48,9 @@ export function PurchaseConsole() {
     useState(false);
 
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
+  const [apiKeyByRequestId, setApiKeyByRequestId] = useState<
+    Record<string, string>
+  >({});
   const [purchaseByRequestId, setPurchaseByRequestId] = useState<
     Record<string, PurchaseStatus>
   >({});
@@ -55,13 +60,20 @@ export function PurchaseConsole() {
 
   const createPurchaseMutation = useCreateApiPurchase();
 
-  const statusQuery = useApiPurchaseStatus(activeRequestId ?? "", {
-    enabled: Boolean(activeRequestId),
-    refetchInterval:
-      activeRequestId && !purchaseByRequestId[activeRequestId]?.isFinal
-        ? POLLING_INTERVAL_MS
-        : false,
-  });
+  const activeRequestApiKey =
+    activeRequestId ? apiKeyByRequestId[activeRequestId] ?? "" : "";
+
+  const statusQuery = useApiPurchaseStatus(
+    activeRequestId ?? "",
+    activeRequestApiKey,
+    {
+      enabled: Boolean(activeRequestId && activeRequestApiKey),
+      refetchInterval:
+        activeRequestId && !purchaseByRequestId[activeRequestId]?.isFinal
+          ? POLLING_INTERVAL_MS
+          : false,
+    }
+  );
 
   const livePurchase = statusQuery.data?.data?.purchase;
   const activePurchase = activeRequestId
@@ -70,7 +82,9 @@ export function PurchaseConsole() {
       : purchaseByRequestId[activeRequestId]
     : null;
   const shouldPoll = Boolean(
-    activeRequestId && (!activePurchase || !activePurchase.isFinal)
+    activeRequestId &&
+      activeRequestApiKey &&
+      (!activePurchase || !activePurchase.isFinal)
   );
 
   const queryError = statusQuery.isError
@@ -88,7 +102,24 @@ export function PurchaseConsole() {
     );
   }, [livePurchase, purchaseByRequestId]);
 
-  const displayError = queryError?.message ?? lastError;
+  useEffect(() => {
+    if (!livePurchase) return;
+    setPurchaseByRequestId((prev) => ({
+      ...prev,
+      [livePurchase.requestId]: livePurchase,
+    }));
+  }, [livePurchase]);
+
+  const recentlyStartedPolling = Boolean(
+    pollingStartedAt &&
+      Date.now() - new Date(pollingStartedAt).getTime() < 60000
+  );
+  const suppressTransientPolling404 = Boolean(
+    queryError?.status === 404 && recentlyStartedPolling
+  );
+  const displayError = suppressTransientPolling404
+    ? lastError
+    : queryError?.message ?? lastError;
 
   const pollingState = {
     isPolling: shouldPoll,
@@ -96,34 +127,22 @@ export function PurchaseConsole() {
     startedAt: pollingStartedAt,
   };
 
-  const validateUrl = (url: string) => {
-    if (!url.trim()) return true;
-
-    try {
-      const parsed = new URL(url);
-      return parsed.protocol === "http:" || parsed.protocol === "https:";
-    } catch {
-      return false;
-    }
-  };
-
   const validateForm = () => {
     const errors: string[] = [];
-    const parsedAmount = Number.parseFloat(amount);
     const parsedTimeout = Number.parseInt(waitTimeoutMs, 10);
 
     if (!apiKey.trim()) errors.push("X-API-KEY is required");
     if (!idempotencyKey.trim()) errors.push("X-Idempotency-Key is required");
     if (!productCode.trim()) errors.push("Product code is required");
     if (!recipientPhone.trim()) errors.push("Recipient phone is required");
-    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
-      errors.push("Amount must be greater than zero");
+    if (!customerReference.trim()) {
+      errors.push("Customer reference is required");
     }
-    if (!validateUrl(callbackUrl)) {
-      errors.push("Callback URL must start with http:// or https://");
-    }
-    if (waitForFinal && (Number.isNaN(parsedTimeout) || parsedTimeout <= 0)) {
-      errors.push("waitTimeoutMs must be a positive number");
+    if (
+      waitForFinal &&
+      (Number.isNaN(parsedTimeout) || parsedTimeout < 0 || parsedTimeout > 30000)
+    ) {
+      errors.push("waitTimeoutMs must be between 0 and 30000");
     }
 
     return errors;
@@ -142,19 +161,19 @@ export function PurchaseConsole() {
     createPurchaseMutation.mutate(
       {
         payload: {
-          productCode: productCode.trim(),
-          amount: Number.parseFloat(amount),
-          recipientPhone: recipientPhone.trim(),
-          clientReference: clientReference.trim() || undefined,
-          callbackUrl: callbackUrl.trim() || undefined,
-          waitForFinal,
-          waitTimeoutMs: waitForFinal
-            ? Number.parseInt(waitTimeoutMs, 10)
-            : undefined,
+          product_code: productCode.trim(),
+          customer_reference: customerReference.trim(),
+          phone_number: recipientPhone.trim(),
         },
         headers: {
           apiKey: apiKey.trim(),
           idempotencyKey: idempotencyKey.trim(),
+        },
+        options: {
+          waitForFinal,
+          waitTimeoutMs: waitForFinal
+            ? Number.parseInt(waitTimeoutMs, 10)
+            : undefined,
         },
       },
       {
@@ -170,9 +189,13 @@ export function PurchaseConsole() {
             ...prev,
             [purchase.requestId]: purchase,
           }));
+          setApiKeyByRequestId((prev) => ({
+            ...prev,
+            [purchase.requestId]: apiKey.trim(),
+          }));
           setActiveRequestId(purchase.requestId);
 
-          if (result.httpStatus === 202 && !purchase.isFinal) {
+          if (!purchase.isFinal) {
             setPollingStartedAt(new Date().toISOString());
             toast.success("Request accepted and pending final status");
           } else {
@@ -183,6 +206,7 @@ export function PurchaseConsole() {
           if (!idempotencyManuallyEdited) {
             setIdempotencyKey(createUuid());
           }
+          setCustomerReference(createCustomerReference());
         },
         onError: (error) => {
           const mapped = mapResellerApiError(error as AxiosError);
@@ -262,17 +286,6 @@ export function PurchaseConsole() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount</Label>
-              <Input
-                id="amount"
-                type="number"
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-                placeholder="1000"
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="recipientPhone">Recipient Phone</Label>
               <Input
                 id="recipientPhone"
@@ -283,25 +296,12 @@ export function PurchaseConsole() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="clientReference">
-                Client Reference (optional)
-              </Label>
+              <Label htmlFor="customerReference">Customer Reference</Label>
               <Input
-                id="clientReference"
-                value={clientReference}
-                onChange={(event) => setClientReference(event.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="callbackUrl">
-                Callback URL Override (optional)
-              </Label>
-              <Input
-                id="callbackUrl"
-                value={callbackUrl}
-                onChange={(event) => setCallbackUrl(event.target.value)}
-                placeholder="https://example.com/callback"
+                id="customerReference"
+                value={customerReference}
+                onChange={(event) => setCustomerReference(event.target.value)}
+                placeholder="order-123"
               />
             </div>
 
@@ -347,6 +347,16 @@ export function PurchaseConsole() {
             <Alert>
               <AlertTitle>Last error</AlertTitle>
               <AlertDescription>{displayError}</AlertDescription>
+            </Alert>
+          ) : null}
+
+          {suppressTransientPolling404 ? (
+            <Alert>
+              <AlertTitle>Status sync in progress</AlertTitle>
+              <AlertDescription>
+                Purchase was accepted. Status endpoint is still warming up, retrying
+                automatically.
+              </AlertDescription>
             </Alert>
           ) : null}
 

@@ -242,27 +242,35 @@ describe("resellerService", () => {
 
       const result = await resellerService.createApiPurchase(
         {
-          productCode: "MTN-DATA-1GB",
-          amount: 1000,
-          recipientPhone: "08012345678",
+          product_code: "MTN-DATA-1GB",
+          customer_reference: "order-123",
+          phone_number: "08012345678",
         },
         {
           apiKey: "nx_live_abc",
           idempotencyKey: "idem_1",
+        },
+        {
+          waitForFinal: true,
+          waitTimeoutMs: 12000,
         }
       );
 
       expect(apiClient.post).toHaveBeenCalledWith(
         "/reseller/api/purchases",
         {
-          productCode: "MTN-DATA-1GB",
-          amount: 1000,
-          recipientPhone: "08012345678",
+          product_code: "MTN-DATA-1GB",
+          customer_reference: "order-123",
+          phone_number: "08012345678",
         },
         {
           headers: {
             "X-API-KEY": "nx_live_abc",
             "X-Idempotency-Key": "idem_1",
+          },
+          params: {
+            waitForFinal: true,
+            waitTimeoutMs: 12000,
           },
         }
       );
@@ -297,10 +305,18 @@ describe("resellerService", () => {
       };
       vi.mocked(apiClient.get).mockResolvedValue(mockResponse as any);
 
-      const result = await resellerService.getApiPurchaseStatus("req_123");
+      const result = await resellerService.getApiPurchaseStatus(
+        "req_123",
+        "nx_live_abc"
+      );
 
       expect(apiClient.get).toHaveBeenCalledWith(
-        "/reseller/api/purchases/req_123"
+        "/reseller/api/purchases/req_123",
+        {
+          headers: {
+            "X-API-KEY": "nx_live_abc",
+          },
+        }
       );
       expect(result.data?.purchase.requestId).toBe("req_123");
       expect(result.data?.purchase.topupRequestId).toBe("topup_123");

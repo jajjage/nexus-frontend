@@ -107,11 +107,12 @@ export interface RotateWebhookSecretResponse {
 // ============= API Purchase Types =============
 
 export interface CreateApiPurchaseRequest {
-  productCode: string;
-  amount: number;
-  recipientPhone: string;
-  clientReference?: string;
-  callbackUrl?: string;
+  product_code: string;
+  customer_reference: string;
+  phone_number: string;
+}
+
+export interface CreateApiPurchaseQueryParams {
   waitForFinal?: boolean;
   waitTimeoutMs?: number;
 }

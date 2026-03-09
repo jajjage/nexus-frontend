@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { resellerService } from "@/services/reseller.service";
 import type {
   CreateApiPurchaseHeaders,
+  CreateApiPurchaseQueryParams,
   CreateApiPurchaseRequest,
   BulkTopupRequest,
   CreateApiKeyRequest,
@@ -32,6 +33,8 @@ const resellerKeys = {
   webhookConfig: () => [...resellerKeys.all, "webhook-config"] as const,
   purchaseStatus: (requestId: string) =>
     [...resellerKeys.all, "purchase-status", requestId] as const,
+  purchaseStatusByKey: (requestId: string, apiKey: string) =>
+    [...resellerKeys.all, "purchase-status", requestId, apiKey] as const,
   purchaseAnalyticsOverview: (params?: ResellerPurchaseAnalyticsQueryParams) =>
     [...resellerKeys.all, "purchase-analytics-overview", params] as const,
 };
@@ -76,7 +79,22 @@ export function mapResellerApiError(
   }
 
   if (status === 404) {
-    return { status, code, message: "Request not found." };
+    return {
+      status,
+      code,
+      message:
+        serverMessage && serverMessage !== "Request failed"
+          ? serverMessage
+          : "Unknown/inactive product_code or requestId not found.",
+    };
+  }
+
+  if (status === 409) {
+    return {
+      status,
+      code,
+      message: "Ambiguous product mapping for product_code.",
+    };
   }
 
   if (status === 403) {
@@ -110,7 +128,8 @@ export function mapResellerApiError(
     return {
       status,
       code,
-      message: "Invalid request. Check the submitted fields.",
+      message:
+        "Invalid request. Check payload fields, idempotency key, and wait timeout range.",
       fieldErrors,
     };
   }
@@ -278,10 +297,12 @@ export function useCreateApiPurchase() {
     mutationFn: ({
       payload,
       headers,
+      options,
     }: {
       payload: CreateApiPurchaseRequest;
       headers: CreateApiPurchaseHeaders;
-    }) => resellerService.createApiPurchase(payload, headers),
+      options?: CreateApiPurchaseQueryParams;
+    }) => resellerService.createApiPurchase(payload, headers, options),
     onError: (error: AxiosError<any>) => {
       const mapped = mapResellerApiError(error);
       toast.error(mapped.message);
@@ -291,15 +312,16 @@ export function useCreateApiPurchase() {
 
 export function useApiPurchaseStatus(
   requestId: string,
+  apiKey: string,
   options?: {
     enabled?: boolean;
     refetchInterval?: number | false;
   }
 ) {
   return useQuery({
-    queryKey: resellerKeys.purchaseStatus(requestId),
-    queryFn: () => resellerService.getApiPurchaseStatus(requestId),
-    enabled: Boolean(requestId) && (options?.enabled ?? true),
+    queryKey: resellerKeys.purchaseStatusByKey(requestId, apiKey),
+    queryFn: () => resellerService.getApiPurchaseStatus(requestId, apiKey),
+    enabled: Boolean(requestId) && Boolean(apiKey) && (options?.enabled ?? true),
     refetchInterval: options?.refetchInterval,
     placeholderData: keepPreviousData,
   });

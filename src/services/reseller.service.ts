@@ -11,6 +11,7 @@ import type {
   BulkTopupRequest,
   BulkTopupResponseData,
   CreateApiPurchaseHeaders,
+  CreateApiPurchaseQueryParams,
   CreateApiPurchaseRequest,
   CreateApiPurchaseResult,
   CreateApiKeyRequest,
@@ -209,8 +210,17 @@ export const resellerService = {
    */
   createApiPurchase: async (
     data: CreateApiPurchaseRequest,
-    headers: CreateApiPurchaseHeaders
+    headers: CreateApiPurchaseHeaders,
+    options?: CreateApiPurchaseQueryParams
   ): Promise<ApiResponse<CreateApiPurchaseResult>> => {
+    const params: CreateApiPurchaseQueryParams = {};
+    if (options?.waitForFinal !== undefined) {
+      params.waitForFinal = options.waitForFinal;
+    }
+    if (options?.waitTimeoutMs !== undefined) {
+      params.waitTimeoutMs = options.waitTimeoutMs;
+    }
+
     const response = await apiClient.post<ApiResponse<any>>(
       "/reseller/api/purchases",
       data,
@@ -219,6 +229,7 @@ export const resellerService = {
           "X-API-KEY": headers.apiKey,
           "X-Idempotency-Key": headers.idempotencyKey,
         },
+        params: Object.keys(params).length > 0 ? params : undefined,
       }
     );
 
@@ -238,10 +249,16 @@ export const resellerService = {
    * Get purchase status by request id
    */
   getApiPurchaseStatus: async (
-    requestId: string
+    requestId: string,
+    apiKey: string
   ): Promise<ApiResponse<ApiPurchaseStatusResponseData>> => {
     const response = await apiClient.get<ApiResponse<any>>(
-      `/reseller/api/purchases/${requestId}`
+      `/reseller/api/purchases/${requestId}`,
+      {
+        headers: {
+          "X-API-KEY": apiKey,
+        },
+      }
     );
 
     const rawPurchase = response.data?.data?.purchase ?? response.data?.data;

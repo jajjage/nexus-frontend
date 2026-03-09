@@ -1,5 +1,8 @@
 "use client";
 
+import { NotificationDispatchHistoryDrawer } from "@/components/features/admin/notifications/NotificationDispatchHistoryDrawer";
+import { NotificationRecurrenceModal } from "@/components/features/admin/notifications/NotificationRecurrenceModal";
+import { NotificationResendModal } from "@/components/features/admin/notifications/NotificationResendModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +31,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -65,12 +75,17 @@ import {
   Bell,
   Calendar,
   CheckCircle,
+  Clock3,
   Edit,
   Eye,
+  History,
   Info,
   Loader2,
+  MoreVertical,
   Plus,
+  Repeat,
   RefreshCw,
+  SendHorizontal,
   Trash2,
   XCircle,
 } from "lucide-react";
@@ -92,6 +107,11 @@ export function NotificationListTable() {
   const [editingNotification, setEditingNotification] =
     useState<Notification | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedActionNotification, setSelectedActionNotification] =
+    useState<Notification | null>(null);
+  const [resendMode, setResendMode] = useState<"now" | "later" | null>(null);
+  const [isRecurrenceOpen, setIsRecurrenceOpen] = useState(false);
+  const [isDispatchHistoryOpen, setIsDispatchHistoryOpen] = useState(false);
 
   // Create Form state (immediate notification)
   const [title, setTitle] = useState("");
@@ -279,6 +299,26 @@ export function NotificationListTable() {
         onSuccess: () => setDeleteId(null),
       });
     }
+  };
+
+  const openActionModal = (
+    notification: Notification,
+    action: "resend-now" | "resend-later" | "recurrence" | "dispatches"
+  ) => {
+    setSelectedActionNotification(notification);
+    if (action === "resend-now") {
+      setResendMode("now");
+      return;
+    }
+    if (action === "resend-later") {
+      setResendMode("later");
+      return;
+    }
+    if (action === "recurrence") {
+      setIsRecurrenceOpen(true);
+      return;
+    }
+    setIsDispatchHistoryOpen(true);
   };
 
   if (isLoading) {
@@ -748,7 +788,7 @@ export function NotificationListTable() {
                 <TableHead className="max-w-[250px]">Body</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead className="w-[140px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -816,24 +856,75 @@ export function NotificationListTable() {
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => handleEdit(notification)}
-                          disabled={
-                            notification.isArchived || notification.archived
-                          }
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => setDeleteId(notification.id)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon-sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuItem
+                              onClick={() =>
+                                openActionModal(notification, "resend-now")
+                              }
+                              disabled={
+                                notification.isArchived || notification.archived
+                              }
+                            >
+                              <SendHorizontal className="h-4 w-4" />
+                              Resend now
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                openActionModal(notification, "resend-later")
+                              }
+                              disabled={
+                                notification.isArchived || notification.archived
+                              }
+                            >
+                              <Clock3 className="h-4 w-4" />
+                              Resend later
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                openActionModal(notification, "recurrence")
+                              }
+                              disabled={
+                                notification.isArchived || notification.archived
+                              }
+                            >
+                              <Repeat className="h-4 w-4" />
+                              Daily schedule
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                openActionModal(notification, "dispatches")
+                              }
+                            >
+                              <History className="h-4 w-4" />
+                              Dispatch history
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleEdit(notification)}
+                              disabled={
+                                notification.isArchived || notification.archived
+                              }
+                            >
+                              <Edit className="h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setDeleteId(notification.id)}
+                              disabled={deleteMutation.isPending}
+                              variant="destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -962,6 +1053,50 @@ export function NotificationListTable() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <NotificationResendModal
+        open={resendMode !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setResendMode(null);
+            if (!isRecurrenceOpen && !isDispatchHistoryOpen) {
+              setSelectedActionNotification(null);
+            }
+          }
+        }}
+        notificationId={selectedActionNotification?.id ?? null}
+        isArchived={Boolean(
+          selectedActionNotification?.isArchived ||
+            selectedActionNotification?.archived
+        )}
+        mode={resendMode ?? "later"}
+      />
+
+      <NotificationRecurrenceModal
+        open={isRecurrenceOpen}
+        onOpenChange={(open) => {
+          setIsRecurrenceOpen(open);
+          if (!open && resendMode === null && !isDispatchHistoryOpen) {
+            setSelectedActionNotification(null);
+          }
+        }}
+        notificationId={selectedActionNotification?.id ?? null}
+        isArchived={Boolean(
+          selectedActionNotification?.isArchived ||
+            selectedActionNotification?.archived
+        )}
+      />
+
+      <NotificationDispatchHistoryDrawer
+        open={isDispatchHistoryOpen}
+        onOpenChange={(open) => {
+          setIsDispatchHistoryOpen(open);
+          if (!open && resendMode === null && !isRecurrenceOpen) {
+            setSelectedActionNotification(null);
+          }
+        }}
+        notificationId={selectedActionNotification?.id ?? null}
+      />
     </Card>
   );
 }

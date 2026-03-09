@@ -1,5 +1,6 @@
 "use client";
 
+import { CreateFromTemplateModal } from "@/components/features/admin/notifications/CreateFromTemplateModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,19 +43,26 @@ import {
   useDeleteTemplate,
   useNotificationTemplates,
 } from "@/hooks/admin/useAdminNotifications";
-import { NotificationType } from "@/types/admin/notification.types";
+import {
+  NotificationTemplate,
+  NotificationType,
+} from "@/types/admin/notification.types";
 import {
   FileText,
   Loader2,
   Plus,
   RefreshCw,
   Trash2,
+  Wand2,
   Variable,
 } from "lucide-react";
 import { useState } from "react";
 
 export function NotificationTemplatesTable() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isUseTemplateOpen, setIsUseTemplateOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<NotificationTemplate | null>(null);
 
   // Form state
   const [name, setName] = useState("");
@@ -109,6 +117,11 @@ export function NotificationTemplatesTable() {
     ) {
       deleteMutation.mutate(templateId);
     }
+  };
+
+  const handleUseTemplate = (template: NotificationTemplate) => {
+    setSelectedTemplate(template);
+    setIsUseTemplateOpen(true);
   };
 
   if (isLoading) {
@@ -282,7 +295,7 @@ export function NotificationTemplatesTable() {
                 <TableHead>Type</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Variables</TableHead>
-                <TableHead className="w-[80px]">Actions</TableHead>
+                <TableHead className="w-[120px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -332,14 +345,25 @@ export function NotificationTemplatesTable() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => handleDelete(template.id, template.name)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => handleUseTemplate(template)}
+                          title="Use template"
+                        >
+                          <Wand2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => handleDelete(template.id, template.name)}
+                          disabled={deleteMutation.isPending}
+                          title="Delete template"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -355,6 +379,17 @@ export function NotificationTemplatesTable() {
           </div>
         )}
       </CardContent>
+
+      <CreateFromTemplateModal
+        open={isUseTemplateOpen}
+        onOpenChange={(open) => {
+          setIsUseTemplateOpen(open);
+          if (!open) {
+            setSelectedTemplate(null);
+          }
+        }}
+        template={selectedTemplate}
+      />
     </Card>
   );
 }

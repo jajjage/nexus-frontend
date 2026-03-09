@@ -11,9 +11,13 @@ import {
   useDeleteNotification,
   useDeleteTemplate,
   useNotificationAnalytics,
+  useNotificationDispatches,
+  useNotificationRecurrence,
   useNotificationTemplate,
   useNotificationTemplates,
+  useResendNotification,
   useScheduleNotification,
+  useUpsertNotificationRecurrence,
   useUpdateNotification,
 } from "@/hooks/admin/useAdminNotifications";
 import { adminNotificationService } from "@/services/admin/notification.service";
@@ -35,6 +39,10 @@ vi.mock("@/services/admin/notification.service", () => ({
     createFromTemplate: vi.fn(),
     createTemplate: vi.fn(),
     deleteTemplate: vi.fn(),
+    resendNotification: vi.fn(),
+    getNotificationDispatches: vi.fn(),
+    getNotificationRecurrence: vi.fn(),
+    upsertNotificationRecurrence: vi.fn(),
   },
 }));
 
@@ -58,6 +66,10 @@ const mockService = adminNotificationService as unknown as {
   createFromTemplate: ReturnType<typeof vi.fn>;
   createTemplate: ReturnType<typeof vi.fn>;
   deleteTemplate: ReturnType<typeof vi.fn>;
+  resendNotification: ReturnType<typeof vi.fn>;
+  getNotificationDispatches: ReturnType<typeof vi.fn>;
+  getNotificationRecurrence: ReturnType<typeof vi.fn>;
+  upsertNotificationRecurrence: ReturnType<typeof vi.fn>;
 };
 
 describe("Notification Hooks", () => {
@@ -374,6 +386,166 @@ describe("Notification Hooks", () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(mockService.deleteTemplate).toHaveBeenCalledWith("tmpl-123");
+    });
+  });
+
+  // ============= useNotificationDispatches Tests =============
+
+  describe("useNotificationDispatches", () => {
+    it("should fetch dispatch history", async () => {
+      const mockResponse = {
+        success: true,
+        data: {
+          dispatches: [
+            {
+              id: "dispatch-1",
+              notificationId: "notif-123",
+              trigger: "initial",
+              status: "sent",
+              attempts: 1,
+              maxAttempts: 3,
+              scheduledFor: "2024-01-01T10:00:00Z",
+              sentAt: "2024-01-01T10:00:01Z",
+              lastError: null,
+              createdAt: "2024-01-01T09:59:59Z",
+            },
+          ],
+          total: 1,
+          limit: 50,
+          offset: 0,
+          hasMore: false,
+        },
+      };
+      mockService.getNotificationDispatches.mockResolvedValue(mockResponse);
+
+      const { result } = renderHook(
+        () => useNotificationDispatches("notif-123", { limit: 50, offset: 0 }),
+        { wrapper }
+      );
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(mockService.getNotificationDispatches).toHaveBeenCalledWith(
+        "notif-123",
+        { limit: 50, offset: 0 }
+      );
+      expect(result.current.data?.data?.dispatches).toHaveLength(1);
+    });
+  });
+
+  // ============= useNotificationRecurrence Tests =============
+
+  describe("useNotificationRecurrence", () => {
+    it("should return recurrence when configured", async () => {
+      const mockResponse = {
+        success: true,
+        data: {
+          id: "rec-1",
+          notificationId: "notif-123",
+          timeOfDay: "08:00",
+          timezone: "UTC",
+          isActive: true,
+          lastRunAt: null,
+        },
+      };
+      mockService.getNotificationRecurrence.mockResolvedValue(mockResponse);
+
+      const { result } = renderHook(
+        () => useNotificationRecurrence("notif-123"),
+        { wrapper }
+      );
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data?.data?.isActive).toBe(true);
+    });
+
+    it("should treat 404 as empty state", async () => {
+      const error = {
+        response: { status: 404 },
+      };
+      mockService.getNotificationRecurrence.mockRejectedValue(error);
+
+      const { result } = renderHook(
+        () => useNotificationRecurrence("notif-123"),
+        { wrapper }
+      );
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data?.data).toBeNull();
+    });
+  });
+
+  // ============= useResendNotification Tests =============
+
+  describe("useResendNotification", () => {
+    it("should resend notification successfully", async () => {
+      const mockResponse = {
+        success: true,
+        message: "Resend queued",
+        data: {
+          notification: mockNotification,
+          dispatch: {
+            id: "dispatch-1",
+            notificationId: "notif-123",
+          },
+        },
+      };
+      mockService.resendNotification.mockResolvedValue(mockResponse);
+
+      const { result } = renderHook(() => useResendNotification(), { wrapper });
+
+      result.current.mutate({
+        notificationId: "notif-123",
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(mockService.resendNotification).toHaveBeenCalledWith(
+        "notif-123",
+        undefined
+      );
+    });
+  });
+
+  // ============= useUpsertNotificationRecurrence Tests =============
+
+  describe("useUpsertNotificationRecurrence", () => {
+    it("should update recurrence successfully", async () => {
+      const mockResponse = {
+        success: true,
+        message: "Saved",
+        data: {
+          id: "rec-1",
+          notificationId: "notif-123",
+          timeOfDay: "08:00",
+          timezone: "UTC",
+          isActive: true,
+          lastRunAt: null,
+        },
+      };
+      mockService.upsertNotificationRecurrence.mockResolvedValue(mockResponse);
+
+      const { result } = renderHook(() => useUpsertNotificationRecurrence(), {
+        wrapper,
+      });
+
+      result.current.mutate({
+        notificationId: "notif-123",
+        data: {
+          enabled: true,
+          time_of_day: "08:00",
+          timezone: "UTC",
+        },
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(mockService.upsertNotificationRecurrence).toHaveBeenCalledWith(
+        "notif-123",
+        {
+          enabled: true,
+          time_of_day: "08:00",
+          timezone: "UTC",
+        }
+      );
     });
   });
 });

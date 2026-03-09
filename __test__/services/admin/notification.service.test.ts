@@ -13,6 +13,7 @@ vi.mock("@/lib/api-client", () => ({
     get: vi.fn(),
     post: vi.fn(),
     patch: vi.fn(),
+    put: vi.fn(),
     delete: vi.fn(),
   },
 }));
@@ -21,6 +22,7 @@ const mockApiClient = apiClient as unknown as {
   get: ReturnType<typeof vi.fn>;
   post: ReturnType<typeof vi.fn>;
   patch: ReturnType<typeof vi.fn>;
+  put: ReturnType<typeof vi.fn>;
   delete: ReturnType<typeof vi.fn>;
 };
 
@@ -382,6 +384,194 @@ describe("adminNotificationService", () => {
       expect(mockApiClient.delete).toHaveBeenCalledWith(
         "/admin/notifications/templates/tmpl-123"
       );
+    });
+  });
+
+  // ============= resendNotification Tests =============
+
+  describe("resendNotification", () => {
+    it("should resend immediately when publish_at is not provided", async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          message: "Resend queued",
+          data: {
+            notification: mockNotification,
+            dispatch: {
+              id: "dispatch-1",
+              notification_id: "notif-123",
+              trigger: "resend",
+              status: "queued",
+              attempts: 0,
+              max_attempts: 3,
+              scheduled_for: null,
+              sent_at: null,
+              last_error: null,
+              created_at: "2024-01-02T00:00:00Z",
+            },
+          },
+        },
+      };
+      mockApiClient.post.mockResolvedValue(mockResponse);
+
+      const result = await adminNotificationService.resendNotification(
+        "notif-123"
+      );
+
+      expect(mockApiClient.post).toHaveBeenCalledWith(
+        "/admin/notifications/notif-123/resend",
+        {}
+      );
+      expect(result.data?.dispatch.notificationId).toBe("notif-123");
+      expect(result.data?.dispatch.maxAttempts).toBe(3);
+    });
+
+    it("should resend with publish_at when provided", async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          message: "Resend scheduled",
+          data: {
+            notification: mockNotification,
+            dispatch: {
+              id: "dispatch-2",
+              notification_id: "notif-123",
+              trigger: "resend",
+              status: "queued",
+              attempts: 0,
+              max_attempts: 3,
+              scheduled_for: "2024-01-10T08:00:00Z",
+              sent_at: null,
+              last_error: null,
+              created_at: "2024-01-02T00:00:00Z",
+            },
+          },
+        },
+      };
+      mockApiClient.post.mockResolvedValue(mockResponse);
+
+      await adminNotificationService.resendNotification("notif-123", {
+        publish_at: "2024-01-10T08:00:00.000Z",
+      });
+
+      expect(mockApiClient.post).toHaveBeenCalledWith(
+        "/admin/notifications/notif-123/resend",
+        { publish_at: "2024-01-10T08:00:00.000Z" }
+      );
+    });
+  });
+
+  // ============= getNotificationDispatches Tests =============
+
+  describe("getNotificationDispatches", () => {
+    it("should fetch dispatches with params and normalize fields", async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          data: {
+            dispatches: [
+              {
+                id: "dispatch-1",
+                notification_id: "notif-123",
+                trigger: "initial",
+                status: "sent",
+                attempts: 1,
+                max_attempts: 3,
+                scheduled_for: "2024-01-01T10:00:00Z",
+                sent_at: "2024-01-01T10:00:02Z",
+                last_error: null,
+                created_at: "2024-01-01T09:59:59Z",
+              },
+            ],
+            total: 1,
+            limit: 50,
+            offset: 0,
+            has_more: false,
+          },
+        },
+      };
+      mockApiClient.get.mockResolvedValue(mockResponse);
+
+      const result = await adminNotificationService.getNotificationDispatches(
+        "notif-123",
+        { limit: 50, offset: 0 }
+      );
+
+      expect(mockApiClient.get).toHaveBeenCalledWith(
+        "/admin/notifications/notif-123/dispatches",
+        { params: { limit: 50, offset: 0 } }
+      );
+      expect(result.data?.dispatches[0].notificationId).toBe("notif-123");
+      expect(result.data?.dispatches[0].maxAttempts).toBe(3);
+      expect(result.data?.hasMore).toBe(false);
+    });
+  });
+
+  // ============= recurrence Tests =============
+
+  describe("recurrence", () => {
+    it("should fetch and normalize recurrence", async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          data: {
+            id: "rec-1",
+            notification_id: "notif-123",
+            time_of_day: "08:00",
+            timezone: "Africa/Lagos",
+            is_active: true,
+            last_run_at: null,
+          },
+        },
+      };
+      mockApiClient.get.mockResolvedValue(mockResponse);
+
+      const result =
+        await adminNotificationService.getNotificationRecurrence("notif-123");
+
+      expect(mockApiClient.get).toHaveBeenCalledWith(
+        "/admin/notifications/notif-123/recurrence"
+      );
+      expect(result.data?.timeOfDay).toBe("08:00");
+      expect(result.data?.isActive).toBe(true);
+    });
+
+    it("should upsert recurrence", async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          message: "Saved",
+          data: {
+            id: "rec-1",
+            notification_id: "notif-123",
+            time_of_day: "09:30",
+            timezone: "UTC",
+            is_active: false,
+            last_run_at: "2024-01-01T08:00:00Z",
+          },
+        },
+      };
+      mockApiClient.put.mockResolvedValue(mockResponse);
+
+      const result = await adminNotificationService.upsertNotificationRecurrence(
+        "notif-123",
+        {
+          enabled: false,
+          time_of_day: "09:30",
+          timezone: "UTC",
+        }
+      );
+
+      expect(mockApiClient.put).toHaveBeenCalledWith(
+        "/admin/notifications/notif-123/recurrence",
+        {
+          enabled: false,
+          time_of_day: "09:30",
+          timezone: "UTC",
+        }
+      );
+      expect(result.data?.timeOfDay).toBe("09:30");
+      expect(result.data?.lastRunAt).toBe("2024-01-01T08:00:00Z");
     });
   });
 });

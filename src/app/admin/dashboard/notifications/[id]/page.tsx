@@ -1,5 +1,8 @@
 "use client";
 
+import { NotificationDispatchHistoryDrawer } from "@/components/features/admin/notifications/NotificationDispatchHistoryDrawer";
+import { NotificationRecurrenceModal } from "@/components/features/admin/notifications/NotificationRecurrenceModal";
+import { NotificationResendModal } from "@/components/features/admin/notifications/NotificationResendModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +15,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   useAdminNotification,
+  useNotificationDispatches,
   useNotificationAnalytics,
+  useNotificationRecurrence,
 } from "@/hooks/admin/useAdminNotifications";
 import { NotificationType } from "@/types/admin/notification.types";
 import { format } from "date-fns";
@@ -22,14 +27,19 @@ import {
   Bell,
   Calendar,
   CheckCircle,
+  Clock3,
+  History,
   Info,
   MousePointerClick,
+  Repeat,
+  SendHorizontal,
   Send,
   Users,
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useMemo, useState } from "react";
 
 const typeIcons: Record<NotificationType, React.ReactNode> = {
   info: <Info className="h-5 w-5 text-blue-500" />,
@@ -56,14 +66,34 @@ const typeColors: Record<NotificationType, string> = {
  */
 export default function NotificationDetailPage() {
   const params = useParams();
-  const notificationId = params.id as string;
+  const rawId = params?.id;
+  const notificationId = Array.isArray(rawId) ? rawId[0] : rawId;
+  const [resendMode, setResendMode] = useState<"now" | "later" | null>(null);
+  const [isRecurrenceOpen, setIsRecurrenceOpen] = useState(false);
+  const [isDispatchHistoryOpen, setIsDispatchHistoryOpen] = useState(false);
 
   const { data, isLoading, isError } = useAdminNotification(notificationId);
   const { data: analyticsData, isLoading: isAnalyticsLoading } =
     useNotificationAnalytics(notificationId);
+  const { data: recurrenceData } = useNotificationRecurrence(notificationId);
+  const { data: dispatchData } = useNotificationDispatches(notificationId, {
+    limit: 1,
+    offset: 0,
+  });
 
   const notification = data?.data?.notification;
   const analytics = analyticsData?.data;
+  const recurrence = recurrenceData?.data;
+  const latestDispatch = dispatchData?.data?.dispatches?.[0];
+
+  const isDispatchActive = useMemo(
+    () =>
+      Boolean(
+        latestDispatch &&
+          ["queued", "processing", "retrying"].includes(latestDispatch.status)
+      ),
+    [latestDispatch]
+  );
 
   if (isLoading) {
     return (
@@ -74,7 +104,9 @@ export default function NotificationDetailPage() {
     );
   }
 
-  if (isError || !notification) {
+  const hasValidNotification = Boolean(notification?.id || notification?.title);
+
+  if (isError || !hasValidNotification) {
     return (
       <div className="mx-auto max-w-4xl p-6">
         <Card>
@@ -96,19 +128,60 @@ export default function NotificationDetailPage() {
 
   const publishDate = notification.publish_at || notification.publishAt;
   const createdDate = notification.created_at || notification.createdAt;
+  const isArchived = Boolean(notification.archived || notification.isArchived);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button asChild variant="ghost" size="icon">
-          <Link href="/admin/dashboard/notifications">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">Notification Details</h1>
-          <p className="text-muted-foreground text-sm">ID: {notification.id}</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button asChild variant="ghost" size="icon">
+            <Link href="/admin/dashboard/notifications">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Notification Details</h1>
+            <p className="text-muted-foreground text-sm">ID: {notification.id}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setResendMode("now")}
+            disabled={isArchived}
+          >
+            <SendHorizontal className="mr-2 h-4 w-4" />
+            Resend Now
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setResendMode("later")}
+            disabled={isArchived}
+          >
+            <Clock3 className="mr-2 h-4 w-4" />
+            Resend Later
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsRecurrenceOpen(true)}
+            disabled={isArchived}
+          >
+            <Repeat className="mr-2 h-4 w-4" />
+            Daily Schedule
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsDispatchHistoryOpen(true)}
+          >
+            <History className="mr-2 h-4 w-4" />
+            Dispatch History
+          </Button>
         </div>
       </div>
 
@@ -150,6 +223,20 @@ export default function NotificationDetailPage() {
                   <Badge variant="outline">Pending</Badge>
                 )}
               </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={recurrence?.isActive ? "default" : "outline"}>
+                Daily: {recurrence?.isActive ? "ON" : "OFF"}
+              </Badge>
+              <Badge variant={isDispatchActive ? "default" : "outline"}>
+                Dispatch: {isDispatchActive ? "Active" : "Idle"}
+              </Badge>
+              <Badge variant="outline">
+                Last daily run:{" "}
+                {recurrence?.lastRunAt
+                  ? format(new Date(recurrence.lastRunAt), "PPp")
+                  : "Never"}
+              </Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -336,6 +423,29 @@ export default function NotificationDetailPage() {
           </dl>
         </CardContent>
       </Card>
+
+      <NotificationResendModal
+        open={resendMode !== null}
+        onOpenChange={(open) => {
+          if (!open) setResendMode(null);
+        }}
+        notificationId={notification.id}
+        isArchived={isArchived}
+        mode={resendMode ?? "later"}
+      />
+
+      <NotificationRecurrenceModal
+        open={isRecurrenceOpen}
+        onOpenChange={setIsRecurrenceOpen}
+        notificationId={notification.id}
+        isArchived={isArchived}
+      />
+
+      <NotificationDispatchHistoryDrawer
+        open={isDispatchHistoryOpen}
+        onOpenChange={setIsDispatchHistoryOpen}
+        notificationId={notification.id}
+      />
     </div>
   );
 }

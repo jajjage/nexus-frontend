@@ -5,20 +5,74 @@
 
 import apiClient from "@/lib/api-client";
 import {
-  CreateFromTemplateRequest,
+  CreateFromTemplateWithScheduleRequest,
   CreateNotificationRequest,
   CreateTemplateRequest,
   Notification,
   NotificationAnalytics,
+  NotificationDispatch,
+  NotificationDispatchesResponse,
+  NotificationDispatchQueryParams,
   NotificationListResponse,
   NotificationQueryParams,
+  NotificationRecurrence,
+  NotificationResendResponse,
   NotificationTemplate,
+  ResendNotificationRequest,
   ScheduleNotificationRequest,
+  UpsertNotificationRecurrenceRequest,
   UpdateNotificationRequest,
 } from "@/types/admin/notification.types";
 import { ApiResponse } from "@/types/api.types";
 
 const BASE_PATH = "/admin/notifications";
+
+const normalizeNotification = (raw: any): Notification => ({
+  ...(raw ?? {}),
+});
+
+const extractNotification = (payload: any): Notification | null => {
+  const candidates = [
+    payload?.data?.notification,
+    payload?.data?.data?.notification,
+    payload?.data?.data,
+    payload?.notification,
+    payload?.data,
+    payload,
+  ];
+
+  const found = candidates.find(
+    (candidate) =>
+      candidate &&
+      typeof candidate === "object" &&
+      !Array.isArray(candidate) &&
+      (candidate.id || candidate.title || candidate.body || candidate.type)
+  );
+
+  return found ? normalizeNotification(found) : null;
+};
+
+const normalizeDispatch = (raw: any): NotificationDispatch => ({
+  id: raw?.id ?? "",
+  notificationId: raw?.notificationId ?? raw?.notification_id ?? "",
+  trigger: raw?.trigger ?? "initial",
+  status: raw?.status ?? "queued",
+  attempts: Number(raw?.attempts ?? 0),
+  maxAttempts: Number(raw?.maxAttempts ?? raw?.max_attempts ?? 0),
+  scheduledFor: raw?.scheduledFor ?? raw?.scheduled_for ?? null,
+  sentAt: raw?.sentAt ?? raw?.sent_at ?? null,
+  lastError: raw?.lastError ?? raw?.last_error ?? null,
+  createdAt: raw?.createdAt ?? raw?.created_at ?? new Date(0).toISOString(),
+});
+
+const normalizeRecurrence = (raw: any): NotificationRecurrence => ({
+  id: raw?.id ?? "",
+  notificationId: raw?.notificationId ?? raw?.notification_id ?? "",
+  timeOfDay: raw?.timeOfDay ?? raw?.time_of_day ?? "08:00",
+  timezone: raw?.timezone ?? "UTC",
+  isActive: Boolean(raw?.isActive ?? raw?.is_active ?? false),
+  lastRunAt: raw?.lastRunAt ?? raw?.last_run_at ?? null,
+});
 
 export const adminNotificationService = {
   /**
@@ -45,7 +99,13 @@ export const adminNotificationService = {
     const response = await apiClient.get<
       ApiResponse<{ notification: Notification }>
     >(`${BASE_PATH}/${notificationId}`);
-    return response.data;
+    const rawNotification = extractNotification(response.data);
+    return {
+      ...response.data,
+      data: {
+        notification: rawNotification ?? normalizeNotification(null),
+      },
+    };
   },
 
   /**
@@ -120,7 +180,7 @@ export const adminNotificationService = {
    * POST /api/v1/admin/notifications/from-template
    */
   createFromTemplate: async (
-    data: CreateFromTemplateRequest
+    data: CreateFromTemplateWithScheduleRequest
   ): Promise<ApiResponse<{ notification: Notification }>> => {
     const response = await apiClient.post<
       ApiResponse<{ notification: Notification }>
@@ -174,5 +234,94 @@ export const adminNotificationService = {
       `${BASE_PATH}/templates/${templateId}`
     );
     return response.data;
+  },
+
+  /**
+   * Resend an existing notification now or later
+   * POST /api/v1/admin/notifications/:notificationId/resend
+   */
+  resendNotification: async (
+    notificationId: string,
+    data?: ResendNotificationRequest
+  ): Promise<ApiResponse<NotificationResendResponse>> => {
+    const response = await apiClient.post<ApiResponse<any>>(
+      `${BASE_PATH}/${notificationId}/resend`,
+      data ?? {}
+    );
+
+    const rawData = response.data?.data ?? {};
+    return {
+      ...response.data,
+      data: {
+        notification: rawData.notification ?? rawData,
+        dispatch: normalizeDispatch(rawData.dispatch ?? rawData),
+      },
+    };
+  },
+
+  /**
+   * Get dispatch history for a notification
+   * GET /api/v1/admin/notifications/:notificationId/dispatches
+   */
+  getNotificationDispatches: async (
+    notificationId: string,
+    params?: NotificationDispatchQueryParams
+  ): Promise<ApiResponse<NotificationDispatchesResponse>> => {
+    const response = await apiClient.get<ApiResponse<any>>(
+      `${BASE_PATH}/${notificationId}/dispatches`,
+      { params }
+    );
+
+    const rawData = response.data?.data ?? {};
+    const rawDispatches = Array.isArray(rawData)
+      ? rawData
+      : rawData.dispatches ?? [];
+
+    return {
+      ...response.data,
+      data: {
+        dispatches: rawDispatches.map(normalizeDispatch),
+        total: rawData.total,
+        limit: rawData.limit,
+        offset: rawData.offset,
+        hasMore: rawData.hasMore ?? rawData.has_more,
+      },
+    };
+  },
+
+  /**
+   * Get daily recurrence config
+   * GET /api/v1/admin/notifications/:notificationId/recurrence
+   */
+  getNotificationRecurrence: async (
+    notificationId: string
+  ): Promise<ApiResponse<NotificationRecurrence>> => {
+    const response = await apiClient.get<ApiResponse<any>>(
+      `${BASE_PATH}/${notificationId}/recurrence`
+    );
+    const raw = response.data?.data ?? {};
+    return {
+      ...response.data,
+      data: normalizeRecurrence(raw),
+    };
+  },
+
+  /**
+   * Upsert daily recurrence config
+   * PUT /api/v1/admin/notifications/:notificationId/recurrence
+   */
+  upsertNotificationRecurrence: async (
+    notificationId: string,
+    data: UpsertNotificationRecurrenceRequest
+  ): Promise<ApiResponse<NotificationRecurrence>> => {
+    const response = await apiClient.put<ApiResponse<any>>(
+      `${BASE_PATH}/${notificationId}/recurrence`,
+      data
+    );
+    const raw = response.data?.data ?? {};
+    return {
+      ...response.data,
+      data: normalizeRecurrence(raw),
+    };
   },
 };

@@ -68,6 +68,51 @@ export interface NotificationAnalytics {
   clickRate?: number;
 }
 
+export type NotificationDispatchTrigger = "initial" | "resend" | "legacy";
+
+export type NotificationDispatchStatus =
+  | "queued"
+  | "processing"
+  | "sent"
+  | "failed"
+  | "cancelled"
+  | "retrying";
+
+export interface NotificationDispatch {
+  id: string;
+  notificationId: string;
+  trigger: NotificationDispatchTrigger;
+  status: NotificationDispatchStatus;
+  attempts: number;
+  maxAttempts: number;
+  scheduledFor: string | null;
+  sentAt: string | null;
+  lastError: string | null;
+  createdAt: string;
+}
+
+export interface NotificationDispatchesResponse {
+  dispatches: NotificationDispatch[];
+  total?: number;
+  limit?: number;
+  offset?: number;
+  hasMore?: boolean;
+}
+
+export interface NotificationRecurrence {
+  id: string;
+  notificationId: string;
+  timeOfDay: string;
+  timezone: string;
+  isActive: boolean;
+  lastRunAt: string | null;
+}
+
+export interface NotificationResendResponse {
+  notification: Notification;
+  dispatch: NotificationDispatch;
+}
+
 // ============= API Responses =============
 
 export interface NotificationListResponse {
@@ -115,6 +160,21 @@ export interface CreateFromTemplateRequest {
   publish_at?: string;
 }
 
+export interface CreateFromTemplateWithScheduleRequest
+  extends CreateFromTemplateRequest {
+  publish_at?: string;
+}
+
+export interface ResendNotificationRequest {
+  publish_at?: string;
+}
+
+export interface UpsertNotificationRecurrenceRequest {
+  time_of_day: string;
+  timezone: string;
+  enabled: boolean;
+}
+
 export interface CreateTemplateRequest {
   name: string;
   title: string;
@@ -130,4 +190,9 @@ export interface NotificationQueryParams {
   limit?: number;
   offset?: number;
   archived?: boolean;
+}
+
+export interface NotificationDispatchQueryParams {
+  limit?: number;
+  offset?: number;
 }
