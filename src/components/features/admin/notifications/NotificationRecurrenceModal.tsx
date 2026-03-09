@@ -122,7 +122,8 @@ export function NotificationRecurrenceModal({
         <DialogHeader>
           <DialogTitle>Daily Schedule</DialogTitle>
           <DialogDescription>
-            Configure daily resend for this notification in your selected timezone.
+            Configure daily resend for this notification in your selected
+            timezone.
           </DialogDescription>
         </DialogHeader>
 

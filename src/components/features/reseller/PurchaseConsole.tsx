@@ -60,8 +60,9 @@ export function PurchaseConsole() {
 
   const createPurchaseMutation = useCreateApiPurchase();
 
-  const activeRequestApiKey =
-    activeRequestId ? apiKeyByRequestId[activeRequestId] ?? "" : "";
+  const activeRequestApiKey = activeRequestId
+    ? (apiKeyByRequestId[activeRequestId] ?? "")
+    : "";
 
   const statusQuery = useApiPurchaseStatus(
     activeRequestId ?? "",
@@ -119,7 +120,7 @@ export function PurchaseConsole() {
   );
   const displayError = suppressTransientPolling404
     ? lastError
-    : queryError?.message ?? lastError;
+    : (queryError?.message ?? lastError);
 
   const pollingState = {
     isPolling: shouldPoll,
@@ -140,7 +141,9 @@ export function PurchaseConsole() {
     }
     if (
       waitForFinal &&
-      (Number.isNaN(parsedTimeout) || parsedTimeout < 0 || parsedTimeout > 30000)
+      (Number.isNaN(parsedTimeout) ||
+        parsedTimeout < 0 ||
+        parsedTimeout > 30000)
     ) {
       errors.push("waitTimeoutMs must be between 0 and 30000");
     }
@@ -354,8 +357,8 @@ export function PurchaseConsole() {
             <Alert>
               <AlertTitle>Status sync in progress</AlertTitle>
               <AlertDescription>
-                Purchase was accepted. Status endpoint is still warming up, retrying
-                automatically.
+                Purchase was accepted. Status endpoint is still warming up,
+                retrying automatically.
               </AlertDescription>
             </Alert>
           ) : null}

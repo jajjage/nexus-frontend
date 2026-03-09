@@ -321,7 +321,8 @@ export function useApiPurchaseStatus(
   return useQuery({
     queryKey: resellerKeys.purchaseStatusByKey(requestId, apiKey),
     queryFn: () => resellerService.getApiPurchaseStatus(requestId, apiKey),
-    enabled: Boolean(requestId) && Boolean(apiKey) && (options?.enabled ?? true),
+    enabled:
+      Boolean(requestId) && Boolean(apiKey) && (options?.enabled ?? true),
     refetchInterval: options?.refetchInterval,
     placeholderData: keepPreviousData,
   });

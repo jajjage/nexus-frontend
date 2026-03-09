@@ -81,11 +81,15 @@ export function NotificationDispatchHistoryDrawer({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-3xl">
+      <SheetContent
+        side="right"
+        className="w-full overflow-y-auto sm:max-w-3xl"
+      >
         <SheetHeader>
           <SheetTitle>Dispatch History</SheetTitle>
           <SheetDescription>
-            Delivery attempts for this notification (initial, resend, and legacy).
+            Delivery attempts for this notification (initial, resend, and
+            legacy).
           </SheetDescription>
         </SheetHeader>
 
@@ -132,7 +136,9 @@ export function NotificationDispatchHistoryDrawer({
                             {dispatch.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{formatDateTime(dispatch.scheduledFor)}</TableCell>
+                        <TableCell>
+                          {formatDateTime(dispatch.scheduledFor)}
+                        </TableCell>
                         <TableCell>{formatDateTime(dispatch.sentAt)}</TableCell>
                         <TableCell>
                           {dispatch.attempts}/{dispatch.maxAttempts}

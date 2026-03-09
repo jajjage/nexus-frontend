@@ -275,7 +275,7 @@ export const adminNotificationService = {
     const rawData = response.data?.data ?? {};
     const rawDispatches = Array.isArray(rawData)
       ? rawData
-      : rawData.dispatches ?? [];
+      : (rawData.dispatches ?? []);
 
     return {
       ...response.data,

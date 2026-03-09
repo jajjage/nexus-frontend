@@ -357,7 +357,9 @@ export function NotificationTemplatesTable() {
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          onClick={() => handleDelete(template.id, template.name)}
+                          onClick={() =>
+                            handleDelete(template.id, template.name)
+                          }
                           disabled={deleteMutation.isPending}
                           title="Delete template"
                         >

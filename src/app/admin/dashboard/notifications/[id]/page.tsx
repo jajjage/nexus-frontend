@@ -142,7 +142,9 @@ export default function NotificationDetailPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Notification Details</h1>
-            <p className="text-muted-foreground text-sm">ID: {notification.id}</p>
+            <p className="text-muted-foreground text-sm">
+              ID: {notification.id}
+            </p>
           </div>
         </div>
 

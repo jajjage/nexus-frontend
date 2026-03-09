@@ -414,9 +414,8 @@ describe("adminNotificationService", () => {
       };
       mockApiClient.post.mockResolvedValue(mockResponse);
 
-      const result = await adminNotificationService.resendNotification(
-        "notif-123"
-      );
+      const result =
+        await adminNotificationService.resendNotification("notif-123");
 
       expect(mockApiClient.post).toHaveBeenCalledWith(
         "/admin/notifications/notif-123/resend",
@@ -553,14 +552,15 @@ describe("adminNotificationService", () => {
       };
       mockApiClient.put.mockResolvedValue(mockResponse);
 
-      const result = await adminNotificationService.upsertNotificationRecurrence(
-        "notif-123",
-        {
-          enabled: false,
-          time_of_day: "09:30",
-          timezone: "UTC",
-        }
-      );
+      const result =
+        await adminNotificationService.upsertNotificationRecurrence(
+          "notif-123",
+          {
+            enabled: false,
+            time_of_day: "09:30",
+            timezone: "UTC",
+          }
+        );
 
       expect(mockApiClient.put).toHaveBeenCalledWith(
         "/admin/notifications/notif-123/recurrence",

@@ -109,7 +109,10 @@ export function useNotificationDispatches(
   return useQuery({
     queryKey: notificationKeys.dispatches(notificationId, params),
     queryFn: () =>
-      adminNotificationService.getNotificationDispatches(notificationId, params),
+      adminNotificationService.getNotificationDispatches(
+        notificationId,
+        params
+      ),
     enabled: !!notificationId,
     placeholderData: keepPreviousData,
   });
@@ -298,7 +301,10 @@ export function useUpsertNotificationRecurrence() {
       notificationId: string;
       data: UpsertNotificationRecurrenceRequest;
     }) =>
-      adminNotificationService.upsertNotificationRecurrence(notificationId, data),
+      adminNotificationService.upsertNotificationRecurrence(
+        notificationId,
+        data
+      ),
     onSuccess: (response, { notificationId }) => {
       toast.success(response.message || "Daily recurrence updated");
       queryClient.invalidateQueries({

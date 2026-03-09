@@ -85,7 +85,9 @@ export function NotificationResendModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {mode === "now" ? "Resend Notification Now" : "Resend Notification Later"}
+            {mode === "now"
+              ? "Resend Notification Now"
+              : "Resend Notification Later"}
           </DialogTitle>
           <DialogDescription>
             {mode === "now"
@@ -97,7 +99,9 @@ export function NotificationResendModal({
         <div className="space-y-4 py-2">
           {mode === "later" ? (
             <div className="space-y-2">
-              <Label htmlFor="resend-publish-at">Scheduled Time (optional)</Label>
+              <Label htmlFor="resend-publish-at">
+                Scheduled Time (optional)
+              </Label>
               <Input
                 id="resend-publish-at"
                 type="datetime-local"

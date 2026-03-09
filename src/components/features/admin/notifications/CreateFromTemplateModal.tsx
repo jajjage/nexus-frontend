@@ -214,9 +214,7 @@ export function CreateFromTemplateModal({
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="template-publish-at">
-                Publish at (optional)
-              </Label>
+              <Label htmlFor="template-publish-at">Publish at (optional)</Label>
               <Input
                 id="template-publish-at"
                 type="datetime-local"
@@ -236,7 +234,8 @@ export function CreateFromTemplateModal({
 
             {missingVariables.length > 0 ? (
               <p className="text-destructive text-sm">
-                Please fill all template variables: {missingVariables.join(", ")}
+                Please fill all template variables:{" "}
+                {missingVariables.join(", ")}
               </p>
             ) : null}
           </div>
