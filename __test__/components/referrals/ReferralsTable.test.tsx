@@ -59,8 +59,8 @@ describe("ReferralsTable", () => {
 
     expect(screen.getByText("User One")).toBeInTheDocument();
     expect(screen.getByText("User Two")).toBeInTheDocument();
-    expect(screen.getByText("Success")).toBeInTheDocument(); // 'claimed' status shows as 'Success'
-    expect(screen.getByText("pending")).toBeInTheDocument();
+    expect(screen.getByText("Rewarded")).toBeInTheDocument(); // 'claimed' status shows as 'Rewarded'
+    expect(screen.getByText("Awaiting Purchase")).toBeInTheDocument();
   });
 
   it("should show empty message when no referrals exist", () => {
