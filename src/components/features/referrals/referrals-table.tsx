@@ -58,7 +58,7 @@ export function ReferralsTable() {
       <CardHeader>
         <CardTitle>Invited Friends</CardTitle>
         <CardDescription>
-          Track status of people you've invited.
+          Track status of people you&apos;ve invited.
         </CardDescription>
       </CardHeader>
       <CardContent>
