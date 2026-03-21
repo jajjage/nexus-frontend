@@ -16,10 +16,25 @@ import {
 import { useAdminUsers } from "@/hooks/admin/useAdminUsers";
 import { useDebounce } from "@/hooks/useDebounce";
 import { AdminUser } from "@/types/admin/user.types";
-import { ChevronLeft, ChevronRight, Search, UserPlus } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  MessageCircle,
+  Search,
+  UserPlus,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+
+const formatForWhatsApp = (phone: string) => {
+  if (!phone) return "";
+  const cleanPhone = phone.replace(/\D/g, "");
+  if (cleanPhone.startsWith("0")) {
+    return `234${cleanPhone.substring(1)}`;
+  }
+  return cleanPhone;
+};
 
 export function UserListTable() {
   const router = useRouter();
@@ -187,7 +202,20 @@ export function UserListTable() {
                 users.map((user: AdminUser) => (
                   <TableRow key={user.id || user.userId}>
                     <TableCell className="font-medium">
-                      {user.fullName}
+                      <div className="flex items-center gap-2">
+                        {user.fullName}
+                        {user.phoneNumber && (
+                          <a
+                            href={`https://wa.me/${formatForWhatsApp(user.phoneNumber)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-full p-1 text-green-600 transition-colors hover:bg-green-50 hover:text-green-700"
+                            title={`Message ${user.phoneNumber} on WhatsApp`}
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                          </a>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
