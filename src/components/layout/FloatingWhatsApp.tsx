@@ -11,7 +11,7 @@ export function FloatingWhatsApp() {
 
   // Using environment variable with a safe fallback
   const supportNumber =
-    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "2348000000000";
+    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "2347033776056";
   const defaultMessage = encodeURIComponent(
     "Hello Nexus Data Support! 👋\n\nI am reaching out from your website and I need some assistance with..."
   );
@@ -23,7 +23,7 @@ export function FloatingWhatsApp() {
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="group fixed right-6 bottom-6 z-[50] flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition-transform hover:scale-110 hover:bg-green-600 active:scale-95"
+      className="group fixed right-6 bottom-24 z-[50] flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition-transform hover:scale-110 hover:bg-green-600 active:scale-95 md:bottom-8"
       aria-label="Contact Support on WhatsApp"
       title="Chat with Customer Service"
     >
