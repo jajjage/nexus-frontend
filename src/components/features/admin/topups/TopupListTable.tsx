@@ -31,20 +31,30 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 
-const statusColors: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  pending: "secondary",
-  success: "default",
-  completed: "default",
-  failed: "destructive",
-  reversed: "outline",
-  retry: "secondary",
-  cancelled: "outline",
+// Status badge colors
+const getStatusColorClass = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "pending":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 border-transparent";
+    case "completed":
+    case "success":
+    case "received":
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-transparent";
+    case "failed":
+    case "cancelled":
+      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 border-transparent";
+    case "reversed":
+    case "refunded":
+      return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300 border-transparent";
+    case "retry":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border-transparent";
+    default:
+      return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-transparent";
+  }
 };
 
 const operatorColors: Record<string, string> = {
@@ -56,15 +66,42 @@ const operatorColors: Record<string, string> = {
 };
 
 export function TopupListTable() {
-  const [page, setPage] = useState(1);
-  const [searchInput, setSearchInput] = useState("");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
+  const [searchInput, setSearchInput] = useState(
+    searchParams.get("search") || ""
+  );
   const debouncedSearch = useDebounce(searchInput, 500);
-  const [status, setStatus] = useState<string>("all");
-  const [operator, setOperator] = useState<string>("all");
+  const [status, setStatus] = useState<string>(
+    searchParams.get("status") || "all"
+  );
+  const [operator, setOperator] = useState<string>(
+    searchParams.get("operator") || "all"
+  );
   const isSearchActive = !!debouncedSearch.trim();
   const limit = 15;
 
   const [prevSearch, setPrevSearch] = useState(debouncedSearch);
+
+  // Update URL when state changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    if (page > 1) params.set("page", page.toString());
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (status !== "all") params.set("status", status);
+    if (operator !== "all") params.set("operator", operator);
+
+    const queryString = params.toString();
+    const newUrl = `${pathname}${queryString ? `?${queryString}` : ""}`;
+
+    if (queryString !== searchParams.toString()) {
+      router.replace(newUrl, { scroll: false });
+    }
+  }, [page, debouncedSearch, status, operator, pathname, router, searchParams]);
 
   if (debouncedSearch !== prevSearch) {
     setPrevSearch(debouncedSearch);
@@ -278,8 +315,8 @@ export function TopupListTable() {
                     {/* Status */}
                     <TableCell>
                       <Badge
-                        variant={statusColors[req.status] || "secondary"}
-                        className="capitalize"
+                        variant="outline"
+                        className={`capitalize ${getStatusColorClass(req.status)}`}
                       >
                         {req.status}
                       </Badge>

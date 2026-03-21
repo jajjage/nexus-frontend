@@ -31,7 +31,8 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 
 // Method display names
@@ -50,16 +51,47 @@ const relatedTypeLabels: Record<string, string> = {
   refund: "Refund",
 };
 
+// Status badge colors
+const getStatusColorClass = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "pending":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 border-transparent";
+    case "completed":
+    case "success":
+    case "received":
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-transparent";
+    case "failed":
+    case "cancelled":
+      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 border-transparent";
+    case "reversed":
+    case "refunded":
+      return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300 border-transparent";
+    case "retry":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border-transparent";
+    default:
+      return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-transparent";
+  }
+};
+
 export function TransactionListTable() {
-  const [page, setPage] = useState(1);
-  const [searchInput, setSearchInput] = useState("");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
+  const [searchInput, setSearchInput] = useState(
+    searchParams.get("search") || ""
+  );
   const debouncedSearch = useDebounce(searchInput, 500);
-  const [direction, setDirection] = useState<"all" | "credit" | "debit">("all");
+  const [direction, setDirection] = useState<"all" | "credit" | "debit">(
+    (searchParams.get("direction") as "all" | "credit" | "debit") || "all"
+  );
   const isSearchActive = !!debouncedSearch.trim();
 
   const handleDirectionChange = (value: string) => {
     if (value === "all" || value === "credit" || value === "debit") {
       setDirection(value);
+      setPage(1);
     }
   };
 
@@ -67,6 +99,22 @@ export function TransactionListTable() {
 
   const [prevSearch, setPrevSearch] = useState(debouncedSearch);
   const [prevDirection, setPrevDirection] = useState(direction);
+
+  // Update URL when state changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    if (page > 1) params.set("page", page.toString());
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (direction !== "all") params.set("direction", direction);
+
+    const queryString = params.toString();
+    const newUrl = `${pathname}${queryString ? `?${queryString}` : ""}`;
+
+    if (queryString !== searchParams.toString()) {
+      router.replace(newUrl, { scroll: false });
+    }
+  }, [page, debouncedSearch, direction, pathname, router, searchParams]);
 
   if (debouncedSearch !== prevSearch || direction !== prevDirection) {
     setPrevSearch(debouncedSearch);
@@ -269,32 +317,23 @@ export function TransactionListTable() {
                     <TableCell>
                       {tx.related?.status ? (
                         <Badge
-                          variant={
-                            tx.related.status === "completed"
-                              ? "default"
-                              : tx.related.status === "pending"
-                                ? "secondary"
-                                : "destructive"
-                          }
-                          className="capitalize"
+                          variant="outline"
+                          className={`capitalize ${getStatusColorClass(tx.related.status)}`}
                         >
                           {tx.related.status}
                         </Badge>
                       ) : tx.status ? (
                         <Badge
-                          variant={
-                            tx.status === "completed"
-                              ? "default"
-                              : tx.status === "pending"
-                                ? "secondary"
-                                : "destructive"
-                          }
-                          className="capitalize"
+                          variant="outline"
+                          className={`capitalize ${getStatusColorClass(tx.status)}`}
                         >
                           {tx.status}
                         </Badge>
                       ) : (
-                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                        <Badge
+                          variant="outline"
+                          className={`capitalize ${getStatusColorClass("completed")}`}
+                        >
                           Completed
                         </Badge>
                       )}

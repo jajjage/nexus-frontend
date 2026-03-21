@@ -48,17 +48,26 @@ interface TopupDetailViewProps {
   requestId: string;
 }
 
-const statusColors: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  pending: "secondary",
-  success: "default",
-  completed: "default",
-  failed: "destructive",
-  reversed: "outline",
-  retry: "secondary",
-  cancelled: "outline",
+// Status badge colors
+const getStatusColorClass = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "pending":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 border-transparent";
+    case "completed":
+    case "success":
+    case "received":
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-transparent";
+    case "failed":
+    case "cancelled":
+      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 border-transparent";
+    case "reversed":
+    case "refunded":
+      return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300 border-transparent";
+    case "retry":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border-transparent";
+    default:
+      return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-transparent";
+  }
 };
 
 const operatorColors: Record<string, string> = {
@@ -204,8 +213,8 @@ export function TopupDetailView({ requestId }: TopupDetailViewProps) {
                 <div className="space-y-2">
                   <Label>Current Status</Label>
                   <Badge
-                    variant={statusColors[request.status] || "secondary"}
-                    className="capitalize"
+                    variant="outline"
+                    className={`capitalize ${getStatusColorClass(request.status)}`}
                   >
                     {request.status}
                   </Badge>
@@ -274,8 +283,8 @@ export function TopupDetailView({ requestId }: TopupDetailViewProps) {
             </DialogContent>
           </Dialog>
           <Badge
-            variant={statusColors[request.status] || "secondary"}
-            className="text-sm capitalize"
+            variant="outline"
+            className={`text-sm capitalize ${getStatusColorClass(request.status)}`}
           >
             {request.status}
           </Badge>
@@ -331,8 +340,8 @@ export function TopupDetailView({ requestId }: TopupDetailViewProps) {
             <div className="flex items-center justify-between">
               <Label className="text-muted-foreground">Status</Label>
               <Badge
-                variant={statusColors[request.status] || "secondary"}
-                className="capitalize"
+                variant="outline"
+                className={`capitalize ${getStatusColorClass(request.status)}`}
               >
                 {request.status}
               </Badge>

@@ -32,6 +32,28 @@ const methodLabels: Record<string, string> = {
   refund: "Refund",
 };
 
+// Status badge colors
+const getStatusColorClass = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "pending":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 border-transparent";
+    case "completed":
+    case "success":
+    case "received":
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-transparent";
+    case "failed":
+    case "cancelled":
+      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 border-transparent";
+    case "reversed":
+    case "refunded":
+      return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300 border-transparent";
+    case "retry":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border-transparent";
+    default:
+      return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-transparent";
+  }
+};
+
 // Helper to detect if a transaction is for data (with fallback for incorrect backend type)
 const isDataTransaction = (transaction: any): boolean => {
   // First check the related.type from backend
@@ -321,14 +343,8 @@ export function TransactionDetailView({
               <div>
                 <Label className="text-muted-foreground text-xs">Status</Label>
                 <Badge
-                  variant={
-                    transaction.related.status === "completed"
-                      ? "default"
-                      : transaction.related.status === "pending"
-                        ? "secondary"
-                        : "destructive"
-                  }
-                  className="mt-1 capitalize"
+                  variant="outline"
+                  className={`mt-1 capitalize ${getStatusColorClass(transaction.related.status)}`}
                 >
                   {transaction.related.status}
                 </Badge>

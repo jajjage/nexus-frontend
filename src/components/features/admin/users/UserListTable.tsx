@@ -18,25 +18,50 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { AdminUser } from "@/types/admin/user.types";
 import { ChevronLeft, ChevronRight, Search, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export function UserListTable() {
-  const [page, setPage] = useState(1);
-  const [searchInput, setSearchInput] = useState("");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
+  const [searchInput, setSearchInput] = useState(
+    searchParams.get("search") || ""
+  );
   const debouncedSearch = useDebounce(searchInput, 500);
-  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [roleFilter, setRoleFilter] = useState<string>(
+    searchParams.get("role") || "all"
+  );
   const isSearchActive = !!debouncedSearch.trim();
 
   const limit = 10;
 
   const [prevSearch, setPrevSearch] = useState(debouncedSearch);
 
+  // Update URL when state changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    if (page > 1) params.set("page", page.toString());
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (roleFilter !== "all") params.set("role", roleFilter);
+
+    const queryString = params.toString();
+    const newUrl = `${pathname}${queryString ? `?${queryString}` : ""}`;
+
+    // Only update if URL actually changed to avoid infinite loops
+    const currentQueryString = searchParams.toString();
+    if (queryString !== currentQueryString) {
+      router.replace(newUrl, { scroll: false });
+    }
+  }, [page, debouncedSearch, roleFilter, pathname, router, searchParams]);
+
   // Reset page when search term changes
-  // We use this pattern instead of useEffect to avoid cascading renders
-  // See: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
   if (debouncedSearch !== prevSearch) {
     setPrevSearch(debouncedSearch);
-    setPage(1);
+    if (page !== 1) setPage(1);
   }
 
   const { data, isLoading, isFetching, isError, refetch } = useAdminUsers({
