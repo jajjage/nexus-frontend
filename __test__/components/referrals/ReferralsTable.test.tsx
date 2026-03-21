@@ -1,3 +1,4 @@
+/* eslint-disable react/display-name */
 import { ReferralsTable } from "@/components/features/referrals/referrals-table";
 import { useAuth } from "@/hooks/useAuth";
 import { useReferralsList } from "@/hooks/useReferrals";
