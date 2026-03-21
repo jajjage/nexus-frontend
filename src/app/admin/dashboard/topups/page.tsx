@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TopupListTable } from "@/components/features/admin/topups/TopupListTable";
 
 /**
@@ -13,7 +15,9 @@ export default function AdminTopupsPage() {
           Manage and monitor user topup requests.
         </p>
       </div>
-      <TopupListTable />
+      <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+        <TopupListTable />
+      </Suspense>
     </div>
   );
 }

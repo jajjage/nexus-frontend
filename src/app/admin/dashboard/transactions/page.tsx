@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TransactionListTable } from "@/components/features/admin/transactions/TransactionListTable";
 
 /**
@@ -13,7 +15,9 @@ export default function AdminTransactionsPage() {
           View and monitor all platform transactions.
         </p>
       </div>
-      <TransactionListTable />
+      <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+        <TransactionListTable />
+      </Suspense>
     </div>
   );
 }
