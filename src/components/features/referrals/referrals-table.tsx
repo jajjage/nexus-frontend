@@ -104,8 +104,10 @@ export function ReferralsTable() {
                       <TableCell>
                         <Badge className={getStatusColor(referral.status)}>
                           {referral.status === "claimed"
-                            ? "Success"
-                            : referral.status}
+                            ? "Rewarded"
+                            : referral.status === "pending"
+                              ? "Awaiting Purchase"
+                              : referral.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-medium">

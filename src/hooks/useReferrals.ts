@@ -8,9 +8,8 @@ import { AxiosError } from "axios";
 import { toast } from "sonner";
 
 // ============= FEATURE FLAG =============
-// Referrals feature is temporarily disabled (Coming Soon)
-// Set to true to enable all referral API calls
-const REFERRALS_ENABLED = false;
+// Referrals feature is now globally enabled
+const REFERRALS_ENABLED = true;
 
 // ============= Query Keys =============
 export const referralKeys = {
@@ -112,39 +111,6 @@ export const useReferralRewardId = () => {
 
 // ============= Referral Mutations (V2) =============
 // NOTE: Mutations are kept but will show "Feature coming soon" toast if called
-
-/**
- * Claim referral bonus (V2)
- */
-export const useClaimReferralBonusV2 = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () => {
-      if (!REFERRALS_ENABLED) {
-        return Promise.reject(new Error("Feature coming soon"));
-      }
-      return referralService.claimReferralBonusV2();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: referralKeys.statsV2() });
-      queryClient.invalidateQueries({
-        queryKey: referralKeys.withdrawals.all(),
-      });
-      queryClient.invalidateQueries({ queryKey: ["wallet"] });
-      toast.success(data.message || "Referral bonus claimed successfully!");
-    },
-    onError: (error: AxiosError<any>) => {
-      if (!REFERRALS_ENABLED) {
-        toast.info("Referrals feature coming soon!");
-        return;
-      }
-      toast.error(
-        error.response?.data?.message || "Failed to claim referral bonus"
-      );
-    },
-  });
-};
 
 /**
  * Request withdrawal (V2)

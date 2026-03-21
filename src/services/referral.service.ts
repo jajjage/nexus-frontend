@@ -37,18 +37,6 @@ export const referralService = {
   },
 
   /**
-   * 2. Claim Referral Bonus (V2)
-   * For the referred user to claim their signup bonus.
-   */
-  claimReferralBonusV2: async (): Promise<ApiResponse<any>> => {
-    const response = await apiClient.post<ApiResponse<any>>(
-      "/dashboard/referrals/claim-v2",
-      {}
-    );
-    return response.data;
-  },
-
-  /**
    * 3. Check Available Balance (V2)
    */
   getAvailableBalanceV2: async (

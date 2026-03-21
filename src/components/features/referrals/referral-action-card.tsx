@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import {
   useAvailableBalanceV2,
-  useClaimReferralBonusV2,
   useReferralStatsV2,
 } from "@/hooks/useReferrals";
 import { Gift, Loader2, Wallet } from "lucide-react";
@@ -24,9 +23,6 @@ export function ReferralActionCard() {
   const { data: referredBalanceV2, isLoading: isLoadingReferred } =
     useAvailableBalanceV2("referred");
 
-  const { mutate: claimBonus, isPending: isClaiming } =
-    useClaimReferralBonusV2();
-
   const [showWithdrawalType, setShowWithdrawalType] = useState<
     "referrer" | "referred" | null
   >(null);
@@ -35,7 +31,7 @@ export function ReferralActionCard() {
   const referrerStats = stats?.referrerStats;
 
   // 1. Claim Bonus Action (New User / Referee)
-  const canClaimBonus = referredStats?.referralStatus === "pending";
+  const isPendingBonus = referredStats?.referralStatus === "pending";
   const signupBonusAmount = 250; // Heuristic split share if amount not in referredStats
 
   // 2. Withdrawal Actions
@@ -64,13 +60,9 @@ export function ReferralActionCard() {
   }
 
   // Hide if nothing to act on
-  if (!canClaimBonus && !hasReferrerBalance && !hasReferredBalance) {
+  if (!isPendingBonus && !hasReferrerBalance && !hasReferredBalance) {
     return null;
   }
-
-  const handleClaimBonus = () => {
-    claimBonus();
-  };
 
   return (
     <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/10">
@@ -80,12 +72,12 @@ export function ReferralActionCard() {
             <Gift className="size-5 text-amber-600 dark:text-amber-400" />
           </div>
           <CardTitle className="text-lg text-amber-950 dark:text-amber-100">
-            {canClaimBonus ? "Claim Your Reward" : "Available Rewards"}
+            {isPendingBonus ? "Bonus Pending" : "Available Rewards"}
           </CardTitle>
         </div>
         <CardDescription className="text-amber-800 dark:text-amber-300">
-          {canClaimBonus
-            ? `You were referred by ${referredStats?.referrerName}. Claim your signup bonus now!`
+          {isPendingBonus
+            ? "Bonus unlocks automatically after first successful purchase."
             : "Collect your referral earnings."}
         </CardDescription>
       </CardHeader>
@@ -93,7 +85,7 @@ export function ReferralActionCard() {
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex flex-wrap gap-6">
             {/* Signup Bonus Balance */}
-            {(canClaimBonus || hasReferredBalance) && (
+            {(isPendingBonus || hasReferredBalance) && (
               <div>
                 <p className="text-xs font-medium tracking-wider text-amber-800 uppercase dark:text-amber-300">
                   Signup Bonus
@@ -122,24 +114,8 @@ export function ReferralActionCard() {
           </div>
 
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            {/* Action: Claim Signup Bonus */}
-            {canClaimBonus && (
-              <Button
-                onClick={handleClaimBonus}
-                disabled={isClaiming}
-                className="flex-1 bg-amber-600 text-white hover:bg-amber-700 sm:flex-none"
-              >
-                {isClaiming ? (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                ) : (
-                  <Gift className="mr-2 size-4" />
-                )}
-                Claim Bonus
-              </Button>
-            )}
-
             {/* Action: Withdraw Signup Bonus */}
-            {hasReferredBalance && !canClaimBonus && (
+            {hasReferredBalance && (
               <Button
                 onClick={() => setShowWithdrawalType("referred")}
                 variant="outline"

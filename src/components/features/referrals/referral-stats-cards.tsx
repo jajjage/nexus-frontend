@@ -65,8 +65,8 @@ export function ReferralStatsCards() {
             {referrer?.totalReferralsInvited || 0}
           </div>
           <p className="text-muted-foreground text-xs">
-            {referrer?.claimedReferrals || 0} claimed,{" "}
-            {referrer?.pendingClaimReferrals || 0} pending
+            {referrer?.claimedReferrals || 0} rewarded,{" "}
+            {referrer?.pendingClaimReferrals || 0} waiting for purchase
           </p>
         </CardContent>
       </Card>
