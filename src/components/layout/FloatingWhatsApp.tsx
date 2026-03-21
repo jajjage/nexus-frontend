@@ -13,7 +13,7 @@ export function FloatingWhatsApp() {
   const supportNumber =
     process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "2348000000000";
   const defaultMessage = encodeURIComponent(
-    "Hello Nexus Data support, I need help with my account."
+    "Hello Nexus Data Support! 👋\n\nI am reaching out from your website and I need some assistance with..."
   );
 
   const whatsappUrl = `https://wa.me/${supportNumber}?text=${defaultMessage}`;
