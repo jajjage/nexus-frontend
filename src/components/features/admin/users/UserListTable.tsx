@@ -206,7 +206,7 @@ export function UserListTable() {
                         {user.fullName}
                         {user.phoneNumber && (
                           <a
-                            href={`https://wa.me/${formatForWhatsApp(user.phoneNumber)}`}
+                            href={`https://wa.me/${formatForWhatsApp(user.phoneNumber)}?text=${encodeURIComponent(`Hello ${user.fullName}, this is Nexus Data admin. `)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="rounded-full p-1 text-green-600 transition-colors hover:bg-green-50 hover:text-green-700"
