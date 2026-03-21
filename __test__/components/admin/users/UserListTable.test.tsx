@@ -12,6 +12,16 @@ vi.mock("next/link", () => ({
     React.createElement("a", { href }, children),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+  usePathname: () => "/admin/dashboard/users",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 const mockUseAdminUsers = useAdminUsers as Mock;
 
 describe("UserListTable", () => {
