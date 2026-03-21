@@ -2,6 +2,7 @@ import { MarkupSyncer } from "@/components/MarkupSyncer";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { ServiceWorkerNavigationListener } from "@/components/ServiceWorkerNavigationListener";
 import { NetworkStatusBanner } from "@/components/layout/network-status-banner";
+import { FloatingWhatsApp } from "@/components/layout/FloatingWhatsApp";
 import { SoftLockScreen } from "@/components/pwa/SoftLockScreen";
 // import { HealthMonitor } from "@/components/HealthMonitor";
 import { AuthProvider } from "@/context/AuthContext";
@@ -143,6 +144,7 @@ export default function RootLayout({
                   <PWAInstallPrompt />
                   {/* <FcmSyncer /> */}
                   <Toaster richColors position="top-right" />
+                  <FloatingWhatsApp />
                   <SoftLockScreen />
                   {children}
                 </div>
