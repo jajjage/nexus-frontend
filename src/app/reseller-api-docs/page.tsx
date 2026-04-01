@@ -4,11 +4,11 @@ import SwaggerUI from "swagger-ui-react";
 import "swagger-ui-react/swagger-ui.css";
 
 export default function ResellerApiDocsPage() {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-  const docsUrl = `${apiBaseUrl}/api/v1/docs/reseller/openapi.json`;
+  // Use relative path - frontend proxies /api/v1 to backend
+  const docsUrl = "/api/v1/docs/reseller/openapi.json";
 
   return (
-    <div className="w-full p-4 md:p-8">
+    <div className="min-h-screen w-full bg-white p-4 md:p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight">
           Reseller API Documentation
