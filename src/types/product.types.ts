@@ -1,5 +1,6 @@
 export interface Operator {
   name: string;
+  code?: string;
   countryCode: string;
   logoUrl: string;
 }
@@ -40,7 +41,7 @@ export interface Product {
   productCode: string;
   name: string;
   productType: "airtime" | "data" | string;
-  denomAmount: string;
+  denomAmount: string | number | null;
   minAmount?: number;
   maxAmount?: number;
   dataMb: number | null;
@@ -61,6 +62,12 @@ export interface Product {
   activeOffer?: ActiveOffer;
 }
 
+/**
+ * Public Product type used for Reseller API product discovery
+ * This is the type returned by GET /api/v1/products
+ */
+export type PublicProduct = Product;
+
 export interface Pagination {
   page: number;
   perPage: number;
@@ -75,6 +82,7 @@ export interface ProductsResponseData {
 
 export interface ProductQueryParams {
   page?: number;
+  perPage?: number;
   productType?: "airtime" | "data" | "bill";
   operatorId?: string;
   search?: string;

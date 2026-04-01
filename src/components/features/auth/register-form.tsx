@@ -349,7 +349,7 @@ export function RegisterForm() {
               </p>
             )}
           </div>
-          <div className="grid gap-2">
+          {/* <div className="grid gap-2">
             <Label htmlFor="referralCode">Referral Code (Optional)</Label>
             <Input
               id="referralCode"
@@ -361,7 +361,7 @@ export function RegisterForm() {
                 {errors.referralCode.message}
               </p>
             )}
-          </div>
+          </div> */}
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">

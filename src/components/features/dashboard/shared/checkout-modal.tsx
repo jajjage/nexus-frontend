@@ -11,6 +11,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
+import { convertDenomAmountToNumber } from "@/utils/reseller-products";
 import { Product } from "@/types/product.types";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronRight, Info, Share2, X, XCircle } from "lucide-react";
@@ -63,7 +64,7 @@ export function CheckoutModal({
   }, [isOpen]);
 
   // Price calculations
-  const faceValue = parseFloat(product.denomAmount || "0");
+  const faceValue = convertDenomAmountToNumber(product.denomAmount);
   const supplierPrice = product.supplierOffers?.[0]?.supplierPrice
     ? parseFloat(product.supplierOffers[0].supplierPrice)
     : faceValue;

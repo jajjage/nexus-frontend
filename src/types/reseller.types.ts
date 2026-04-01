@@ -156,6 +156,17 @@ export interface ApiPurchaseStatusResponseData {
   purchase: PurchaseStatus;
 }
 
+/**
+ * Standard API response wrapper for purchase operations
+ * Matches the backend response shape documented in the Reseller API guide
+ */
+export interface ResellerPurchaseResponse {
+  success: boolean;
+  message: string;
+  data: PurchaseStatus;
+  statusCode?: number;
+}
+
 // ============= Purchase Analytics Types =============
 
 export type PurchaseAnalyticsStatus =

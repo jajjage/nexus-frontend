@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { convertDenomAmountToNumber } from "@/utils/reseller-products";
 import { Product } from "@/types/product.types";
 
 interface ProductCardProps {
@@ -21,7 +22,7 @@ export function ProductCard({
   // 1. Format Main Display (Volume or Amount)
   const formatMainDisplay = (p: Product) => {
     if (p.productType === "airtime") {
-      return `₦${parseFloat(p.denomAmount).toLocaleString()}`;
+      return `₦${convertDenomAmountToNumber(p.denomAmount).toLocaleString()}`;
     }
 
     // For Data - use 1024 MB = 1 GB (binary, standard for data plans)
@@ -46,7 +47,7 @@ export function ProductCard({
   const mainDisplayText = formatMainDisplay(product);
 
   // 2. Determine Price
-  const faceValue = parseFloat(product.denomAmount || "0");
+  const faceValue = convertDenomAmountToNumber(product.denomAmount);
   const supplierOffer = product.supplierOffers?.[0];
 
   // Parse supplier price, fallback to faceValue if missing or 0

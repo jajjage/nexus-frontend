@@ -7,6 +7,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useTopup } from "@/hooks/useTopup";
 import { useTransaction } from "@/hooks/useWallet";
 import { useSecurityStore } from "@/store/securityStore";
+import { convertDenomAmountToNumber } from "@/utils/reseller-products";
 import { Product } from "@/types/product.types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -176,7 +177,7 @@ export function AirtimePlans() {
   const handlePayment = (useCashback: boolean) => {
     if (!selectedProduct) return;
 
-    const amount = parseFloat(selectedProduct.denomAmount);
+    const amount = convertDenomAmountToNumber(selectedProduct.denomAmount);
     const payableAmount = useCashback
       ? Math.max(0, amount - (user?.cashback?.availableBalance || 0))
       : amount;
@@ -212,7 +213,7 @@ export function AirtimePlans() {
   ) => {
     if (!selectedProduct) return;
 
-    const amount = parseFloat(selectedProduct.denomAmount);
+    const amount = convertDenomAmountToNumber(selectedProduct.denomAmount);
 
     topupMutation.mutate(
       {

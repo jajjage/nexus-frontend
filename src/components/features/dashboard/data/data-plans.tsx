@@ -15,6 +15,7 @@ import { useEligibleOffers } from "@/hooks/useUserOffers";
 import { useTransaction } from "@/hooks/useWallet";
 import { detectNetworkProvider } from "@/lib/network-utils";
 import { useSecurityStore } from "@/store/securityStore";
+import { convertDenomAmountToNumber } from "@/utils/reseller-products";
 import { Product } from "@/types/product.types";
 import { useQueryClient } from "@tanstack/react-query";
 import { Grid, LayoutList } from "lucide-react";
@@ -367,7 +368,7 @@ export function DataPlans() {
     if (!selectedProduct) return;
 
     // Calculate the amount to display
-    const faceValue = parseFloat(selectedProduct.denomAmount || "0");
+    const faceValue = convertDenomAmountToNumber(selectedProduct.denomAmount);
     const supplierPrice = selectedProduct.supplierOffers?.[0]?.supplierPrice
       ? parseFloat(selectedProduct.supplierOffers[0].supplierPrice)
       : faceValue;
@@ -415,7 +416,7 @@ export function DataPlans() {
       return;
     }
 
-    const amount = parseFloat(selectedProduct.denomAmount || "0");
+    const amount = convertDenomAmountToNumber(selectedProduct.denomAmount);
     const offer = selectedProduct.supplierOffers?.[0];
 
     console.log("[DataPlans] Proceeding with payment", {
