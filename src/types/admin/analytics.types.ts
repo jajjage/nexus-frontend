@@ -121,12 +121,27 @@ export interface RechartsDataPoint {
 // 7. Today's Snapshot
 export interface TodaySnapshot {
   transactions: {
-    count: number;
-    volume: number;
+    // Primary metrics - attempted (total attempts including failed/reversed)
+    attemptedCount: number;
+    attemptedVolume: number;
+
+    // Legacy aliases for backward compatibility
+    count?: number; // alias for attemptedCount
+    volume?: number; // alias for attemptedVolume
+
     profit: number;
-    successful: number;
-    failed: number;
-    pending: number;
+
+    // Status counts - use these directly (no client-side math needed)
+    successCount: number;
+    failedCount: number;
+    pendingCount: number;
+    reversedCount: number;
+
+    // Legacy aliases for backward compatibility
+    successful?: number; // alias for successCount
+    failed?: number; // alias for failedCount
+    pending?: number; // alias for pendingCount
+    reversed?: number; // alias for reversedCount
   };
   newUsers: number;
   activeUsers: number;
@@ -134,8 +149,25 @@ export interface TodaySnapshot {
   walletWithdrawals: number;
   revenueEstimate: number;
   comparedToYesterday: {
-    transactionsDelta: number;
-    transactionsDeltaPercent: string;
+    // Transaction attempts (primary metric comparison)
+    attemptedTransactionsDelta: number;
+    attemptedTransactionsDeltaPercent: string;
+
+    // Legacy alias for backward compatibility
+    transactionsDelta?: number; // alias for attemptedTransactionsDelta
+    transactionsDeltaPercent?: string; // alias for attemptedTransactionsDeltaPercent
+
+    // Status breakdowns - per-status deltas
+    successfulTransactionsDelta: number;
+    successfulTransactionsDeltaPercent: string;
+    failedTransactionsDelta: number;
+    failedTransactionsDeltaPercent: string;
+    pendingTransactionsDelta: number;
+    pendingTransactionsDeltaPercent: string;
+    reversedTransactionsDelta: number;
+    reversedTransactionsDeltaPercent: string;
+
+    // Volume comparison
     volumeDelta: number;
     volumeDeltaPercent: string;
   };

@@ -226,12 +226,19 @@ describe("useAdminAnalytics Hooks", () => {
     it("should fetch today's snapshot", async () => {
       const mockData = {
         transactions: {
-          count: 150,
-          volume: 45000.5,
+          attemptedCount: 158,
+          attemptedVolume: 47100.5,
+          count: 150, // legacy
+          volume: 45000.5, // legacy
           profit: 2200.25,
-          successful: 145,
-          failed: 3,
-          pending: 2,
+          successCount: 145,
+          failedCount: 3,
+          pendingCount: 2,
+          reversedCount: 8,
+          successful: 145, // legacy
+          failed: 3, // legacy
+          pending: 2, // legacy
+          reversed: 8, // legacy
         },
         newUsers: 12,
         activeUsers: 85,
@@ -239,8 +246,18 @@ describe("useAdminAnalytics Hooks", () => {
         walletWithdrawals: 12000.0,
         revenueEstimate: 2200.25,
         comparedToYesterday: {
-          transactionsDelta: 15,
-          transactionsDeltaPercent: "+11.1%",
+          attemptedTransactionsDelta: 18,
+          attemptedTransactionsDeltaPercent: "+12.9%",
+          transactionsDelta: 18, // legacy alias
+          transactionsDeltaPercent: "+12.9%", // legacy alias
+          successfulTransactionsDelta: 15,
+          successfulTransactionsDeltaPercent: "+11.1%",
+          failedTransactionsDelta: 1,
+          failedTransactionsDeltaPercent: "+50.0%",
+          pendingTransactionsDelta: -1,
+          pendingTransactionsDeltaPercent: "-33.3%",
+          reversedTransactionsDelta: 3,
+          reversedTransactionsDeltaPercent: "+60.0%",
           volumeDelta: 5000.5,
           volumeDeltaPercent: "+12.5%",
         },
@@ -258,10 +275,21 @@ describe("useAdminAnalytics Hooks", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      expect(result.current.data?.transactions.count).toBe(150);
+      expect(result.current.data?.transactions.attemptedCount).toBe(158);
+      expect(result.current.data?.transactions.successCount).toBe(145);
+      expect(result.current.data?.transactions.reversedCount).toBe(8);
       expect(
-        result.current.data?.comparedToYesterday.transactionsDeltaPercent
+        result.current.data?.comparedToYesterday
+          .attemptedTransactionsDeltaPercent
+      ).toBe("+12.9%");
+      expect(
+        result.current.data?.comparedToYesterday
+          .successfulTransactionsDeltaPercent
       ).toBe("+11.1%");
+      expect(
+        result.current.data?.comparedToYesterday
+          .reversedTransactionsDeltaPercent
+      ).toBe("+60.0%");
     });
   });
 

@@ -77,36 +77,53 @@ export function TodaySnapshotCard() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {/* Transactions */}
+          {/* Transactions - Primary: Attempted Count */}
           <div className="bg-muted/50 space-y-1 rounded-lg p-4">
             <p className="text-muted-foreground text-xs tracking-wide uppercase">
-              Transactions
+              Attempted Tx
             </p>
             <p className="text-2xl font-bold">
-              {formatNumber(snapshot?.transactions.count || 0)}
+              {formatNumber(
+                snapshot?.transactions.attemptedCount ??
+                  snapshot?.transactions.count ??
+                  0
+              )}
             </p>
             <div className="flex items-center gap-1 text-sm">
               {getDeltaIcon(
-                snapshot?.comparedToYesterday.transactionsDeltaPercent || "0%"
+                snapshot?.comparedToYesterday
+                  .attemptedTransactionsDeltaPercent ??
+                  snapshot?.comparedToYesterday.transactionsDeltaPercent ??
+                  "0%"
               )}
               <span
                 className={getDeltaColor(
-                  snapshot?.comparedToYesterday.transactionsDeltaPercent || "0%"
+                  snapshot?.comparedToYesterday
+                    .attemptedTransactionsDeltaPercent ??
+                    snapshot?.comparedToYesterday.transactionsDeltaPercent ??
+                    "0%"
                 )}
               >
-                {snapshot?.comparedToYesterday.transactionsDeltaPercent || "0%"}
+                {snapshot?.comparedToYesterday
+                  .attemptedTransactionsDeltaPercent ??
+                  snapshot?.comparedToYesterday.transactionsDeltaPercent ??
+                  "0%"}
               </span>
               <span className="text-muted-foreground">vs yesterday</span>
             </div>
           </div>
 
-          {/* Volume */}
+          {/* Volume - Use Attempted Volume */}
           <div className="bg-muted/50 space-y-1 rounded-lg p-4">
             <p className="text-muted-foreground text-xs tracking-wide uppercase">
               Volume
             </p>
             <p className="text-2xl font-bold">
-              {formatCurrency(snapshot?.transactions.volume || 0)}
+              {formatCurrency(
+                snapshot?.transactions.attemptedVolume ??
+                  snapshot?.transactions.volume ??
+                  0
+              )}
             </p>
             <div className="flex items-center gap-1 text-sm">
               {getDeltaIcon(
@@ -160,46 +177,156 @@ export function TodaySnapshotCard() {
           </div>
         </div>
 
-        {/* Secondary Stats Row */}
+        {/* Secondary Stats Row - Transaction Status Breakdown */}
         <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {/* Success/Failed/Pending */}
+          {/* Success Count with Delta */}
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
               <span className="text-sm font-bold text-green-600">
-                {snapshot?.transactions.successful || 0}
+                {snapshot?.transactions.successCount ??
+                  snapshot?.transactions.successful ??
+                  0}
               </span>
             </div>
-            <span className="text-muted-foreground text-sm">Successful</span>
+            <div className="flex-1">
+              <span className="text-muted-foreground text-sm">Successful</span>
+              {snapshot?.comparedToYesterday
+                .successfulTransactionsDeltaPercent && (
+                <div className="flex items-center gap-1 text-xs">
+                  {getDeltaIcon(
+                    snapshot.comparedToYesterday
+                      .successfulTransactionsDeltaPercent
+                  )}
+                  <span
+                    className={getDeltaColor(
+                      snapshot.comparedToYesterday
+                        .successfulTransactionsDeltaPercent
+                    )}
+                  >
+                    {
+                      snapshot.comparedToYesterday
+                        .successfulTransactionsDeltaPercent
+                    }
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Failed Count with Delta */}
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
               <span className="text-sm font-bold text-red-600">
-                {snapshot?.transactions.failed || 0}
+                {snapshot?.transactions.failedCount ??
+                  snapshot?.transactions.failed ??
+                  0}
               </span>
             </div>
-            <span className="text-muted-foreground text-sm">Failed</span>
+            <div className="flex-1">
+              <span className="text-muted-foreground text-sm">Failed</span>
+              {snapshot?.comparedToYesterday.failedTransactionsDeltaPercent && (
+                <div className="flex items-center gap-1 text-xs">
+                  {getDeltaIcon(
+                    snapshot.comparedToYesterday.failedTransactionsDeltaPercent
+                  )}
+                  <span
+                    className={getDeltaColor(
+                      snapshot.comparedToYesterday
+                        .failedTransactionsDeltaPercent
+                    )}
+                  >
+                    {
+                      snapshot.comparedToYesterday
+                        .failedTransactionsDeltaPercent
+                    }
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Pending Count with Delta */}
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
               <span className="text-sm font-bold text-amber-600">
-                {snapshot?.transactions.pending || 0}
+                {snapshot?.transactions.pendingCount ??
+                  snapshot?.transactions.pending ??
+                  0}
               </span>
             </div>
-            <span className="text-muted-foreground text-sm">Pending</span>
+            <div className="flex-1">
+              <span className="text-muted-foreground text-sm">Pending</span>
+              {snapshot?.comparedToYesterday
+                .pendingTransactionsDeltaPercent && (
+                <div className="flex items-center gap-1 text-xs">
+                  {getDeltaIcon(
+                    snapshot.comparedToYesterday.pendingTransactionsDeltaPercent
+                  )}
+                  <span
+                    className={getDeltaColor(
+                      snapshot.comparedToYesterday
+                        .pendingTransactionsDeltaPercent
+                    )}
+                  >
+                    {
+                      snapshot.comparedToYesterday
+                        .pendingTransactionsDeltaPercent
+                    }
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Reversed Count with Delta (NEW) */}
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30">
+              <span className="text-sm font-bold text-purple-600">
+                {snapshot?.transactions.reversedCount ??
+                  snapshot?.transactions.reversed ??
+                  0}
+              </span>
+            </div>
+            <div className="flex-1">
+              <span className="text-muted-foreground text-sm">Reversed</span>
+              {snapshot?.comparedToYesterday
+                .reversedTransactionsDeltaPercent && (
+                <div className="flex items-center gap-1 text-xs">
+                  {getDeltaIcon(
+                    snapshot.comparedToYesterday
+                      .reversedTransactionsDeltaPercent
+                  )}
+                  <span
+                    className={getDeltaColor(
+                      snapshot.comparedToYesterday
+                        .reversedTransactionsDeltaPercent
+                    )}
+                  >
+                    {
+                      snapshot.comparedToYesterday
+                        .reversedTransactionsDeltaPercent
+                    }
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Wallet Flow */}
-          <div className="flex items-center gap-2">
-            <Wallet className="text-muted-foreground h-4 w-4" />
-            <span className="text-sm">
-              <span className="text-green-600">
-                +{formatCurrency(snapshot?.walletDeposits || 0)}
+          <div className="md:col-span-4 lg:col-span-4">
+            <div className="flex items-center gap-2">
+              <Wallet className="text-muted-foreground h-4 w-4" />
+              <span className="text-sm">
+                <span className="text-green-600">
+                  Deposits: +{formatCurrency(snapshot?.walletDeposits || 0)}
+                </span>
+                {" / "}
+                <span className="text-red-600">
+                  Withdrawals: -
+                  {formatCurrency(snapshot?.walletWithdrawals || 0)}
+                </span>
               </span>
-              {" / "}
-              <span className="text-red-600">
-                -{formatCurrency(snapshot?.walletWithdrawals || 0)}
-              </span>
-            </span>
+            </div>
           </div>
         </div>
       </CardContent>
