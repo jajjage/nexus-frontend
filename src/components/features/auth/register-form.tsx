@@ -317,7 +317,11 @@ export function RegisterForm() {
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" placeholder="John Doe" {...register("fullName")} />
+            <Input
+              id="name"
+              placeholder="e.g. Muhammad Ali"
+              {...register("fullName")}
+            />
             {errors.fullName && (
               <p className="text-sm text-red-500">{errors.fullName.message}</p>
             )}
@@ -327,7 +331,7 @@ export function RegisterForm() {
             <Input
               id="email"
               type="email"
-              placeholder="m@example.com"
+              placeholder="e.g. m@example.com"
               {...register("email")}
             />
             {errors.email && (
@@ -339,7 +343,7 @@ export function RegisterForm() {
             <Input
               id="phoneNumber"
               type="tel"
-              placeholder="08012345678"
+              placeholder="e.g. 08012345678"
               maxLength={11}
               {...register("phoneNumber")}
             />
