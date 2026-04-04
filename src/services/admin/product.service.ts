@@ -13,6 +13,7 @@ import {
   ProductWithMappingResponse,
   SupplierProductMapping,
   UpdateProductRequest,
+  UpdateProductSupplierMappingRequest,
 } from "@/types/admin/product.types";
 import { ApiResponse } from "@/types/api.types";
 
@@ -83,6 +84,21 @@ export const adminProductService = {
     const response = await apiClient.post<
       ApiResponse<{ mapping: SupplierProductMapping }>
     >(`${BASE_PATH}/${productId}/map-to-supplier`, data);
+    return response.data;
+  },
+
+  /**
+   * Update a product supplier mapping
+   * PUT /api/v1/admin/products/:productId/supplier-mappings/:mappingId
+   */
+  updateProductSupplierMapping: async (
+    productId: string,
+    mappingId: string,
+    data: UpdateProductSupplierMappingRequest
+  ): Promise<ApiResponse<{ mapping: SupplierProductMapping }>> => {
+    const response = await apiClient.put<
+      ApiResponse<{ mapping: SupplierProductMapping }>
+    >(`${BASE_PATH}/${productId}/supplier-mappings/${mappingId}`, data);
     return response.data;
   },
 };

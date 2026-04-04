@@ -11,6 +11,7 @@ import {
   MapProductToSupplierRequest,
   ProductQueryParams,
   UpdateProductRequest,
+  UpdateProductSupplierMappingRequest,
 } from "@/types/admin/product.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
@@ -116,6 +117,44 @@ export function useMapProductToSupplier() {
     onError: (error: AxiosError<any>) => {
       toast.error(
         error.response?.data?.message || "Failed to map product to supplier"
+      );
+    },
+  });
+}
+
+/**
+ * Update product supplier mapping
+ */
+export function useUpdateProductSupplierMapping() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      productId,
+      mappingId,
+      data,
+    }: {
+      productId: string;
+      mappingId: string;
+      data: UpdateProductSupplierMappingRequest;
+    }) =>
+      adminProductService.updateProductSupplierMapping(
+        productId,
+        mappingId,
+        data
+      ),
+    onSuccess: (response, { productId }) => {
+      toast.success(
+        response.message || "Supplier mapping updated successfully"
+      );
+      queryClient.invalidateQueries({
+        queryKey: productKeys.detail(productId),
+      });
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
+    },
+    onError: (error: AxiosError<any>) => {
+      toast.error(
+        error.response?.data?.message || "Failed to update supplier mapping"
       );
     },
   });

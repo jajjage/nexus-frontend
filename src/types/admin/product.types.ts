@@ -111,6 +111,16 @@ export interface MapProductToSupplierRequest {
   isActive?: boolean;
 }
 
+export interface UpdateProductSupplierMappingRequest {
+  supplierId?: string;
+  supplierProductCode?: string;
+  supplierPrice?: number;
+  minOrderAmount?: number;
+  maxOrderAmount?: number;
+  leadTimeSeconds?: number;
+  isActive?: boolean;
+}
+
 // ============= Query Parameters =============
 
 export interface ProductQueryParams {

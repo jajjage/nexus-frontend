@@ -34,6 +34,7 @@ import {
   useAdminProduct,
   useMapProductToSupplier,
   useUpdateProduct,
+  useUpdateProductSupplierMapping,
 } from "@/hooks/admin/useAdminProducts";
 import { useAdminSuppliers } from "@/hooks/admin/useAdminSuppliers";
 import { format } from "date-fns";
@@ -57,9 +58,12 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
   const { data: suppliersData } = useAdminSuppliers();
   const updateMutation = useUpdateProduct();
   const mapMutation = useMapProductToSupplier();
+  const updateMappingMutation = useUpdateProductSupplierMapping();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isEditMappingOpen, setIsEditMappingOpen] = useState(false);
+  const [editingMappingId, setEditingMappingId] = useState<string | null>(null);
 
   // Edit form state
   const [editName, setEditName] = useState("");
@@ -84,6 +88,21 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
   const [mapMaxOrder, setMapMaxOrder] = useState<number | undefined>();
   const [mapLeadTime, setMapLeadTime] = useState<number | undefined>();
   const [mapIsActive, setMapIsActive] = useState(true);
+
+  // Edit mapping form state
+  const [editMappingSupplierId, setEditMappingSupplierId] = useState("");
+  const [editMappingSupplierCode, setEditMappingSupplierCode] = useState("");
+  const [editMappingPrice, setEditMappingPrice] = useState(0);
+  const [editMappingMinOrder, setEditMappingMinOrder] = useState<
+    number | undefined
+  >();
+  const [editMappingMaxOrder, setEditMappingMaxOrder] = useState<
+    number | undefined
+  >();
+  const [editMappingLeadTime, setEditMappingLeadTime] = useState<
+    number | undefined
+  >();
+  const [editMappingIsActive, setEditMappingIsActive] = useState(true);
 
   const product = data?.data;
   const suppliers = suppliersData?.data?.suppliers || [];
@@ -158,6 +177,58 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
           setMapMaxOrder(undefined);
           setMapLeadTime(undefined);
           setMapIsActive(true);
+        },
+      }
+    );
+  };
+
+  const handleEditMapping = (mapping: any) => {
+    setEditingMappingId(mapping.id);
+    setEditMappingSupplierId(mapping.supplierId);
+    setEditMappingSupplierCode(mapping.supplierProductCode);
+    setEditMappingPrice(parseFloat(mapping.supplierPrice) || 0);
+    setEditMappingMinOrder(
+      mapping.minOrderAmount ? parseFloat(mapping.minOrderAmount) : undefined
+    );
+    setEditMappingMaxOrder(
+      mapping.maxOrderAmount ? parseFloat(mapping.maxOrderAmount) : undefined
+    );
+    setEditMappingLeadTime(mapping.leadTimeSeconds);
+    setEditMappingIsActive(mapping.isActive);
+    setIsEditMappingOpen(true);
+  };
+
+  const handleSaveEditMapping = () => {
+    if (!editingMappingId) return;
+
+    const payload = {
+      supplierId: editMappingSupplierId,
+      supplierProductCode: editMappingSupplierCode,
+      supplierPrice: editMappingPrice,
+      minOrderAmount: editMappingMinOrder,
+      maxOrderAmount: editMappingMaxOrder,
+      leadTimeSeconds: editMappingLeadTime,
+      isActive: editMappingIsActive,
+    };
+
+    updateMappingMutation.mutate(
+      {
+        productId,
+        mappingId: editingMappingId,
+        data: payload,
+      },
+      {
+        onSuccess: () => {
+          setIsEditMappingOpen(false);
+          setEditingMappingId(null);
+          // Reset form
+          setEditMappingSupplierId("");
+          setEditMappingSupplierCode("");
+          setEditMappingPrice(0);
+          setEditMappingMinOrder(undefined);
+          setEditMappingMaxOrder(undefined);
+          setEditMappingLeadTime(undefined);
+          setEditMappingIsActive(true);
         },
       }
     );
@@ -329,6 +400,128 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   Map to Supplier
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Supplier Mapping Dialog */}
+          <Dialog open={isEditMappingOpen} onOpenChange={setIsEditMappingOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Edit Supplier Mapping</DialogTitle>
+                <DialogDescription>
+                  Update this product&apos;s supplier mapping details.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Supplier</Label>
+                  <Select
+                    value={editMappingSupplierId}
+                    onValueChange={setEditMappingSupplierId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select supplier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {suppliers.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Supplier Product Code</Label>
+                  <Input
+                    value={editMappingSupplierCode}
+                    onChange={(e) => setEditMappingSupplierCode(e.target.value)}
+                    placeholder="e.g., SUPPLIER-SKU-123"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Price (₦)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editMappingPrice}
+                    onChange={(e) =>
+                      setEditMappingPrice(Number(e.target.value))
+                    }
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Min Order Amount</Label>
+                    <Input
+                      type="number"
+                      value={editMappingMinOrder || ""}
+                      onChange={(e) =>
+                        setEditMappingMinOrder(
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
+                      }
+                      placeholder="Optional"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Max Order Amount</Label>
+                    <Input
+                      type="number"
+                      value={editMappingMaxOrder || ""}
+                      onChange={(e) =>
+                        setEditMappingMaxOrder(
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
+                      }
+                      placeholder="Optional"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Lead Time (seconds)</Label>
+                  <Input
+                    type="number"
+                    value={editMappingLeadTime || ""}
+                    onChange={(e) =>
+                      setEditMappingLeadTime(
+                        e.target.value ? Number(e.target.value) : undefined
+                      )
+                    }
+                    placeholder="Optional"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>Mapping Active</Label>
+                  <Switch
+                    checked={editMappingIsActive}
+                    onCheckedChange={setEditMappingIsActive}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditMappingOpen(false)}
+                  disabled={updateMappingMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveEditMapping}
+                  disabled={
+                    updateMappingMutation.isPending ||
+                    !editMappingSupplierId ||
+                    !editMappingSupplierCode
+                  }
+                >
+                  {updateMappingMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Update Mapping
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -550,7 +743,7 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
                   key={mapping.id}
                   className="bg-muted/50 flex items-center justify-between rounded-lg border p-4"
                 >
-                  <div className="space-y-1">
+                  <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">
                         {mapping.supplierName || "Unknown Supplier"}
@@ -596,9 +789,19 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
                         )}
                     </div>
                   </div>
-                  <div className="text-muted-foreground text-xs">
-                    {mapping.createdAt &&
-                      format(new Date(mapping.createdAt), "PP")}
+                  <div className="flex flex-col items-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEditMapping(mapping)}
+                    >
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                    <span className="text-muted-foreground text-xs">
+                      {mapping.createdAt &&
+                        format(new Date(mapping.createdAt), "PP")}
+                    </span>
                   </div>
                 </div>
               ))}
