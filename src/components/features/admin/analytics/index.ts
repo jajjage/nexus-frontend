@@ -3,6 +3,7 @@ export { AuditStatisticsCard } from "./AuditStatisticsCard";
 export { GmvOverviewCard } from "./GmvOverviewCard";
 export { KeyMetricsCards } from "./KeyMetricsCards";
 export { OperatorPerformanceCard } from "./OperatorPerformanceCard";
+export { ProductAnalyticsSection } from "./ProductAnalyticsSection";
 export { RecentActivityCard } from "./RecentActivityCard";
 export { RevenueCard } from "./RevenueCard";
 export { SystemHealthCard } from "./SystemHealthCard";

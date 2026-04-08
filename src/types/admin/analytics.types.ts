@@ -121,43 +121,33 @@ export interface RechartsDataPoint {
 // 7. Today's Snapshot
 export interface TodaySnapshot {
   transactions: {
-    // Primary metrics - attempted (total attempts including failed/reversed)
+    count: number;
     attemptedCount: number;
+    volume: number;
     attemptedVolume: number;
 
-    // Legacy aliases for backward compatibility
-    count?: number; // alias for attemptedCount
-    volume?: number; // alias for attemptedVolume
-
     profit: number;
-
-    // Status counts - use these directly (no client-side math needed)
+    successful: number;
     successCount: number;
+    failed: number;
     failedCount: number;
+    pending: number;
     pendingCount: number;
+    reversed: number;
     reversedCount: number;
-
-    // Legacy aliases for backward compatibility
-    successful?: number; // alias for successCount
-    failed?: number; // alias for failedCount
-    pending?: number; // alias for pendingCount
-    reversed?: number; // alias for reversedCount
   };
   newUsers: number;
   activeUsers: number;
   walletDeposits: number;
   walletWithdrawals: number;
+  paymentReceivedCount: number;
+  paymentReceivedAmount: number;
   revenueEstimate: number;
   comparedToYesterday: {
-    // Transaction attempts (primary metric comparison)
+    transactionsDelta: number;
+    transactionsDeltaPercent: string;
     attemptedTransactionsDelta: number;
     attemptedTransactionsDeltaPercent: string;
-
-    // Legacy alias for backward compatibility
-    transactionsDelta?: number; // alias for attemptedTransactionsDelta
-    transactionsDeltaPercent?: string; // alias for attemptedTransactionsDeltaPercent
-
-    // Status breakdowns - per-status deltas
     successfulTransactionsDelta: number;
     successfulTransactionsDeltaPercent: string;
     failedTransactionsDelta: number;
@@ -167,10 +157,45 @@ export interface TodaySnapshot {
     reversedTransactionsDelta: number;
     reversedTransactionsDeltaPercent: string;
 
-    // Volume comparison
     volumeDelta: number;
     volumeDeltaPercent: string;
+    paymentReceivedCountDelta: number;
+    paymentReceivedCountDeltaPercent: string;
+    paymentReceivedAmountDelta: number;
+    paymentReceivedAmountDeltaPercent: string;
   };
+}
+
+export interface ProductSalesRow {
+  productId: string;
+  productCode: string | null;
+  productName: string;
+  productType: string;
+  productSlug: string | null;
+  operatorName: string;
+  successfulCount: number;
+  totalAmount: number;
+}
+
+export interface DailyProductSnapshot {
+  date: string;
+  totalSuccessfulTopups: number;
+  totalReceivedTransactions: number;
+  bestPerformingProduct: ProductSalesRow | null;
+  products: ProductSalesRow[];
+}
+
+export interface DailyProductSnapshotResponse {
+  period: {
+    from: string;
+    to: string;
+  };
+  summary: {
+    totalSuccessfulTopups: number;
+    totalReceivedTransactions: number;
+    topProducts: ProductSalesRow[];
+  };
+  dailySnapshots: DailyProductSnapshot[];
 }
 
 // 8. Daily Metrics Time Series

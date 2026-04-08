@@ -312,20 +312,89 @@ export function TodaySnapshotCard() {
             </div>
           </div>
 
-          {/* Wallet Flow */}
-          <div className="md:col-span-4 lg:col-span-4">
-            <div className="flex items-center gap-2">
-              <Wallet className="text-muted-foreground h-4 w-4" />
-              <span className="text-sm">
-                <span className="text-green-600">
-                  Deposits: +{formatCurrency(snapshot?.walletDeposits || 0)}
+          {/* Wallet & Payment Received Summary */}
+          <div className="grid grid-cols-2 gap-4 md:col-span-4 md:grid-cols-4">
+            <div className="bg-muted/50 space-y-1 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-green-600" />
+                <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                  Successful Deposits
+                </p>
+              </div>
+              <p className="text-lg font-bold text-green-600">
+                {formatCurrency(snapshot?.walletDeposits || 0)}
+              </p>
+              <p className="text-muted-foreground text-xs">
+                Excludes reversed, failed, pending, and received records
+              </p>
+            </div>
+
+            <div className="bg-muted/50 space-y-1 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-red-600" />
+                <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                  Successful Withdrawals
+                </p>
+              </div>
+              <p className="text-lg font-bold text-red-600">
+                {formatCurrency(snapshot?.walletWithdrawals || 0)}
+              </p>
+              <p className="text-muted-foreground text-xs">
+                Excludes reversed, failed, pending, and received records
+              </p>
+            </div>
+
+            <div className="bg-muted/50 space-y-1 rounded-lg p-4">
+              <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                Payments Received
+              </p>
+              <p className="text-lg font-bold">
+                {formatNumber(snapshot?.paymentReceivedCount || 0)}
+              </p>
+              <div className="flex items-center gap-1 text-xs">
+                {getDeltaIcon(
+                  snapshot?.comparedToYesterday
+                    .paymentReceivedCountDeltaPercent || "0%"
+                )}
+                <span
+                  className={getDeltaColor(
+                    snapshot?.comparedToYesterday
+                      .paymentReceivedCountDeltaPercent || "0%"
+                  )}
+                >
+                  {snapshot?.comparedToYesterday
+                    .paymentReceivedCountDeltaPercent || "0%"}
                 </span>
-                {" / "}
-                <span className="text-red-600">
-                  Withdrawals: -
-                  {formatCurrency(snapshot?.walletWithdrawals || 0)}
+                <span className="text-muted-foreground">vs yesterday</span>
+              </div>
+            </div>
+
+            <div className="bg-muted/50 space-y-1 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-emerald-600" />
+                <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                  Payment Amount
+                </p>
+              </div>
+              <p className="text-lg font-bold text-emerald-600">
+                {formatCurrency(snapshot?.paymentReceivedAmount || 0)}
+              </p>
+              <div className="flex items-center gap-1 text-xs">
+                {getDeltaIcon(
+                  snapshot?.comparedToYesterday
+                    .paymentReceivedAmountDeltaPercent || "0%"
+                )}
+                <span
+                  className={getDeltaColor(
+                    snapshot?.comparedToYesterday
+                      .paymentReceivedAmountDeltaPercent || "0%"
+                  )}
+                >
+                  {snapshot?.comparedToYesterday
+                    .paymentReceivedAmountDeltaPercent || "0%"}
                 </span>
-              </span>
+                <span className="text-muted-foreground">vs yesterday</span>
+              </div>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import {
   useOperatorPerformance,
   useRevenueMetrics,
   useTodaySnapshot,
+  useTopupProductDailySnapshot,
   useTopupOverview,
   useTransactionOverview,
   useTransactionsByType,
@@ -24,9 +25,11 @@ const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return ({ children }: { children: ReactNode }) => (
+  const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
+  Wrapper.displayName = "AdminAnalyticsTestWrapper";
+  return Wrapper;
 };
 
 describe("useAdminAnalytics Hooks", () => {
@@ -244,6 +247,8 @@ describe("useAdminAnalytics Hooks", () => {
         activeUsers: 85,
         walletDeposits: 65000.0,
         walletWithdrawals: 12000.0,
+        paymentReceivedCount: 18,
+        paymentReceivedAmount: 54000.0,
         revenueEstimate: 2200.25,
         comparedToYesterday: {
           attemptedTransactionsDelta: 18,
@@ -260,6 +265,10 @@ describe("useAdminAnalytics Hooks", () => {
           reversedTransactionsDeltaPercent: "+60.0%",
           volumeDelta: 5000.5,
           volumeDeltaPercent: "+12.5%",
+          paymentReceivedCountDelta: 4,
+          paymentReceivedCountDeltaPercent: "+28.6%",
+          paymentReceivedAmountDelta: 12000.0,
+          paymentReceivedAmountDeltaPercent: "+28.6%",
         },
       };
 
@@ -290,6 +299,8 @@ describe("useAdminAnalytics Hooks", () => {
         result.current.data?.comparedToYesterday
           .reversedTransactionsDeltaPercent
       ).toBe("+60.0%");
+      expect(result.current.data?.paymentReceivedCount).toBe(18);
+      expect(result.current.data?.paymentReceivedAmount).toBe(54000.0);
     });
   });
 
@@ -339,6 +350,90 @@ describe("useAdminAnalytics Hooks", () => {
       // Should not be fetching because enabled is false
       expect(result.current.isFetching).toBe(false);
       expect(adminAnalyticsService.getDailyMetrics).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("useTopupProductDailySnapshot", () => {
+    it("should fetch product daily snapshot with valid params", async () => {
+      const params = { fromDate: "2026-01-01", toDate: "2026-01-07" };
+      const mockData = {
+        period: {
+          from: "2026-01-01",
+          to: "2026-01-07",
+        },
+        summary: {
+          totalSuccessfulTopups: 45,
+          totalReceivedTransactions: 12,
+          topProducts: [
+            {
+              productId: "prod-1",
+              productCode: "MTN-1GB",
+              productName: "MTN 1GB",
+              productType: "data",
+              productSlug: "mtn-1gb",
+              operatorName: "MTN",
+              successfulCount: 18,
+              totalAmount: 18000,
+            },
+          ],
+        },
+        dailySnapshots: [
+          {
+            date: "2026-01-01",
+            totalSuccessfulTopups: 10,
+            totalReceivedTransactions: 3,
+            bestPerformingProduct: {
+              productId: "prod-1",
+              productCode: "MTN-1GB",
+              productName: "MTN 1GB",
+              productType: "data",
+              productSlug: "mtn-1gb",
+              operatorName: "MTN",
+              successfulCount: 5,
+              totalAmount: 5000,
+            },
+            products: [
+              {
+                productId: "prod-1",
+                productCode: "MTN-1GB",
+                productName: "MTN 1GB",
+                productType: "data",
+                productSlug: "mtn-1gb",
+                operatorName: "MTN",
+                successfulCount: 5,
+                totalAmount: 5000,
+              },
+            ],
+          },
+        ],
+      };
+
+      vi.mocked(
+        adminAnalyticsService.getTopupProductDailySnapshot
+      ).mockResolvedValue({
+        success: true,
+        data: mockData,
+        message: "",
+      });
+
+      const { result } = renderHook(
+        () => useTopupProductDailySnapshot(params),
+        {
+          wrapper: createWrapper(),
+        }
+      );
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(adminAnalyticsService.getTopupProductDailySnapshot).toHaveBeenCalledWith(
+        params
+      );
+      expect(result.current.data?.summary.topProducts[0]?.productName).toBe(
+        "MTN 1GB"
+      );
+      expect(
+        result.current.data?.dailySnapshots[0]?.bestPerformingProduct?.productName
+      ).toBe("MTN 1GB");
     });
   });
 

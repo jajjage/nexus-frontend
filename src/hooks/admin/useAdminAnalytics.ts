@@ -7,6 +7,7 @@
 
 import { adminAnalyticsService } from "@/services/admin/analytics.service";
 import {
+  DailyProductSnapshotResponse,
   DailyMetricsParams,
   DateRangeParams,
   RechartsDataPoint,
@@ -31,6 +32,8 @@ const analyticsKeys = {
   todaySnapshot: () => [...analyticsKeys.all, "today"] as const,
   dailyMetrics: (params: DailyMetricsParams) =>
     [...analyticsKeys.all, "daily-metrics", params] as const,
+  topupProductDailySnapshot: (params: DateRangeParams) =>
+    [...analyticsKeys.all, "topup", "products", "daily-snapshot", params] as const,
   revenue: (params?: DateRangeParams) =>
     [...analyticsKeys.all, "revenue", params] as const,
   operatorPerformance: (params?: DateRangeParams) =>
@@ -188,6 +191,19 @@ export function useDailyMetrics(params: DailyMetricsParams) {
     queryFn: () => adminAnalyticsService.getDailyMetrics(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
     select: (data) => data.data,
+    enabled: !!params.fromDate && !!params.toDate,
+  });
+}
+
+/**
+ * Fetch date-range product performance for successful topups and received transactions
+ */
+export function useTopupProductDailySnapshot(params: DateRangeParams) {
+  return useQuery({
+    queryKey: analyticsKeys.topupProductDailySnapshot(params),
+    queryFn: () => adminAnalyticsService.getTopupProductDailySnapshot(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    select: (data): DailyProductSnapshotResponse | undefined => data.data,
     enabled: !!params.fromDate && !!params.toDate,
   });
 }

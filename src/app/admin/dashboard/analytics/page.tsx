@@ -4,6 +4,7 @@ import {
   GmvOverviewCard,
   KeyMetricsCards,
   OperatorPerformanceCard,
+  ProductAnalyticsSection,
   RevenueCard,
   TodaySnapshotCard,
   TopupPerformanceChart,
@@ -14,7 +15,7 @@ import {
   WalletOverviewCard,
 } from "@/components/features/admin/analytics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, DollarSign, Users, Wallet } from "lucide-react";
+import { BarChart3, Boxes, DollarSign, Users, Wallet } from "lucide-react";
 
 export default function AnalyticsPage() {
   return (
@@ -34,7 +35,7 @@ export default function AnalyticsPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full max-w-2xl grid-cols-4">
+        <TabsList className="grid w-full max-w-4xl grid-cols-5">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Overview
@@ -50,6 +51,10 @@ export default function AnalyticsPage() {
           <TabsTrigger value="wallet" className="flex items-center gap-2">
             <Wallet className="h-4 w-4" />
             Wallet
+          </TabsTrigger>
+          <TabsTrigger value="products" className="flex items-center gap-2">
+            <Boxes className="h-4 w-4" />
+            Products
           </TabsTrigger>
         </TabsList>
 
@@ -103,6 +108,11 @@ export default function AnalyticsPage() {
 
           {/* Additional visualizations */}
           <TopupPerformanceChart />
+        </TabsContent>
+
+        {/* Products Tab */}
+        <TabsContent value="products" className="mt-6 space-y-6">
+          <ProductAnalyticsSection />
         </TabsContent>
       </Tabs>
     </div>

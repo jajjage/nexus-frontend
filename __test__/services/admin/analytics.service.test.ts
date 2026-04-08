@@ -1,9 +1,10 @@
 import apiClient from "@/lib/api-client";
 import { adminAnalyticsService } from "@/services/admin/analytics.service";
+import type { Mocked } from "vitest";
 
 // Mock the API client
 vi.mock("@/lib/api-client");
-const mockApiClient = apiClient as any;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 describe("adminAnalyticsService", () => {
   beforeEach(() => {
@@ -268,6 +269,71 @@ describe("adminAnalyticsService", () => {
       );
       expect(result.data).toHaveLength(1);
       expect(result.data?.[0].transactions.count).toBe(100);
+    });
+  });
+
+  describe("getTopupProductDailySnapshot", () => {
+    it("should fetch product daily snapshot from the documented endpoint", async () => {
+      const params = { fromDate: "2026-01-01", toDate: "2026-01-07" };
+      const mockData = {
+        period: { from: "2026-01-01", to: "2026-01-07" },
+        summary: {
+          totalSuccessfulTopups: 45,
+          totalReceivedTransactions: 12,
+          topProducts: [],
+        },
+        dailySnapshots: [],
+      };
+
+      mockApiClient.get.mockResolvedValue({
+        data: { success: true, data: mockData },
+      });
+
+      const result =
+        await adminAnalyticsService.getTopupProductDailySnapshot(params);
+
+      expect(mockApiClient.get).toHaveBeenCalledWith(
+        "/admin/analytics/topup/products/daily-snapshot",
+        { params }
+      );
+      expect(result.data?.summary.totalSuccessfulTopups).toBe(45);
+    });
+
+    it("should fall back to the pluralized endpoint when the documented route returns 404", async () => {
+      const params = { fromDate: "2026-01-01", toDate: "2026-01-07" };
+      const mockData = {
+        period: { from: "2026-01-01", to: "2026-01-07" },
+        summary: {
+          totalSuccessfulTopups: 45,
+          totalReceivedTransactions: 12,
+          topProducts: [],
+        },
+        dailySnapshots: [],
+      };
+
+      mockApiClient.get
+        .mockRejectedValueOnce({
+          isAxiosError: true,
+          response: { status: 404 },
+        })
+        .mockResolvedValueOnce({
+          data: { success: true, data: mockData },
+        });
+
+      const result =
+        await adminAnalyticsService.getTopupProductDailySnapshot(params);
+
+      expect(mockApiClient.get).toHaveBeenNthCalledWith(
+        1,
+        "/admin/analytics/topup/products/daily-snapshot",
+        { params }
+      );
+      expect(mockApiClient.get).toHaveBeenNthCalledWith(
+        2,
+        "/admin/analytics/topups/products/daily-snapshot",
+        { params }
+      );
+      expect(result.data?.summary.totalReceivedTransactions).toBe(12);
     });
   });
 

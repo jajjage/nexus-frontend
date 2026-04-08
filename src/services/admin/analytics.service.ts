@@ -4,8 +4,10 @@
  */
 
 import apiClient from "@/lib/api-client";
+import { isAxiosError } from "axios";
 import {
   ChartData,
+  DailyProductSnapshotResponse,
   DailyMetric,
   DailyMetricsParams,
   DateRangeParams,
@@ -141,6 +143,33 @@ export const adminAnalyticsService = {
       { params }
     );
     return response.data;
+  },
+
+  /**
+   * Get date-range product performance snapshots for topups
+   */
+  getTopupProductDailySnapshot: async (
+    params: DateRangeParams
+  ): Promise<ApiResponse<DailyProductSnapshotResponse>> => {
+    try {
+      const response = await apiClient.get<
+        ApiResponse<DailyProductSnapshotResponse>
+      >(`${BASE_PATH}/topup/products/daily-snapshot`, {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 404) {
+        const fallbackResponse = await apiClient.get<
+          ApiResponse<DailyProductSnapshotResponse>
+        >(`${BASE_PATH}/topups/products/daily-snapshot`, {
+          params,
+        });
+        return fallbackResponse.data;
+      }
+
+      throw error;
+    }
   },
 
   /**
