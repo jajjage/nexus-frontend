@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
@@ -18,12 +19,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAgentAccount, useAgentCustomers } from "@/hooks/useAgent";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 export default function AgentCustomersPage() {
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const {
     data: account,
     error: accountError,
@@ -33,7 +35,12 @@ export default function AgentCustomersPage() {
     data,
     error: customersError,
     isLoading: customersLoading,
-  } = useAgentCustomers(page, 20, Boolean(account));
+  } = useAgentCustomers(page, 20, Boolean(account), searchQuery);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setPage(1); // Reset to first page on search
+  };
 
   if (accountLoading || (Boolean(account) && customersLoading)) {
     return (
@@ -109,6 +116,19 @@ export default function AgentCustomersPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search by name, email, or phone..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                />
+              </div>
+            </div>
+
             {customers.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-gray-500">No customers yet</p>

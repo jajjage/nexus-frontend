@@ -38,6 +38,7 @@ export interface AgentValidationResponse {
 export interface AgentCustomer {
   id: string;
   userId: string;
+  agentCode: string;
   email: string;
   fullName: string;
   phoneNumber: string;
@@ -46,6 +47,10 @@ export interface AgentCustomer {
   totalPurchases: number;
   totalCommissionsEarned: number;
   status: "active" | "inactive";
+  isActive: boolean;
+  isVerified: boolean;
+  isSuspended: boolean;
+  profilePictureUrl: string | null;
 }
 
 export interface AgentCommission {

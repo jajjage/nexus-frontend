@@ -92,12 +92,26 @@ function normalizeAgent(raw: UnknownRecord | null | undefined): Agent {
 function normalizeAgentCustomer(
   raw: UnknownRecord | null | undefined
 ): AgentCustomer {
+  // Support nested customer profile data
+  const customerData = (raw?.customer || raw?.user || {}) as UnknownRecord;
+
   return {
-    id: toString(raw?.id || raw?.customer_id),
-    userId: toString(raw?.userId || raw?.user_id),
-    email: toString(raw?.email),
-    fullName: toString(raw?.fullName || raw?.full_name),
-    phoneNumber: toString(raw?.phoneNumber || raw?.phone_number),
+    id: toString(raw?.id || raw?.linkId || raw?.link_id),
+    userId: toString(raw?.userId || raw?.user_id || customerData?.id),
+    agentCode: toString(raw?.agentCode || raw?.agent_code || ""),
+    email: toString(raw?.email || (customerData?.email as string)),
+    fullName: toString(
+      raw?.fullName ||
+        raw?.full_name ||
+        (customerData?.fullName as string) ||
+        (customerData?.full_name as string)
+    ),
+    phoneNumber: toString(
+      raw?.phoneNumber ||
+        raw?.phone_number ||
+        (customerData?.phoneNumber as string) ||
+        (customerData?.phone_number as string)
+    ),
     signupDate: toString(
       raw?.signupDate || raw?.signup_date || raw?.createdAt || raw?.created_at
     ),
@@ -109,6 +123,25 @@ function normalizeAgentCustomer(
       raw?.totalCommissionsEarned ?? raw?.total_commissions_earned
     ),
     status: toString(raw?.status, "inactive") as "active" | "inactive",
+    isActive: Boolean(raw?.isActive ?? raw?.is_active ?? true),
+    isVerified: Boolean(
+      raw?.isVerified ??
+        raw?.is_verified ??
+        (customerData?.isVerified as boolean) ??
+        (customerData?.is_verified as boolean)
+    ),
+    isSuspended: Boolean(
+      raw?.isSuspended ??
+        raw?.is_suspended ??
+        (customerData?.isSuspended as boolean) ??
+        (customerData?.is_suspended as boolean)
+    ),
+    profilePictureUrl: toStringOrNull(
+      raw?.profilePictureUrl ||
+        raw?.profile_picture_url ||
+        (customerData?.profilePictureUrl as string) ||
+        (customerData?.profile_picture_url as string)
+    ),
   };
 }
 
@@ -465,17 +498,29 @@ export const agentUserService = {
 
   /**
    * Get list of customers referred by current agent
-   * GET /api/v1/dashboard/agent/customers?page=1&limit=20
+   * GET /api/v1/dashboard/agent/customers?page=1&limit=20&q=searchTerm&isActive=true
    */
   getAgentCustomers: async (
     page: number = 1,
-    limit: number = 20
+    limit: number = 20,
+    searchQuery?: string,
+    isActive?: boolean
   ): Promise<AgentPaginatedResponse<AgentCustomer>> => {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    if (searchQuery) {
+      params.append("q", searchQuery);
+    }
+    if (isActive !== undefined) {
+      params.append("isActive", isActive.toString());
+    }
+
     const response = await apiClient.get<
       | ApiResponse<AgentPaginatedResponse<AgentCustomer> | AgentCustomer[]>
       | AgentPaginatedResponse<AgentCustomer>
       | AgentCustomer[]
-    >(`/dashboard/agent/customers?page=${page}&limit=${limit}`);
+    >(`/dashboard/agent/customers?${params.toString()}`);
     const normalized = normalizePaginatedResponse<UnknownRecord>(
       response.data as any
     );
@@ -632,13 +677,25 @@ export const agentAdminService = {
   getAgentCustomersAdmin: async (
     agentUserId: string,
     page: number = 1,
-    limit: number = 20
+    limit: number = 20,
+    searchQuery?: string,
+    isActive?: boolean
   ): Promise<AgentPaginatedResponse<AgentCustomer>> => {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    if (searchQuery) {
+      params.append("q", searchQuery);
+    }
+    if (isActive !== undefined) {
+      params.append("isActive", isActive.toString());
+    }
+
     const response = await apiClient.get<
       | ApiResponse<AgentPaginatedResponse<AgentCustomer> | AgentCustomer[]>
       | AgentPaginatedResponse<AgentCustomer>
       | AgentCustomer[]
-    >(`/dashboard/agents/${agentUserId}/customers?page=${page}&limit=${limit}`);
+    >(`/dashboard/agents/${agentUserId}/customers?${params.toString()}`);
     const normalized = normalizePaginatedResponse<UnknownRecord>(
       response.data as any
     );

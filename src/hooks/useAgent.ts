@@ -23,12 +23,12 @@ export const agentKeys = {
   all: ["agent"],
   account: () => [...agentKeys.all, "account"],
   stats: () => [...agentKeys.all, "stats"],
-  customers: (page: number, limit: number) => [
-    ...agentKeys.all,
-    "customers",
-    page,
-    limit,
-  ],
+  customers: (
+    page: number,
+    limit: number,
+    searchQuery?: string,
+    isActive?: boolean
+  ) => [...agentKeys.all, "customers", page, limit, searchQuery, isActive],
   commissions: (page: number, limit: number) => [
     ...agentKeys.all,
     "commissions",
@@ -44,13 +44,21 @@ export const agentKeys = {
     limit,
   ],
   agent: (agentUserId: string) => [...agentKeys.all, "agent", agentUserId],
-  agentCustomers: (agentUserId: string, page: number, limit: number) => [
+  agentCustomers: (
+    agentUserId: string,
+    page: number,
+    limit: number,
+    searchQuery?: string,
+    isActive?: boolean
+  ) => [
     ...agentKeys.all,
     "agent",
     agentUserId,
     "customers",
     page,
     limit,
+    searchQuery,
+    isActive,
   ],
   agentCommissions: (agentUserId: string, page: number, limit: number) => [
     ...agentKeys.all,
@@ -106,11 +114,14 @@ export function useAgentStats(enabled: boolean = true) {
 export function useAgentCustomers(
   page: number = 1,
   limit: number = 20,
-  enabled: boolean = true
+  enabled: boolean = true,
+  searchQuery?: string,
+  isActive?: boolean
 ) {
   return useQuery({
-    queryKey: agentKeys.customers(page, limit),
-    queryFn: () => agentUserService.getAgentCustomers(page, limit),
+    queryKey: agentKeys.customers(page, limit, searchQuery, isActive),
+    queryFn: () =>
+      agentUserService.getAgentCustomers(page, limit, searchQuery, isActive),
     enabled,
   });
 }
@@ -309,12 +320,26 @@ export function useAgentDetails(agentUserId: string) {
 export function useAgentCustomersAdmin(
   agentUserId: string,
   page: number = 1,
-  limit: number = 20
+  limit: number = 20,
+  searchQuery?: string,
+  isActive?: boolean
 ) {
   return useQuery({
-    queryKey: agentKeys.agentCustomers(agentUserId, page, limit),
+    queryKey: agentKeys.agentCustomers(
+      agentUserId,
+      page,
+      limit,
+      searchQuery,
+      isActive
+    ),
     queryFn: () =>
-      agentAdminService.getAgentCustomersAdmin(agentUserId, page, limit),
+      agentAdminService.getAgentCustomersAdmin(
+        agentUserId,
+        page,
+        limit,
+        searchQuery,
+        isActive
+      ),
     enabled: !!agentUserId,
   });
 }

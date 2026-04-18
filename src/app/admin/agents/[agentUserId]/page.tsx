@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
@@ -23,10 +24,9 @@ import {
   useAgentCustomersAdmin,
   useAgentDetails,
 } from "@/hooks/useAgent";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Search } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import React from "react";
+import React, { useState } from "react";
 
 interface AgentDetailPageProps {
   params: Promise<{
@@ -36,8 +36,9 @@ interface AgentDetailPageProps {
 
 export default function AgentDetailPage({ params }: AgentDetailPageProps) {
   const [agentUserId, setAgentUserId] = useState<string>("");
-  const [customerPage] = useState(1);
+  const [customerPage, setCustomerPage] = useState(1);
   const [commissionPage] = useState(1);
+  const [customerSearch, setCustomerSearch] = useState("");
 
   const formatCurrency = (value: number | string | null | undefined) =>
     `₦${Number(value ?? 0).toLocaleString()}`;
@@ -61,7 +62,7 @@ export default function AgentDetailPage({ params }: AgentDetailPageProps) {
 
   const { data: agent, isLoading: agentLoading } = useAgentDetails(agentUserId);
   const { data: customersData, isLoading: customersLoading } =
-    useAgentCustomersAdmin(agentUserId, customerPage, 10);
+    useAgentCustomersAdmin(agentUserId, customerPage, 10, customerSearch);
   const { data: commissionsData, isLoading: commissionsLoading } =
     useAgentCommissionsAdmin(agentUserId, commissionPage, 10);
 
@@ -210,6 +211,22 @@ export default function AgentDetailPage({ params }: AgentDetailPageProps) {
                 <CardTitle>Agent Customers</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="mb-6">
+                  <div className="relative">
+                    <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search by name, email, or phone..."
+                      className="pl-10"
+                      value={customerSearch}
+                      onChange={(e) => {
+                        setCustomerSearch(e.target.value);
+                        setCustomerPage(1);
+                      }}
+                    />
+                  </div>
+                </div>
+
                 {customersLoading ? (
                   <div className="flex justify-center py-8">
                     <Spinner />
