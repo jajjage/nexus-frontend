@@ -32,14 +32,21 @@ function toNumber(value: unknown, fallback: number = 0): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function toString(value: unknown, fallback: string = ""): string {
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+  return String(value);
+}
+
 function normalizeAgent(raw: UnknownRecord | null | undefined): Agent {
   return {
-    id: raw?.id ?? raw?.agent_id ?? "",
-    userId: raw?.userId ?? raw?.user_id ?? "",
-    agentCode: raw?.agentCode ?? raw?.agent_code ?? "",
-    email: raw?.email ?? "",
-    fullName: raw?.fullName ?? raw?.full_name ?? "",
-    phoneNumber: raw?.phoneNumber ?? raw?.phone_number ?? "",
+    id: toString(raw?.id || raw?.agent_id),
+    userId: toString(raw?.userId || raw?.user_id),
+    agentCode: toString(raw?.agentCode || raw?.agent_code),
+    email: toString(raw?.email),
+    fullName: toString(raw?.fullName || raw?.full_name),
+    phoneNumber: toString(raw?.phoneNumber || raw?.phone_number),
     isActive: Boolean(raw?.isActive ?? raw?.is_active),
     totalCustomers: toNumber(raw?.totalCustomers ?? raw?.total_customers),
     activeCustomers: toNumber(raw?.activeCustomers ?? raw?.active_customers),
@@ -52,14 +59,16 @@ function normalizeAgent(raw: UnknownRecord | null | undefined): Agent {
     availableBalanceAmount: toNumber(
       raw?.availableBalanceAmount ?? raw?.available_balance_amount
     ),
-    commissionCapType:
-      raw?.commissionCapType ?? raw?.commission_cap_type ?? "indefinite",
+    commissionCapType: toString(
+      raw?.commissionCapType || raw?.commission_cap_type,
+      "indefinite"
+    ),
     commissionCapValue:
       raw?.commissionCapValue ?? raw?.commission_cap_value ?? null,
     commissionCapExpiresAt:
       raw?.commissionCapExpiresAt ?? raw?.commission_cap_expires_at ?? null,
-    createdAt: raw?.createdAt ?? raw?.created_at ?? "",
-    updatedAt: raw?.updatedAt ?? raw?.updated_at ?? "",
+    createdAt: toString(raw?.createdAt || raw?.created_at),
+    updatedAt: toString(raw?.updatedAt || raw?.updated_at),
   };
 }
 
@@ -67,23 +76,20 @@ function normalizeAgentCustomer(
   raw: UnknownRecord | null | undefined
 ): AgentCustomer {
   return {
-    id: raw?.id ?? raw?.customer_id ?? "",
-    userId: raw?.userId ?? raw?.user_id ?? "",
-    email: raw?.email ?? "",
-    fullName: raw?.fullName ?? raw?.full_name ?? "",
-    phoneNumber: raw?.phoneNumber ?? raw?.phone_number ?? "",
-    signupDate:
-      raw?.signupDate ??
-      raw?.signup_date ??
-      raw?.createdAt ??
-      raw?.created_at ??
-      "",
+    id: toString(raw?.id || raw?.customer_id),
+    userId: toString(raw?.userId || raw?.user_id),
+    email: toString(raw?.email),
+    fullName: toString(raw?.fullName || raw?.full_name),
+    phoneNumber: toString(raw?.phoneNumber || raw?.phone_number),
+    signupDate: toString(
+      raw?.signupDate || raw?.signup_date || raw?.createdAt || raw?.created_at
+    ),
     lastPurchaseDate: raw?.lastPurchaseDate ?? raw?.last_purchase_date ?? null,
     totalPurchases: toNumber(raw?.totalPurchases ?? raw?.total_purchases),
     totalCommissionsEarned: toNumber(
       raw?.totalCommissionsEarned ?? raw?.total_commissions_earned
     ),
-    status: raw?.status ?? "inactive",
+    status: toString(raw?.status, "inactive"),
   };
 }
 
@@ -91,24 +97,27 @@ function normalizeAgentCommission(
   raw: UnknownRecord | null | undefined
 ): AgentCommission {
   return {
-    id: raw?.id ?? "",
-    agentId: raw?.agentId ?? raw?.agent_id ?? "",
-    customerId: raw?.customerId ?? raw?.customer_id ?? "",
-    productId: raw?.productId ?? raw?.product_id ?? "",
-    productName: raw?.productName ?? raw?.product_name ?? "",
-    transactionDate:
-      raw?.transactionDate ??
-      raw?.transaction_date ??
-      raw?.createdAt ??
-      raw?.created_at ??
-      "",
+    id: toString(raw?.id),
+    agentId: toString(raw?.agentId || raw?.agent_id),
+    customerId: toString(raw?.customerId || raw?.customer_id),
+    productId: toString(raw?.productId || raw?.product_id),
+    productName: toString(raw?.productName || raw?.product_name),
+    transactionDate: toString(
+      raw?.transactionDate ||
+        raw?.transaction_date ||
+        raw?.createdAt ||
+        raw?.created_at
+    ),
     amount: toNumber(raw?.amount),
-    commissionType: raw?.commissionType ?? raw?.commission_type ?? "fixed",
+    commissionType: toString(
+      raw?.commissionType || raw?.commission_type,
+      "fixed"
+    ),
     commissionValue: toNumber(raw?.commissionValue ?? raw?.commission_value),
     calculatedCommission: toNumber(
       raw?.calculatedCommission ?? raw?.calculated_commission
     ),
-    status: raw?.status ?? "pending",
+    status: toString(raw?.status, "pending"),
     claimedDate: raw?.claimedDate ?? raw?.claimed_date ?? null,
     withdrawnDate: raw?.withdrawnDate ?? raw?.withdrawn_date ?? null,
   };
