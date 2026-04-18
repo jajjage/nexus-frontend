@@ -13,7 +13,7 @@ vi.mock("@/lib/api-client", () => ({
   },
 }));
 
-const mockAxiosResponse = <T,>(data: T) => ({ data });
+const mockAxiosResponse = <T>(data: T) => ({ data });
 
 describe("Agent Service", () => {
   beforeEach(() => {

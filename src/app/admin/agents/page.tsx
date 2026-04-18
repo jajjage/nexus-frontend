@@ -82,9 +82,7 @@ export default function AdminAgentsPage() {
         <Card>
           <CardHeader>
             <CardTitle>All Agents</CardTitle>
-            <CardDescription>
-              Total agents: {totalAgents}
-            </CardDescription>
+            <CardDescription>Total agents: {totalAgents}</CardDescription>
           </CardHeader>
           <CardContent>
             {agents.length === 0 ? (

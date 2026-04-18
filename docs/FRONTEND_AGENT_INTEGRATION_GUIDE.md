@@ -1,6 +1,7 @@
 # Frontend Agent Integration Guide
 
 ## Audience
+
 This guide is for the Next.js frontend and covers:
 
 - public signup with `agentCode`
@@ -81,18 +82,18 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
-    credentials: 'include',
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(init?.headers || {}),
     },
-    cache: 'no-store',
+    cache: "no-store",
   });
 
   const data = await response.json();
 
   if (!response.ok || data.success === false) {
-    throw new Error(data.message || 'Request failed');
+    throw new Error(data.message || "Request failed");
   }
 
   return data;
@@ -117,7 +118,7 @@ Then validate it, show a friendly message, and submit it during registration.
 
 ```ts
 // src/lib/agent.ts
-import { apiFetch } from './api';
+import { apiFetch } from "./api";
 
 export async function validateAgentCode(code: string) {
   return apiFetch<{
@@ -134,19 +135,19 @@ export async function validateAgentCode(code: string) {
 
 ```tsx
 // app/signup/page.tsx
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { validateAgentCode } from '@/lib/agent';
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { validateAgentCode } from "@/lib/agent";
 
 export default function SignupPage() {
   const searchParams = useSearchParams();
-  const [agentCode, setAgentCode] = useState('');
+  const [agentCode, setAgentCode] = useState("");
   const [agentValid, setAgentValid] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const code = searchParams.get('agentCode');
+    const code = searchParams.get("agentCode");
     if (!code) return;
 
     const normalized = code.trim().toUpperCase();
@@ -158,18 +159,21 @@ export default function SignupPage() {
   }, [searchParams]);
 
   async function handleSubmit(formData: FormData) {
-    await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/auth/register`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: formData.get('email'),
-        password: formData.get('password'),
-        fullName: formData.get('fullName'),
-        phoneNumber: formData.get('phoneNumber'),
-        agentCode: agentCode || undefined,
-      }),
-    });
+    await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/auth/register`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.get("email"),
+          password: formData.get("password"),
+          fullName: formData.get("fullName"),
+          phoneNumber: formData.get("phoneNumber"),
+          agentCode: agentCode || undefined,
+        }),
+      }
+    );
   }
 
   return null;
@@ -194,8 +198,8 @@ Any normal signed-in user can choose to become an agent, get an agent code, and 
 
 ```ts
 export async function activateAgent() {
-  return apiFetch('/api/v1/dashboard/agent/account/activate', {
-    method: 'POST',
+  return apiFetch("/api/v1/dashboard/agent/account/activate", {
+    method: "POST",
   });
 }
 ```
@@ -204,11 +208,11 @@ export async function activateAgent() {
 
 ```ts
 export async function getAgentAccount() {
-  return apiFetch('/api/v1/dashboard/agent/account');
+  return apiFetch("/api/v1/dashboard/agent/account");
 }
 
 export async function getAgentStats() {
-  return apiFetch('/api/v1/dashboard/agent/stats');
+  return apiFetch("/api/v1/dashboard/agent/stats");
 }
 
 export async function getAgentCustomers(page = 1, limit = 20) {
@@ -224,12 +228,12 @@ export async function getAgentCommissions(page = 1, limit = 20) {
 }
 
 export async function getAgentAvailableBalance() {
-  return apiFetch('/api/v1/dashboard/agent/available-balance');
+  return apiFetch("/api/v1/dashboard/agent/available-balance");
 }
 
 export async function withdrawAgentCommissions(amount: number) {
-  return apiFetch('/api/v1/dashboard/agent/withdraw', {
-    method: 'POST',
+  return apiFetch("/api/v1/dashboard/agent/withdraw", {
+    method: "POST",
     body: JSON.stringify({ amount }),
   });
 }
@@ -273,32 +277,32 @@ Admins manage commission rules and inspect or disable agents.
 
 ```ts
 export async function getAgentProductCommissions() {
-  return apiFetch('/api/v1/dashboard/agent/products');
+  return apiFetch("/api/v1/dashboard/agent/products");
 }
 
 export async function attachAgentCommission(
   productId: string,
-  payload: { commissionType: 'fixed' | 'percentage'; commissionValue: number }
+  payload: { commissionType: "fixed" | "percentage"; commissionValue: number }
 ) {
   return apiFetch(`/api/v1/dashboard/agent/products/${productId}/commission`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export async function updateAgentCommission(
   productId: string,
-  payload: { commissionType?: 'fixed' | 'percentage'; commissionValue?: number }
+  payload: { commissionType?: "fixed" | "percentage"; commissionValue?: number }
 ) {
   return apiFetch(`/api/v1/dashboard/agent/products/${productId}/commission`, {
-    method: 'PUT',
+    method: "PUT",
     body: JSON.stringify(payload),
   });
 }
 
 export async function removeAgentCommission(productId: string) {
   return apiFetch(`/api/v1/dashboard/agent/products/${productId}/commission`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
 }
 ```
@@ -324,13 +328,13 @@ export async function getAgentCommissionsAdmin(agentUserId: string) {
 
 export async function disableAgent(agentUserId: string) {
   return apiFetch(`/api/v1/dashboard/agents/${agentUserId}/disable`, {
-    method: 'POST',
+    method: "POST",
   });
 }
 
 export async function enableAgent(agentUserId: string) {
   return apiFetch(`/api/v1/dashboard/agents/${agentUserId}/enable`, {
-    method: 'POST',
+    method: "POST",
   });
 }
 ```
@@ -362,7 +366,7 @@ export type AgentAccount = {
   userId: string;
   agentCode: string;
   isActive: boolean;
-  commissionCapType: 'indefinite' | 'time_limited' | 'purchase_limited';
+  commissionCapType: "indefinite" | "time_limited" | "purchase_limited";
   commissionCapValue: number | null;
   commissionCapExpiresAt: string | null;
   metadata: Record<string, unknown> | null;

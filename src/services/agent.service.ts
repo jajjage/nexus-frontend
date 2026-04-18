@@ -5,8 +5,6 @@
  */
 
 import apiClient from "@/lib/api-client";
-import axios from "axios";
-import type { ApiResponse } from "@/types/api.types";
 import type {
   ActivateAgentResponse,
   Agent,
@@ -24,6 +22,8 @@ import type {
   WithdrawCommissionsRequest,
   WithdrawCommissionsResponse,
 } from "@/types/agent.types";
+import type { ApiResponse } from "@/types/api.types";
+import axios from "axios";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -53,9 +53,7 @@ function normalizeAgent(raw: UnknownRecord | null | undefined): Agent {
       raw?.availableBalanceAmount ?? raw?.available_balance_amount
     ),
     commissionCapType:
-      raw?.commissionCapType ??
-      raw?.commission_cap_type ??
-      "indefinite",
+      raw?.commissionCapType ?? raw?.commission_cap_type ?? "indefinite",
     commissionCapValue:
       raw?.commissionCapValue ?? raw?.commission_cap_value ?? null,
     commissionCapExpiresAt:
@@ -65,16 +63,22 @@ function normalizeAgent(raw: UnknownRecord | null | undefined): Agent {
   };
 }
 
-function normalizeAgentCustomer(raw: UnknownRecord | null | undefined): AgentCustomer {
+function normalizeAgentCustomer(
+  raw: UnknownRecord | null | undefined
+): AgentCustomer {
   return {
     id: raw?.id ?? raw?.customer_id ?? "",
     userId: raw?.userId ?? raw?.user_id ?? "",
     email: raw?.email ?? "",
     fullName: raw?.fullName ?? raw?.full_name ?? "",
     phoneNumber: raw?.phoneNumber ?? raw?.phone_number ?? "",
-    signupDate: raw?.signupDate ?? raw?.signup_date ?? raw?.createdAt ?? raw?.created_at ?? "",
-    lastPurchaseDate:
-      raw?.lastPurchaseDate ?? raw?.last_purchase_date ?? null,
+    signupDate:
+      raw?.signupDate ??
+      raw?.signup_date ??
+      raw?.createdAt ??
+      raw?.created_at ??
+      "",
+    lastPurchaseDate: raw?.lastPurchaseDate ?? raw?.last_purchase_date ?? null,
     totalPurchases: toNumber(raw?.totalPurchases ?? raw?.total_purchases),
     totalCommissionsEarned: toNumber(
       raw?.totalCommissionsEarned ?? raw?.total_commissions_earned
@@ -93,7 +97,11 @@ function normalizeAgentCommission(
     productId: raw?.productId ?? raw?.product_id ?? "",
     productName: raw?.productName ?? raw?.product_name ?? "",
     transactionDate:
-      raw?.transactionDate ?? raw?.transaction_date ?? raw?.createdAt ?? raw?.created_at ?? "",
+      raw?.transactionDate ??
+      raw?.transaction_date ??
+      raw?.createdAt ??
+      raw?.created_at ??
+      "",
     amount: toNumber(raw?.amount),
     commissionType: raw?.commissionType ?? raw?.commission_type ?? "fixed",
     commissionValue: toNumber(raw?.commissionValue ?? raw?.commission_value),
@@ -378,9 +386,9 @@ export const agentUserService = {
    */
   getAgentAccount: async (): Promise<AgentAccount | null> => {
     try {
-      const response = await apiClient.get<ApiResponse<AgentAccount> | AgentAccount>(
-        `/dashboard/agent/account`
-      );
+      const response = await apiClient.get<
+        ApiResponse<AgentAccount> | AgentAccount
+      >(`/dashboard/agent/account`);
       return unwrapApiData(response.data);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -448,9 +456,7 @@ export const agentUserService = {
   ): Promise<AgentPaginatedResponse<AgentCommission>> => {
     const response = await apiClient.get<
       AgentPaginatedResponse<AgentCommission>
-    >(
-      `/dashboard/agent/commissions?page=${page}&limit=${limit}`
-    );
+    >(`/dashboard/agent/commissions?page=${page}&limit=${limit}`);
     return response.data;
   },
 
@@ -491,9 +497,7 @@ export const agentAdminService = {
   getProductCommissions: async (): Promise<AgentProduct[]> => {
     const response = await apiClient.get<
       ApiResponse<AgentProduct[]> | AgentProduct[]
-    >(
-      `/dashboard/agent/products`
-    );
+    >(`/dashboard/agent/products`);
     return normalizeListResponse(response.data);
   },
 
@@ -534,9 +538,10 @@ export const agentAdminService = {
   removeProductCommission: async (
     productId: string
   ): Promise<{ success: boolean; message: string }> => {
-    const response = await apiClient.delete<{ success: boolean; message: string }>(
-      `/dashboard/agent/products/${productId}/commission`
-    );
+    const response = await apiClient.delete<{
+      success: boolean;
+      message: string;
+    }>(`/dashboard/agent/products/${productId}/commission`);
     return response.data;
   },
 
@@ -549,12 +554,10 @@ export const agentAdminService = {
     limit: number = 20
   ): Promise<AgentPaginatedResponse<Agent>> => {
     const response = await apiClient.get<
-      ApiResponse<AgentPaginatedResponse<Agent> | Agent[]> |
-        AgentPaginatedResponse<Agent> |
-        Agent[]
-    >(
-      `/dashboard/agents?page=${page}&limit=${limit}`
-    );
+      | ApiResponse<AgentPaginatedResponse<Agent> | Agent[]>
+      | AgentPaginatedResponse<Agent>
+      | Agent[]
+    >(`/dashboard/agents?page=${page}&limit=${limit}`);
     const normalized = normalizePaginatedResponse<UnknownRecord>(response.data);
     return {
       ...normalized,
@@ -586,9 +589,7 @@ export const agentAdminService = {
       | ApiResponse<AgentPaginatedResponse<AgentCustomer> | AgentCustomer[]>
       | AgentPaginatedResponse<AgentCustomer>
       | AgentCustomer[]
-    >(
-      `/dashboard/agents/${agentUserId}/customers?page=${page}&limit=${limit}`
-    );
+    >(`/dashboard/agents/${agentUserId}/customers?page=${page}&limit=${limit}`);
     const normalized = normalizePaginatedResponse<UnknownRecord>(response.data);
     return {
       ...normalized,
@@ -626,9 +627,10 @@ export const agentAdminService = {
   disableAgent: async (
     agentUserId: string
   ): Promise<{ success: boolean; message: string }> => {
-    const response = await apiClient.post<{ success: boolean; message: string }>(
-      `/dashboard/agents/${agentUserId}/disable`
-    );
+    const response = await apiClient.post<{
+      success: boolean;
+      message: string;
+    }>(`/dashboard/agents/${agentUserId}/disable`);
     return response.data;
   },
 
@@ -639,9 +641,10 @@ export const agentAdminService = {
   enableAgent: async (
     agentUserId: string
   ): Promise<{ success: boolean; message: string }> => {
-    const response = await apiClient.post<{ success: boolean; message: string }>(
-      `/dashboard/agents/${agentUserId}/enable`
-    );
+    const response = await apiClient.post<{
+      success: boolean;
+      message: string;
+    }>(`/dashboard/agents/${agentUserId}/enable`);
     return response.data;
   },
 };

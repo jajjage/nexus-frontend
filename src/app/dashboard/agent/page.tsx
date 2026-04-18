@@ -66,9 +66,7 @@ export default function AgentPage() {
           <Card>
             <CardHeader>
               <CardTitle>We couldn&apos;t load your agent dashboard</CardTitle>
-              <CardDescription>
-                Please refresh and try again.
-              </CardDescription>
+              <CardDescription>Please refresh and try again.</CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/dashboard">
@@ -102,8 +100,8 @@ export default function AgentPage() {
             <CardHeader>
               <CardTitle>Agent mode is not active yet</CardTitle>
               <CardDescription>
-                Any signed-in user can activate this instantly and start
-                sharing a code.
+                Any signed-in user can activate this instantly and start sharing
+                a code.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 sm:flex-row">

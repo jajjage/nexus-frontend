@@ -18,7 +18,11 @@ import {
 } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -373,8 +377,8 @@ export default function AdminAgentProductsPage() {
             ) : (
               <div className="overflow-x-auto">
                 <Table>
-                    <TableHeader>
-                      <TableRow>
+                  <TableHeader>
+                    <TableRow>
                       <TableHead>Product</TableHead>
                       <TableHead>Code / ID</TableHead>
                       <TableHead>Product Type</TableHead>
@@ -393,12 +397,11 @@ export default function AdminAgentProductsPage() {
                         </TableCell>
                         <TableCell>
                           <span className="font-mono text-sm font-bold">
-                            {product.productCode || getProductIdentifier(product)}
+                            {product.productCode ||
+                              getProductIdentifier(product)}
                           </span>
                         </TableCell>
-                        <TableCell>
-                          {product.productType || "N/A"}
-                        </TableCell>
+                        <TableCell>{product.productType || "N/A"}</TableCell>
                         <TableCell>
                           <span
                             className={`rounded-full px-2 py-1 text-xs font-medium ${
@@ -420,12 +423,12 @@ export default function AdminAgentProductsPage() {
                         <TableCell>
                           <span
                             className={`rounded-full px-2 py-1 text-xs font-medium ${
-                              product.commissionConfig?.isActive ?? true
+                              (product.commissionConfig?.isActive ?? true)
                                 ? "bg-emerald-100 text-emerald-800"
                                 : "bg-zinc-100 text-zinc-700"
                             }`}
                           >
-                            {product.commissionConfig?.isActive ?? true
+                            {(product.commissionConfig?.isActive ?? true)
                               ? "Active"
                               : "Inactive"}
                           </span>
