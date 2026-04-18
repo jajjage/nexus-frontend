@@ -30,7 +30,7 @@ import { useEffect, useState } from "react";
 
 const navItems = [
   { label: "Home", icon: Home, href: "/dashboard" },
-  { label: "Referral", icon: Users, href: "/dashboard/referrals" },
+  { label: "Agent", icon: Users, href: "/dashboard/agent" },
   { label: "Rewards", icon: Trophy, href: "/dashboard/rewards" },
   { label: "Profile", icon: User, href: "/dashboard/profile" },
 ];
@@ -82,7 +82,7 @@ export function DesktopSidebar({ className }: { className?: string }) {
     <>
       <div
         className={cn(
-          "bg-card sticky top-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col border-r px-4 py-6",
+          "bg-card sticky top-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col overflow-hidden border-r px-4 py-6",
           className
         )}
       >
@@ -98,7 +98,7 @@ export function DesktopSidebar({ className }: { className?: string }) {
           <span className="text-xl font-bold">Nexus Data</span>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-2">
+        <nav className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
           {navItems.map((item) => (
             <Link
               href={item.href}
@@ -196,7 +196,7 @@ export function DesktopSidebar({ className }: { className?: string }) {
           )}
         </nav>
 
-        <div className="mt-auto flex flex-col gap-2">
+        <div className="mt-auto flex shrink-0 flex-col gap-2 pt-3">
           <Button
             variant="ghost"
             className="text-muted-foreground hover:text-foreground justify-start gap-3 px-3"

@@ -63,6 +63,16 @@ const navItems = [
     icon: UsersIcon,
   },
   {
+    title: "Agents",
+    href: "/admin/dashboard/agents",
+    icon: UsersIcon,
+  },
+  {
+    title: "Agent Products",
+    href: "/admin/dashboard/agent-products",
+    icon: PercentIcon,
+  },
+  {
     title: "Transactions",
     href: "/admin/dashboard/transactions",
     icon: CreditCardIcon,
@@ -172,7 +182,10 @@ export default function AdminDashboardLayout({
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname === item.href}
+                      isActive={
+                        pathname === item.href ||
+                        pathname.startsWith(`${item.href}/`)
+                      }
                     >
                       <Link href={item.href}>
                         <item.icon className="h-4 w-4" />

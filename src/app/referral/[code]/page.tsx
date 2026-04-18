@@ -9,6 +9,6 @@ interface ReferralPageProps {
 export default async function ReferralPage({ params }: ReferralPageProps) {
   const { code } = await params;
 
-  // Redirect to register page with the referral code
-  redirect(`/register?ref=${code}`);
+  // Redirect to register page with the agent code
+  redirect(`/register?agentCode=${code}`);
 }

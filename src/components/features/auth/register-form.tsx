@@ -11,8 +11,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { useValidateAgentCode } from "@/hooks/useAgent";
 import { useRegister } from "@/hooks/useAuth";
-import { useValidateReferralCode } from "@/hooks/useReferrals";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSearchParams } from "next/navigation";
 import { useForm, type Resolver } from "react-hook-form";
@@ -49,7 +49,7 @@ const registerSchema = z
             "Please enter a valid Nigerian phone number (e.g., 08012345678)",
         }
       ),
-    referralCode: z.string().optional(),
+    agentCode: z.string().optional(),
     password: z.preprocess(
       (val) => (typeof val === "string" ? val.trim() : val),
       z
@@ -72,11 +72,11 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const searchParams = useSearchParams();
-  const urlCode = searchParams.get("code") || searchParams.get("ref");
+  const urlCode = searchParams.get("agentCode");
 
   const registerMutation = useRegister();
   const { mutateAsync: validateCode, isPending: isValidating } =
-    useValidateReferralCode();
+    useValidateAgentCode();
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(
@@ -87,7 +87,7 @@ export function RegisterForm() {
       fullName: "",
       email: "",
       phoneNumber: "",
-      referralCode: urlCode || "",
+      agentCode: urlCode || "",
       password: "",
       confirmPassword: "",
     },
@@ -100,23 +100,23 @@ export function RegisterForm() {
     formState: { isValid, errors },
   } = form;
 
-  // Update referralCode if URL changes
+  // Update agentCode if URL changes
   useEffect(() => {
     if (urlCode) {
-      setValue("referralCode", urlCode);
+      setValue("agentCode", urlCode);
     }
   }, [urlCode, setValue]);
 
   const onSubmit = async (data: RegisterFormValues) => {
     const { confirmPassword: _confirmPassword, ...rest } = data;
 
-    // Validate referral code if provided
-    if (rest.referralCode) {
+    // Validate agent code if provided
+    if (rest.agentCode) {
       try {
-        await validateCode(rest.referralCode);
+        await validateCode(rest.agentCode);
       } catch (error: any) {
-        form.setError("referralCode", {
-          message: error.response?.data?.message || "Invalid referral code",
+        form.setError("agentCode", {
+          message: error.response?.data?.message || "Invalid agent code",
         });
         return;
       }
@@ -130,7 +130,7 @@ export function RegisterForm() {
       password: rest.password,
       phoneNumber: normalizedPhone,
       fullName: rest.fullName,
-      referralCode: rest.referralCode,
+      agentCode: rest.agentCode,
     };
 
     // Store password in sessionStorage temporarily for auto-fill on login page
@@ -353,19 +353,17 @@ export function RegisterForm() {
               </p>
             )}
           </div>
-          {/* <div className="grid gap-2">
-            <Label htmlFor="referralCode">Referral Code (Optional)</Label>
+          <div className="grid gap-2">
+            <Label htmlFor="agentCode">Agent Code (Optional)</Label>
             <Input
-              id="referralCode"
-              placeholder="e.g. JOHND123"
-              {...register("referralCode")}
+              id="agentCode"
+              placeholder="e.g. AGENT-ABC123"
+              {...register("agentCode")}
             />
-            {errors.referralCode && (
-              <p className="text-sm text-red-500">
-                {errors.referralCode.message}
-              </p>
+            {errors.agentCode && (
+              <p className="text-sm text-red-500">{errors.agentCode.message}</p>
             )}
-          </div> */}
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">

@@ -156,7 +156,7 @@ describe("RegisterForm Component", () => {
             email: "john@example.com",
             phoneNumber: "08012345678",
             password: "ValidPass123!",
-            referralCode: "",
+            agentCode: "",
           });
         },
         { timeout: 10000 }
