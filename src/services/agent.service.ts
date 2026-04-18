@@ -420,7 +420,7 @@ export const agentUserService = {
       const response = await apiClient.get<
         ApiResponse<AgentAccount> | AgentAccount
       >(`/dashboard/agent/account`);
-      return unwrapApiData(response.data);
+      return unwrapApiData<AgentAccount>(response.data as any);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
         return null;
@@ -460,7 +460,7 @@ export const agentUserService = {
     const response = await apiClient.get<ApiResponse<AgentStats> | AgentStats>(
       `/dashboard/agent/stats`
     );
-    return unwrapApiData(response.data);
+    return unwrapApiData<AgentStats>(response.data as any);
   },
 
   /**
@@ -471,10 +471,18 @@ export const agentUserService = {
     page: number = 1,
     limit: number = 20
   ): Promise<AgentPaginatedResponse<AgentCustomer>> => {
-    const response = await apiClient.get<AgentPaginatedResponse<AgentCustomer>>(
-      `/dashboard/agent/customers?page=${page}&limit=${limit}`
+    const response = await apiClient.get<
+      | ApiResponse<AgentPaginatedResponse<AgentCustomer> | AgentCustomer[]>
+      | AgentPaginatedResponse<AgentCustomer>
+      | AgentCustomer[]
+    >(`/dashboard/agent/customers?page=${page}&limit=${limit}`);
+    const normalized = normalizePaginatedResponse<UnknownRecord>(
+      response.data as any
     );
-    return response.data;
+    return {
+      ...normalized,
+      data: normalized.data.map(normalizeAgentCustomer),
+    };
   },
 
   /**
@@ -486,9 +494,17 @@ export const agentUserService = {
     limit: number = 20
   ): Promise<AgentPaginatedResponse<AgentCommission>> => {
     const response = await apiClient.get<
-      AgentPaginatedResponse<AgentCommission>
+      | ApiResponse<AgentPaginatedResponse<AgentCommission> | AgentCommission[]>
+      | AgentPaginatedResponse<AgentCommission>
+      | AgentCommission[]
     >(`/dashboard/agent/commissions?page=${page}&limit=${limit}`);
-    return response.data;
+    const normalized = normalizePaginatedResponse<UnknownRecord>(
+      response.data as any
+    );
+    return {
+      ...normalized,
+      data: normalized.data.map(normalizeAgentCommission),
+    };
   },
 
   /**
@@ -499,7 +515,7 @@ export const agentUserService = {
     const response = await apiClient.get<
       ApiResponse<{ availableBalance: number }> | { availableBalance: number }
     >(`/dashboard/agent/available-balance`);
-    return unwrapApiData(response.data);
+    return unwrapApiData<{ availableBalance: number }>(response.data as any);
   },
 
   /**
