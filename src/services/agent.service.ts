@@ -32,9 +32,24 @@ function toNumber(value: unknown, fallback: number = 0): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function toNumberOrNull(value: unknown): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function toString(value: unknown, fallback: string = ""): string {
   if (value === null || value === undefined) {
     return fallback;
+  }
+  return String(value);
+}
+
+function toStringOrNull(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
   }
   return String(value);
 }
@@ -62,11 +77,13 @@ function normalizeAgent(raw: UnknownRecord | null | undefined): Agent {
     commissionCapType: toString(
       raw?.commissionCapType || raw?.commission_cap_type,
       "indefinite"
+    ) as "indefinite" | "time_limited" | "purchase_limited",
+    commissionCapValue: toNumberOrNull(
+      raw?.commissionCapValue || raw?.commission_cap_value
     ),
-    commissionCapValue:
-      raw?.commissionCapValue ?? raw?.commission_cap_value ?? null,
-    commissionCapExpiresAt:
-      raw?.commissionCapExpiresAt ?? raw?.commission_cap_expires_at ?? null,
+    commissionCapExpiresAt: toStringOrNull(
+      raw?.commissionCapExpiresAt || raw?.commission_cap_expires_at
+    ),
     createdAt: toString(raw?.createdAt || raw?.created_at),
     updatedAt: toString(raw?.updatedAt || raw?.updated_at),
   };
@@ -84,12 +101,14 @@ function normalizeAgentCustomer(
     signupDate: toString(
       raw?.signupDate || raw?.signup_date || raw?.createdAt || raw?.created_at
     ),
-    lastPurchaseDate: raw?.lastPurchaseDate ?? raw?.last_purchase_date ?? null,
+    lastPurchaseDate: toStringOrNull(
+      raw?.lastPurchaseDate || raw?.last_purchase_date
+    ),
     totalPurchases: toNumber(raw?.totalPurchases ?? raw?.total_purchases),
     totalCommissionsEarned: toNumber(
       raw?.totalCommissionsEarned ?? raw?.total_commissions_earned
     ),
-    status: toString(raw?.status, "inactive"),
+    status: toString(raw?.status, "inactive") as "active" | "inactive",
   };
 }
 
@@ -112,14 +131,17 @@ function normalizeAgentCommission(
     commissionType: toString(
       raw?.commissionType || raw?.commission_type,
       "fixed"
-    ),
+    ) as "fixed" | "percentage",
     commissionValue: toNumber(raw?.commissionValue ?? raw?.commission_value),
     calculatedCommission: toNumber(
       raw?.calculatedCommission ?? raw?.calculated_commission
     ),
-    status: toString(raw?.status, "pending"),
-    claimedDate: raw?.claimedDate ?? raw?.claimed_date ?? null,
-    withdrawnDate: raw?.withdrawnDate ?? raw?.withdrawn_date ?? null,
+    status: toString(raw?.status, "pending") as
+      | "pending"
+      | "claimed"
+      | "withdrawn",
+    claimedDate: toStringOrNull(raw?.claimedDate || raw?.claimed_date),
+    withdrawnDate: toStringOrNull(raw?.withdrawnDate || raw?.withdrawn_date),
   };
 }
 
@@ -567,7 +589,9 @@ export const agentAdminService = {
       | AgentPaginatedResponse<Agent>
       | Agent[]
     >(`/dashboard/agents?page=${page}&limit=${limit}`);
-    const normalized = normalizePaginatedResponse<UnknownRecord>(response.data);
+    const normalized = normalizePaginatedResponse<UnknownRecord>(
+      response.data as any
+    );
     return {
       ...normalized,
       data: normalized.data.map(normalizeAgent),
@@ -582,7 +606,7 @@ export const agentAdminService = {
     const response = await apiClient.get<ApiResponse<Agent> | Agent>(
       `/dashboard/agents/${agentUserId}/details`
     );
-    return normalizeAgent(unwrapApiData<UnknownRecord>(response.data));
+    return normalizeAgent(unwrapApiData<UnknownRecord>(response.data as any));
   },
 
   /**
@@ -599,7 +623,9 @@ export const agentAdminService = {
       | AgentPaginatedResponse<AgentCustomer>
       | AgentCustomer[]
     >(`/dashboard/agents/${agentUserId}/customers?page=${page}&limit=${limit}`);
-    const normalized = normalizePaginatedResponse<UnknownRecord>(response.data);
+    const normalized = normalizePaginatedResponse<UnknownRecord>(
+      response.data as any
+    );
     return {
       ...normalized,
       data: normalized.data.map(normalizeAgentCustomer),
@@ -622,7 +648,9 @@ export const agentAdminService = {
     >(
       `/dashboard/agents/${agentUserId}/commissions?page=${page}&limit=${limit}`
     );
-    const normalized = normalizePaginatedResponse<UnknownRecord>(response.data);
+    const normalized = normalizePaginatedResponse<UnknownRecord>(
+      response.data as any
+    );
     return {
       ...normalized,
       data: normalized.data.map(normalizeAgentCommission),
