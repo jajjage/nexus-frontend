@@ -36,7 +36,8 @@ export const BankWithdrawModal: React.FC<BankWithdrawModalProps> = ({
     requestNotes: "",
   });
 
-  const { data: balanceData } = useAvailableBalance();
+  const { data: balanceData, isLoading: balanceLoading } =
+    useAvailableBalance();
   const { mutate: requestBankWithdrawal, isPending } =
     useBankWithdrawalRequest();
 
@@ -53,17 +54,7 @@ export const BankWithdrawModal: React.FC<BankWithdrawModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
-    if (!formData.amount || formData.amount <= 0) {
-      toast.error("Amount must be greater than 0");
-      return;
-    }
-
-    if (balanceData && formData.amount > (balanceData.availableBalance || 0)) {
-      toast.error("Insufficient available balance");
-      return;
-    }
-
+    // Validate required bank fields FIRST
     if (!formData.bankName.trim()) {
       toast.error("Bank name is required");
       return;
@@ -79,10 +70,29 @@ export const BankWithdrawModal: React.FC<BankWithdrawModalProps> = ({
       return;
     }
 
+    // Then validate amount
+    if (!formData.amount || formData.amount <= 0) {
+      toast.error("Amount must be greater than 0");
+      return;
+    }
+
+    // Finally check balance
+    if (!balanceData) {
+      toast.error("Unable to verify balance. Please try again.");
+      return;
+    }
+
+    if (formData.amount > (balanceData.availableBalance || 0)) {
+      toast.error(
+        `Insufficient available balance. Available: ₦${(balanceData.availableBalance || 0).toLocaleString("en-NG")}`
+      );
+      return;
+    }
+
     requestBankWithdrawal(formData, {
       onSuccess: (response) => {
         toast.success(
-          `"Bank withdrawal request submitted for ${response.data?.accountName}`
+          "Withdrawal request submitted! Admin will review and process within 24 hours."
         );
         setFormData({
           amount: 0,
@@ -120,10 +130,17 @@ export const BankWithdrawModal: React.FC<BankWithdrawModalProps> = ({
           <div>
             <Label className="text-sm font-medium">
               Available Balance: ₦
-              {balanceData?.availableBalance?.toLocaleString("en-NG", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }) || "0.00"}
+              {balanceLoading ? (
+                <span className="inline-flex items-center gap-2">
+                  <Spinner className="h-3 w-3" />
+                  Loading...
+                </span>
+              ) : (
+                balanceData?.availableBalance?.toLocaleString("en-NG", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }) || "0.00"
+              )}
             </Label>
           </div>
 
@@ -228,9 +245,11 @@ export const BankWithdrawModal: React.FC<BankWithdrawModalProps> = ({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending && <Spinner className="mr-2 h-4 w-4" />}
-              Submit Request
+            <Button type="submit" disabled={isPending || balanceLoading}>
+              {(isPending || balanceLoading) && (
+                <Spinner className="mr-2 h-4 w-4" />
+              )}
+              {balanceLoading ? "Loading balance..." : "Submit Request"}
             </Button>
           </div>
         </form>

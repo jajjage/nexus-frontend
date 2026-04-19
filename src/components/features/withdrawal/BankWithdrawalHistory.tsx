@@ -67,6 +67,22 @@ export const BankWithdrawalHistory: React.FC<BankWithdrawalHistoryProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Info Notice */}
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <h4 className="font-semibold text-blue-900">Processing Timeline</h4>
+            <p className="mt-1 text-sm text-blue-800">
+              Your withdrawal request will be reviewed and processed by our
+              admin team within
+              <strong> 24 hours</strong>. Your commission balance will be
+              deducted only after the withdrawal is{" "}
+              <strong>successfully approved</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>

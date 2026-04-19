@@ -26,7 +26,8 @@ export const WalletWithdrawModal: React.FC<WalletWithdrawModalProps> = ({
   onClose,
 }) => {
   const [amount, setAmount] = useState("");
-  const { data: balanceData } = useAvailableBalance();
+  const { data: balanceData, isLoading: balanceLoading } =
+    useAvailableBalance();
   const { mutate: withdrawToWallet, isPending } = useWalletWithdrawal();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -39,8 +40,15 @@ export const WalletWithdrawModal: React.FC<WalletWithdrawModalProps> = ({
       return;
     }
 
-    if (balanceData && withdrawAmount > (balanceData.availableBalance || 0)) {
-      toast.error("Insufficient available balance");
+    if (!balanceData) {
+      toast.error("Unable to verify balance. Please try again.");
+      return;
+    }
+
+    if (withdrawAmount > (balanceData.availableBalance || 0)) {
+      toast.error(
+        `Insufficient available balance. Available: ₦${(balanceData.availableBalance || 0).toLocaleString("en-NG")}`
+      );
       return;
     }
 
@@ -75,10 +83,17 @@ export const WalletWithdrawModal: React.FC<WalletWithdrawModalProps> = ({
           <div>
             <Label className="text-sm font-medium">
               Available Balance: ₦
-              {balanceData?.availableBalance?.toLocaleString("en-NG", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }) || "0.00"}
+              {balanceLoading ? (
+                <span className="inline-flex items-center gap-2">
+                  <Spinner className="h-3 w-3" />
+                  Loading...
+                </span>
+              ) : (
+                balanceData?.availableBalance?.toLocaleString("en-NG", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }) || "0.00"
+              )}
             </Label>
           </div>
 
@@ -105,9 +120,11 @@ export const WalletWithdrawModal: React.FC<WalletWithdrawModalProps> = ({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending && <Spinner className="mr-2 h-4 w-4" />}
-              Withdraw
+            <Button type="submit" disabled={isPending || balanceLoading}>
+              {(isPending || balanceLoading) && (
+                <Spinner className="mr-2 h-4 w-4" />
+              )}
+              {balanceLoading ? "Loading balance..." : "Withdraw"}
             </Button>
           </div>
         </form>
