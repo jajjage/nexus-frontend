@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  BankWithdrawalHistory,
+  BankWithdrawModal,
+  WalletWithdrawModal,
+  WithdrawalMethodSelector,
+} from "@/components/features/withdrawal";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,7 +21,6 @@ import {
   useAgentAccount,
   useAgentStats,
   useRegenerateAgentCode,
-  useWithdrawCommissions,
 } from "@/hooks/useAgent";
 import axios from "axios";
 import { Copy, RotateCw, Share2 } from "lucide-react";
@@ -45,10 +50,12 @@ export default function AgentPage() {
   const { mutate: activateAgent, isPending: activating } = useActivateAgent();
   const { mutate: regenerate, isPending: regenerating } =
     useRegenerateAgentCode();
-  const { mutate: withdraw, isPending: withdrawing } = useWithdrawCommissions();
 
-  const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [showWithdrawForm, setShowWithdrawForm] = useState(false);
+  const [withdrawalMethod, setWithdrawalMethod] = useState<
+    "wallet" | "bank" | null
+  >(null);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [showBankModal, setShowBankModal] = useState(false);
 
   if (accountLoading || (Boolean(account) && statsLoading)) {
     return (
@@ -147,31 +154,13 @@ export default function AgentPage() {
     });
   };
 
-  const handleWithdraw = () => {
-    const amount = parseFloat(withdrawAmount);
-    if (!amount || amount <= 0) {
-      toast.error("Please enter a valid amount");
-      return;
+  const handleSelectWithdrawalMethod = (method: "wallet" | "bank") => {
+    setWithdrawalMethod(method);
+    if (method === "wallet") {
+      setShowWalletModal(true);
+    } else {
+      setShowBankModal(true);
     }
-
-    if (amount > (stats?.availableBalanceAmount || 0)) {
-      toast.error("Insufficient balance");
-      return;
-    }
-
-    withdraw(
-      { amount },
-      {
-        onSuccess: () => {
-          toast.success("Withdrawal successful!");
-          setWithdrawAmount("");
-          setShowWithdrawForm(false);
-        },
-        onError: (error) => {
-          toast.error(getErrorMessage(error, "Withdrawal failed"));
-        },
-      }
-    );
   };
 
   return (
@@ -309,72 +298,57 @@ export default function AgentPage() {
         </div>
 
         {/* Withdraw Section */}
-        <Card>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Withdraw Commissions</CardTitle>
             <CardDescription>
-              Request a withdrawal of your available balance
+              Choose how you want to withdraw your available balance
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            {!showWithdrawForm ? (
-              <Button
-                onClick={() => setShowWithdrawForm(true)}
-                disabled={
-                  !stats?.availableBalanceAmount ||
-                  stats.availableBalanceAmount <= 0
-                }
-              >
-                Start Withdrawal
-              </Button>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Amount (₦)</label>
-                  <Input
-                    type="number"
-                    placeholder="0.00"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    max={stats?.availableBalanceAmount}
-                    disabled={withdrawing}
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Available: ₦
-                    {(stats?.availableBalanceAmount ?? 0).toLocaleString()}
-                  </p>
-                </div>
+          <CardContent className="space-y-6">
+            <WithdrawalMethodSelector
+              selectedMethod={withdrawalMethod}
+              onSelectMethod={handleSelectWithdrawalMethod}
+            />
 
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleWithdraw}
-                    disabled={withdrawing || !withdrawAmount}
-                    className="flex-1"
-                  >
-                    {withdrawing ? (
-                      <>
-                        <Spinner className="mr-2 h-4 w-4" />
-                        Processing...
-                      </>
-                    ) : (
-                      "Confirm Withdrawal"
-                    )}
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setShowWithdrawForm(false);
-                      setWithdrawAmount("");
-                    }}
-                    variant="outline"
-                    disabled={withdrawing}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
+            {!withdrawalMethod && (
+              <p className="text-sm text-gray-600">
+                Select a withdrawal method to continue
+              </p>
             )}
           </CardContent>
         </Card>
+
+        {/* Bank Withdrawal History */}
+        {withdrawalMethod === "bank" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Withdrawal History</CardTitle>
+              <CardDescription>
+                Track your bank withdrawal requests
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BankWithdrawalHistory />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Modals */}
+        <WalletWithdrawModal
+          isOpen={showWalletModal}
+          onClose={() => {
+            setShowWalletModal(false);
+            setWithdrawalMethod(null);
+          }}
+        />
+        <BankWithdrawModal
+          isOpen={showBankModal}
+          onClose={() => {
+            setShowBankModal(false);
+            setWithdrawalMethod(null);
+          }}
+        />
       </div>
     </div>
   );
