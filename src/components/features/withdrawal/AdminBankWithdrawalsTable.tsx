@@ -39,17 +39,12 @@ const statusBadgeVariant = (status: string) => {
     case "processing":
       return "secondary";
     case "success":
-      return "success";
+      return "default";
     case "failed":
       return "destructive";
     default:
       return "default";
   }
-};
-
-const maskAccountNumber = (accountNumber: string) => {
-  if (!accountNumber || accountNumber.length < 4) return accountNumber;
-  return "XXXX" + accountNumber.slice(-4);
 };
 
 export const AdminBankWithdrawalsTable: React.FC<
@@ -173,9 +168,9 @@ export const AdminBankWithdrawalsTable: React.FC<
                   <TableCell>{request.bankName}</TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      <div>{request.accountName}</div>
-                      <div className="text-gray-500">
-                        {maskAccountNumber(request.accountNumber)}
+                      <div className="font-semibold">{request.accountName}</div>
+                      <div className="font-mono text-gray-600">
+                        {request.accountNumber}
                       </div>
                     </div>
                   </TableCell>
@@ -290,6 +285,28 @@ export const AdminBankWithdrawalsTable: React.FC<
                 {selectedRequest?.amount.toLocaleString("en-NG", {
                   minimumFractionDigits: 2,
                 })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium">Account Name</Label>
+                <div className="text-sm font-semibold">
+                  {selectedRequest?.accountName}
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Bank</Label>
+                <div className="text-sm font-semibold">
+                  {selectedRequest?.bankName}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Account Number</Label>
+              <div className="font-mono text-sm font-semibold">
+                {selectedRequest?.accountNumber}
               </div>
             </div>
 

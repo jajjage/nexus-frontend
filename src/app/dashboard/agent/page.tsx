@@ -5,6 +5,7 @@ import {
   BankWithdrawModal,
   WalletWithdrawModal,
   WithdrawalMethodSelector,
+  WithdrawalStatusTracker,
 } from "@/components/features/withdrawal";
 import { Button } from "@/components/ui/button";
 import {
@@ -295,6 +296,11 @@ export default function AgentPage() {
               View Commissions
             </Button>
           </Link>
+        </div>
+
+        {/* Withdrawal Status Tracker */}
+        <div className="mb-8">
+          <WithdrawalStatusTracker />
         </div>
 
         {/* Withdraw Section */}
