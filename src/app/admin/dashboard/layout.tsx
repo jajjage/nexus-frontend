@@ -73,6 +73,11 @@ const navItems = [
     icon: PercentIcon,
   },
   {
+    title: "Agent Withdrawals",
+    href: "/admin/dashboard/agent-withdrawals",
+    icon: WalletIcon,
+  },
+  {
     title: "Transactions",
     href: "/admin/dashboard/transactions",
     icon: CreditCardIcon,

@@ -130,7 +130,7 @@ export function RegisterForm() {
       password: rest.password,
       phoneNumber: normalizedPhone,
       fullName: rest.fullName,
-      agentCode: rest.agentCode,
+      ...(rest.agentCode && { agentCode: rest.agentCode }), // Only include agentCode if not empty
     };
 
     // Store password in sessionStorage temporarily for auto-fill on login page

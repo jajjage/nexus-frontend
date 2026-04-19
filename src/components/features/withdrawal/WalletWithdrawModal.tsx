@@ -48,7 +48,7 @@ export const WalletWithdrawModal: React.FC<WalletWithdrawModalProps> = ({
       { amount: withdrawAmount },
       {
         onSuccess: (response) => {
-          toast.success(response.data.message || "Withdrawal successful");
+          toast.success(response.data?.message || "Withdrawal successful");
           setAmount("");
           onClose();
         },

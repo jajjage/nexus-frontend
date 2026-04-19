@@ -82,7 +82,7 @@ export const BankWithdrawModal: React.FC<BankWithdrawModalProps> = ({
     requestBankWithdrawal(formData, {
       onSuccess: (response) => {
         toast.success(
-          response.data.message || "Bank withdrawal request submitted"
+          `"Bank withdrawal request submitted for ${response.data?.accountName}`
         );
         setFormData({
           amount: 0,
