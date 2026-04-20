@@ -35,8 +35,7 @@ export const useAvailableBalance = () => {
     queryKey: withdrawalKeys.balance(),
     queryFn: async () => {
       const response = await withdrawalService.getAvailableBalance();
-      // API returns wrapped response: { success, message, data: { availableBalance, ... } }
-      return response.data.data;
+      return response.data;
     },
     refetchInterval: 30000, // Refetch every 30 seconds
   });
@@ -105,8 +104,7 @@ export const useBankWithdrawals = (page = 1, limit = 20, status?: string) => {
         limit,
         status
       );
-      // API returns wrapped response: { success, message, data: { requests, pagination } }
-      return response.data.data;
+      return response.data;
     },
     enabled: true,
   });
@@ -132,8 +130,7 @@ export const useAdminBankWithdrawals = (
         status,
         agentUserId
       );
-      // API returns wrapped response: { success, message, data: { requests, pagination } }
-      return response.data.data;
+      return response.data;
     },
     enabled: true,
   });

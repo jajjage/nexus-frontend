@@ -1,12 +1,13 @@
 import apiClient from "@/lib/api-client";
+import type { ApiResponse } from "@/types/api.types";
 import {
-    AdminWithdrawalProcessPayload,
-    AvailableBalanceResponse,
-    BankWithdrawalRequest,
-    BankWithdrawalRequestObject,
-    BankWithdrawalsListResponse,
-    WalletWithdrawalRequest,
-    WalletWithdrawalResponse,
+  AdminWithdrawalProcessPayload,
+  AvailableBalanceResponse,
+  BankWithdrawalRequest,
+  BankWithdrawalRequestObject,
+  BankWithdrawalsListResponse,
+  WalletWithdrawalRequest,
+  WalletWithdrawalResponse,
 } from "@/types/withdrawal.types";
 
 /**
@@ -16,50 +17,62 @@ export const withdrawalService = {
   /**
    * Get available balance for agent
    */
-  getAvailableBalance: () => {
-    return apiClient.get<AvailableBalanceResponse>(
+  getAvailableBalance: async (): Promise<
+    ApiResponse<AvailableBalanceResponse>
+  > => {
+    const response = await apiClient.get<ApiResponse<AvailableBalanceResponse>>(
       "/dashboard/agent/available-balance"
     );
+    return response.data;
   },
 
   /**
    * Withdraw to wallet
    */
-  withdrawToWallet: (payload: WalletWithdrawalRequest) => {
-    return apiClient.post<WalletWithdrawalResponse>(
-      "/dashboard/agent/withdraw",
-      {
-        method: "wallet",
-        ...payload,
-      }
-    );
+  withdrawToWallet: async (
+    payload: WalletWithdrawalRequest
+  ): Promise<ApiResponse<WalletWithdrawalResponse>> => {
+    const response = await apiClient.post<
+      ApiResponse<WalletWithdrawalResponse>
+    >("/dashboard/agent/withdraw", {
+      method: "wallet",
+      ...payload,
+    });
+    return response.data;
   },
 
   /**
    * Request bank withdrawal
    */
-  requestBankWithdrawal: (payload: BankWithdrawalRequest) => {
-    return apiClient.post<BankWithdrawalRequestObject>(
-      "/dashboard/agent/withdraw",
-      {
-        method: "bank",
-        ...payload,
-      }
-    );
+  requestBankWithdrawal: async (
+    payload: BankWithdrawalRequest
+  ): Promise<ApiResponse<BankWithdrawalRequestObject>> => {
+    const response = await apiClient.post<
+      ApiResponse<BankWithdrawalRequestObject>
+    >("/dashboard/agent/withdraw", {
+      method: "bank",
+      ...payload,
+    });
+    return response.data;
   },
 
   /**
    * Get agent bank withdrawal history
    */
-  getBankWithdrawals: (page = 1, limit = 20, status?: string) => {
+  getBankWithdrawals: async (
+    page = 1,
+    limit = 20,
+    status?: string
+  ): Promise<ApiResponse<BankWithdrawalsListResponse>> => {
     const params = new URLSearchParams();
     params.set("page", String(page));
     params.set("limit", String(limit));
     if (status) params.set("status", status);
 
-    return apiClient.get<BankWithdrawalsListResponse>(
-      `/dashboard/agent/bank-withdrawals?${params.toString()}`
-    );
+    const response = await apiClient.get<
+      ApiResponse<BankWithdrawalsListResponse>
+    >(`/dashboard/agent/bank-withdrawals?${params.toString()}`);
+    return response.data;
   },
 };
 
@@ -70,33 +83,34 @@ export const adminWithdrawalService = {
   /**
    * Get all agent bank withdrawals (admin view)
    */
-  getBankWithdrawals: (
+  getBankWithdrawals: async (
     page = 1,
     limit = 20,
     status?: string,
     agentUserId?: string
-  ) => {
+  ): Promise<ApiResponse<BankWithdrawalsListResponse>> => {
     const params = new URLSearchParams();
     params.set("page", String(page));
     params.set("limit", String(limit));
     if (status) params.set("status", status);
     if (agentUserId) params.set("agentUserId", agentUserId);
 
-    return apiClient.get<BankWithdrawalsListResponse>(
-      `/dashboard/agents/bank-withdrawals?${params.toString()}`
-    );
+    const response = await apiClient.get<
+      ApiResponse<BankWithdrawalsListResponse>
+    >(`/dashboard/agents/bank-withdrawals?${params.toString()}`);
+    return response.data;
   },
 
   /**
    * Process agent bank withdrawal request
    */
-  processWithdrawal: (
+  processWithdrawal: async (
     withdrawalRequestId: string,
     payload: AdminWithdrawalProcessPayload
-  ) => {
-    return apiClient.patch<BankWithdrawalRequestObject>(
-      `/dashboard/agents/bank-withdrawals/${withdrawalRequestId}`,
-      payload
-    );
+  ): Promise<ApiResponse<BankWithdrawalRequestObject>> => {
+    const response = await apiClient.patch<
+      ApiResponse<BankWithdrawalRequestObject>
+    >(`/dashboard/agents/bank-withdrawals/${withdrawalRequestId}`, payload);
+    return response.data;
   },
 };
