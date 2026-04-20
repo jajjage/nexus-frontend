@@ -1,11 +1,11 @@
 import {
-    adminWithdrawalService,
-    withdrawalService,
+  adminWithdrawalService,
+  withdrawalService,
 } from "@/services/withdrawal.service";
 import {
-    AdminWithdrawalProcessPayload,
-    BankWithdrawalRequest,
-    WalletWithdrawalRequest,
+  AdminWithdrawalProcessPayload,
+  BankWithdrawalRequest,
+  WalletWithdrawalRequest,
 } from "@/types/withdrawal.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -35,7 +35,8 @@ export const useAvailableBalance = () => {
     queryKey: withdrawalKeys.balance(),
     queryFn: async () => {
       const response = await withdrawalService.getAvailableBalance();
-      return response.data;
+      // API returns wrapped response: { success, message, data: { availableBalance, ... } }
+      return response.data.data;
     },
     refetchInterval: 30000, // Refetch every 30 seconds
   });
@@ -82,6 +83,10 @@ export const useBankWithdrawalRequest = () => {
       queryClient.invalidateQueries({
         queryKey: withdrawalKeys.balance(),
       });
+      // Also invalidate admin list so they see the new withdrawal
+      queryClient.invalidateQueries({
+        queryKey: withdrawalKeys.adminBankRequests(),
+      });
     },
   });
 };
@@ -100,7 +105,8 @@ export const useBankWithdrawals = (page = 1, limit = 20, status?: string) => {
         limit,
         status
       );
-      return response.data;
+      // API returns wrapped response: { success, message, data: { requests, pagination } }
+      return response.data.data;
     },
     enabled: true,
   });
@@ -126,7 +132,8 @@ export const useAdminBankWithdrawals = (
         status,
         agentUserId
       );
-      return response.data;
+      // API returns wrapped response: { success, message, data: { requests, pagination } }
+      return response.data.data;
     },
     enabled: true,
   });
@@ -158,4 +165,17 @@ export const useProcessWithdrawal = () => {
       });
     },
   });
+};
+
+/**
+ * Hook to get count of active withdrawal requests (pending + processing)
+ */
+export const useActiveWithdrawalCount = () => {
+  const { data } = useBankWithdrawals(1, 1000);
+
+  const activeCount = (data?.requests || []).filter(
+    (req) => req.status === "pending" || req.status === "processing"
+  ).length;
+
+  return activeCount;
 };

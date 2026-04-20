@@ -7,6 +7,7 @@ import {
   WithdrawalMethodSelector,
   WithdrawalStatusTracker,
 } from "@/components/features/withdrawal";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,6 +24,7 @@ import {
   useAgentStats,
   useRegenerateAgentCode,
 } from "@/hooks/useAgent";
+import { useActiveWithdrawalCount } from "@/hooks/useWithdrawal";
 import axios from "axios";
 import { Copy, RotateCw, Share2 } from "lucide-react";
 import Link from "next/link";
@@ -51,6 +53,7 @@ export default function AgentPage() {
   const { mutate: activateAgent, isPending: activating } = useActivateAgent();
   const { mutate: regenerate, isPending: regenerating } =
     useRegenerateAgentCode();
+  const activeWithdrawalCount = useActiveWithdrawalCount();
 
   const [withdrawalMethod, setWithdrawalMethod] = useState<
     "wallet" | "bank" | null
@@ -306,7 +309,14 @@ export default function AgentPage() {
         {/* Withdraw Section */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Withdraw Commissions</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Withdraw Commissions</CardTitle>
+              {activeWithdrawalCount > 0 && (
+                <Badge variant="destructive" className="text-xs">
+                  {activeWithdrawalCount} Active
+                </Badge>
+              )}
+            </div>
             <CardDescription>
               Choose how you want to withdraw your available balance
             </CardDescription>
