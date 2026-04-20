@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { useBankWithdrawals } from "@/hooks/useWithdrawal";
+import { BankWithdrawalRequestObject } from "@/types/withdrawal.types";
 import { AlertCircle, CheckCircle, Clock, Loader } from "lucide-react";
 import React, { useMemo } from "react";
 
@@ -18,7 +19,8 @@ export const WithdrawalStatusTracker: React.FC = () => {
   // Get the most recent pending or processing request
   const activeRequest = useMemo(() => {
     return requests.find(
-      (req) => req.status === "pending" || req.status === "processing"
+      (req: BankWithdrawalRequestObject) =>
+        req.status === "pending" || req.status === "processing"
     );
   }, [requests]);
 
