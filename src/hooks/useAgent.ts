@@ -43,6 +43,7 @@ export const agentKeys = {
     page,
     limit,
   ],
+  agentsList: () => [...agentKeys.all, "agents"],
   agent: (agentUserId: string) => [...agentKeys.all, "agent", agentUserId],
   agentCustomers: (
     agentUserId: string,
@@ -373,7 +374,7 @@ export function useDisableAgent() {
       queryClient.invalidateQueries({
         queryKey: agentKeys.agent(agentUserId),
       });
-      queryClient.invalidateQueries({ queryKey: agentKeys.agents(1, 20) });
+      queryClient.invalidateQueries({ queryKey: agentKeys.agentsList() });
     },
   });
 }
@@ -391,7 +392,7 @@ export function useEnableAgent() {
       queryClient.invalidateQueries({
         queryKey: agentKeys.agent(agentUserId),
       });
-      queryClient.invalidateQueries({ queryKey: agentKeys.agents(1, 20) });
+      queryClient.invalidateQueries({ queryKey: agentKeys.agentsList() });
     },
   });
 }
