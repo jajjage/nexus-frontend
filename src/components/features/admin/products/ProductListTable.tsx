@@ -148,7 +148,28 @@ export function ProductListTable() {
                   <Badge variant="secondary">{product.productType}</Badge>
                 </TableCell>
                 <TableCell className="text-right font-medium">
-                  ₦{product.denomAmount?.toLocaleString()}
+                  <div className="space-y-1">
+                    <div>₦{product.denomAmount?.toLocaleString()}</div>
+                    <div className="text-muted-foreground text-[11px] leading-tight">
+                      U: ₦
+                      {(
+                        product.priceTags?.user ?? product.denomAmount
+                      )?.toLocaleString()}
+                      {" · "}R: ₦
+                      {(
+                        product.priceTags?.reseller ??
+                        product.priceTags?.user ??
+                        product.denomAmount
+                      )?.toLocaleString()}
+                      {" · "}API: ₦
+                      {(
+                        product.priceTags?.api ??
+                        product.priceTags?.reseller ??
+                        product.priceTags?.user ??
+                        product.denomAmount
+                      )?.toLocaleString()}
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {product.dataMb ? `${product.dataMb} MB` : "—"}

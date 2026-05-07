@@ -21,12 +21,21 @@ export interface Product {
   has_cashback?: boolean;
   cashbackPercentage?: number;
   cashback_percentage?: number;
+  priceTags?: ProductPriceTags;
+  resolvedPrice?: number;
+  resolvedPriceTag?: keyof ProductPriceTags | null;
   metadata?: Record<string, unknown>;
   slug?: string | null;
   createdAt?: string;
   updatedAt?: string;
   // Mappings array from API
   mappings?: SupplierProductMapping[];
+}
+
+export interface ProductPriceTags {
+  user?: number;
+  reseller?: number;
+  api?: number;
 }
 
 // ============= Supplier Mapping Entity =============
@@ -67,6 +76,10 @@ export interface CreateProductRequest {
   name: string;
   productType: string;
   denomAmount: number;
+  priceTags?: ProductPriceTags;
+  userPrice?: number;
+  resellerPrice?: number;
+  apiPrice?: number;
   dataMb?: number;
   validityDays?: number;
   isActive?: boolean;
@@ -91,6 +104,10 @@ export interface UpdateProductRequest {
   productCode?: string;
   productType?: string;
   denomAmount?: number;
+  priceTags?: ProductPriceTags;
+  userPrice?: number;
+  resellerPrice?: number;
+  apiPrice?: number;
   dataMb?: number;
   validityDays?: number;
   isActive?: boolean;

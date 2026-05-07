@@ -37,6 +37,7 @@ import {
   useUpdateProductSupplierMapping,
 } from "@/hooks/admin/useAdminProducts";
 import { useAdminSuppliers } from "@/hooks/admin/useAdminSuppliers";
+import type { ProductPriceTags } from "@/types/admin/product.types";
 import { format } from "date-fns";
 import {
   ArrowLeft,
@@ -70,6 +71,9 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
   const [editProductCode, setEditProductCode] = useState("");
   const [editProductType, setEditProductType] = useState("");
   const [editDenomAmount, setEditDenomAmount] = useState(0);
+  const [editUserPrice, setEditUserPrice] = useState<number | "">("");
+  const [editResellerPrice, setEditResellerPrice] = useState<number | "">("");
+  const [editApiPrice, setEditApiPrice] = useState<number | "">("");
   const [editDataMb, setEditDataMb] = useState<number | undefined>();
   const [editValidityDays, setEditValidityDays] = useState<
     number | undefined
@@ -113,6 +117,9 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
       setEditProductCode(product.productCode);
       setEditProductType(product.productType);
       setEditDenomAmount(product.denomAmount);
+      setEditUserPrice(product.priceTags?.user ?? "");
+      setEditResellerPrice(product.priceTags?.reseller ?? "");
+      setEditApiPrice(product.priceTags?.api ?? "");
       setEditDataMb(product.dataMb ?? undefined);
       setEditValidityDays(product.validityDays ?? undefined);
       setEditIsActive(product.isActive);
@@ -125,11 +132,34 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
   };
 
   const handleSaveEdit = () => {
+    const hasCustomPriceTags =
+      typeof editUserPrice === "number" ||
+      typeof editResellerPrice === "number" ||
+      typeof editApiPrice === "number";
+
+    const priceTags: ProductPriceTags | undefined = hasCustomPriceTags
+      ? {
+          ...(typeof editUserPrice === "number" ? { user: editUserPrice } : {}),
+          ...(typeof editResellerPrice === "number"
+            ? { reseller: editResellerPrice }
+            : {}),
+          ...(typeof editApiPrice === "number" ? { api: editApiPrice } : {}),
+        }
+      : undefined;
+
     const payload = {
       name: editName,
       productCode: editProductCode,
       productType: editProductType,
       denomAmount: editDenomAmount,
+      ...(priceTags ? { priceTags } : {}),
+      ...(typeof editUserPrice === "number"
+        ? { userPrice: editUserPrice }
+        : {}),
+      ...(typeof editResellerPrice === "number"
+        ? { resellerPrice: editResellerPrice }
+        : {}),
+      ...(typeof editApiPrice === "number" ? { apiPrice: editApiPrice } : {}),
       dataMb: editDataMb,
       validityDays: editValidityDays,
       isActive: editIsActive,
@@ -535,7 +565,7 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
                 Edit Product
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Edit Product</DialogTitle>
                 <DialogDescription>Update product details.</DialogDescription>
@@ -570,6 +600,56 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
                     value={editDenomAmount}
                     onChange={(e) => setEditDenomAmount(Number(e.target.value))}
                   />
+                </div>
+                <div className="space-y-4 rounded-lg border p-4">
+                  <div className="space-y-1">
+                    <Label className="text-base">Role-Based Prices</Label>
+                    <p className="text-muted-foreground text-xs">
+                      Leave a field empty to keep the product amount fallback
+                      for that role.
+                    </p>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label>User Price (₦)</Label>
+                      <Input
+                        type="number"
+                        value={editUserPrice}
+                        onChange={(e) =>
+                          setEditUserPrice(
+                            e.target.value ? Number(e.target.value) : ""
+                          )
+                        }
+                        placeholder="Fallback: amount"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Reseller Price (₦)</Label>
+                      <Input
+                        type="number"
+                        value={editResellerPrice}
+                        onChange={(e) =>
+                          setEditResellerPrice(
+                            e.target.value ? Number(e.target.value) : ""
+                          )
+                        }
+                        placeholder="Fallback: user price"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>API Price (₦)</Label>
+                      <Input
+                        type="number"
+                        value={editApiPrice}
+                        onChange={(e) =>
+                          setEditApiPrice(
+                            e.target.value ? Number(e.target.value) : ""
+                          )
+                        }
+                        placeholder="Fallback: reseller price"
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
@@ -632,7 +712,7 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
                   </div>
                 )}
               </div>
-              <DialogFooter>
+              <DialogFooter className="bg-background sticky bottom-0 mt-2 border-t pt-4">
                 <Button
                   variant="outline"
                   onClick={() => setIsEditOpen(false)}
@@ -678,6 +758,57 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
               label="Amount"
               value={`₦${product.denomAmount?.toLocaleString()}`}
             />
+            <div className="space-y-3 rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Role-Based Prices</span>
+                {product.resolvedPrice !== undefined && (
+                  <Badge variant="outline" className="text-xs">
+                    {product.resolvedPriceTag || "resolved"}: ₦
+                    {product.resolvedPrice.toLocaleString()}
+                  </Badge>
+                )}
+              </div>
+              <div className="grid gap-3 text-sm md:grid-cols-3">
+                <div className="bg-muted/50 rounded-md p-3">
+                  <div className="text-muted-foreground text-xs uppercase">
+                    User
+                  </div>
+                  <div className="font-medium">
+                    ₦
+                    {(
+                      product.priceTags?.user ?? product.denomAmount
+                    )?.toLocaleString()}
+                  </div>
+                </div>
+                <div className="bg-muted/50 rounded-md p-3">
+                  <div className="text-muted-foreground text-xs uppercase">
+                    Reseller
+                  </div>
+                  <div className="font-medium">
+                    ₦
+                    {(
+                      product.priceTags?.reseller ??
+                      product.priceTags?.user ??
+                      product.denomAmount
+                    )?.toLocaleString()}
+                  </div>
+                </div>
+                <div className="bg-muted/50 rounded-md p-3">
+                  <div className="text-muted-foreground text-xs uppercase">
+                    API
+                  </div>
+                  <div className="font-medium">
+                    ₦
+                    {(
+                      product.priceTags?.api ??
+                      product.priceTags?.reseller ??
+                      product.priceTags?.user ??
+                      product.denomAmount
+                    )?.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </div>
             {product.dataMb && (
               <InfoRow label="Data" value={`${product.dataMb} MB`} />
             )}

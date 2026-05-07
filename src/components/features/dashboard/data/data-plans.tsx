@@ -15,7 +15,10 @@ import { useEligibleOffers } from "@/hooks/useUserOffers";
 import { useTransaction } from "@/hooks/useWallet";
 import { detectNetworkProvider } from "@/lib/network-utils";
 import { useSecurityStore } from "@/store/securityStore";
-import { convertDenomAmountToNumber } from "@/utils/reseller-products";
+import {
+  convertDenomAmountToNumber,
+  getResolvedProductPrice,
+} from "@/utils/reseller-products";
 import { Product } from "@/types/product.types";
 import { useQueryClient } from "@tanstack/react-query";
 import { Grid, LayoutList } from "lucide-react";
@@ -367,27 +370,15 @@ export function DataPlans() {
   const handlePayment = (useCashback: boolean) => {
     if (!selectedProduct) return;
 
-    // Calculate the amount to display
-    const faceValue = convertDenomAmountToNumber(selectedProduct.denomAmount);
-    const supplierPrice = selectedProduct.supplierOffers?.[0]?.supplierPrice
-      ? parseFloat(selectedProduct.supplierOffers[0].supplierPrice)
-      : faceValue;
-
-    // Get supplier markup
-    const supplierId = selectedProduct.supplierOffers?.[0]?.supplierId || "";
-    const markupPercent = markupMap.get(supplierId) || 0;
-
-    // Calculate selling price: supplierPrice + (supplierPrice * markup%)
-    // markupPercent can be either decimal (0.10) or percentage (10)
-    const actualMarkup =
-      markupPercent < 1 ? markupPercent : markupPercent / 100;
-    const sellingPrice = supplierPrice + supplierPrice * actualMarkup;
+    const basePrice =
+      getResolvedProductPrice(selectedProduct) ??
+      convertDenomAmountToNumber(selectedProduct.denomAmount);
 
     // Calculate payable amount
     const userCashbackBalance = user?.cashback?.availableBalance || 0;
     const payableAmount = useCashback
-      ? Math.max(0, sellingPrice - userCashbackBalance)
-      : sellingPrice;
+      ? Math.max(0, basePrice - userCashbackBalance)
+      : basePrice;
 
     // Store pending payment data
     setPendingPaymentData({ useCashback, amount: payableAmount });
@@ -416,7 +407,9 @@ export function DataPlans() {
       return;
     }
 
-    const amount = convertDenomAmountToNumber(selectedProduct.denomAmount);
+    const amount =
+      getResolvedProductPrice(selectedProduct) ??
+      convertDenomAmountToNumber(selectedProduct.denomAmount);
     const offer = selectedProduct.supplierOffers?.[0];
 
     console.log("[DataPlans] Proceeding with payment", {
@@ -431,6 +424,7 @@ export function DataPlans() {
     topupMutation.mutate(
       {
         amount, // Send face value - backend handles discount calculation
+        // For role-based pricing, this is already the resolved customer-facing amount
         productCode: selectedProduct.productCode,
         recipientPhone: phoneNumber,
         supplierSlug: offer?.supplierSlug,

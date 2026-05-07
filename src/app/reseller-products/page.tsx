@@ -4,7 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useProducts } from "@/hooks/useProducts";
-import { convertDenomAmountToNumber } from "@/utils/reseller-products";
+import {
+  convertDenomAmountToNumber,
+  getResolvedProductPrice,
+} from "@/utils/reseller-products";
 import { Download, ExternalLink, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -72,9 +75,7 @@ export default function ResellerProductsPage() {
       p.productCode,
       p.productType,
       p.operator?.name || "N/A",
-      typeof p.denomAmount === "number"
-        ? p.denomAmount
-        : p.denomAmount || "Variable",
+      getResolvedProductPrice(p) ?? "Variable",
       p.dataMb || "N/A",
       p.validityDays || "N/A",
       p.isActive ? "Active" : "Inactive",
@@ -239,9 +240,7 @@ export default function ResellerProductsPage() {
                       Price
                     </p>
                     {(() => {
-                      const price = convertDenomAmountToNumber(
-                        product.denomAmount
-                      );
+                      const price = getResolvedProductPrice(product) ?? 0;
                       return price > 0 ? (
                         <p className="text-2xl font-bold text-green-400">
                           ₦{price.toLocaleString()}

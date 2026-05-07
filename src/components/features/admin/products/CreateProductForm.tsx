@@ -23,6 +23,7 @@ import { useAdminCategories } from "@/hooks/admin/useAdminCategories";
 import { useAdminOperators } from "@/hooks/admin/useAdminOperators";
 import { useCreateProduct } from "@/hooks/admin/useAdminProducts";
 import { useAdminSuppliers } from "@/hooks/admin/useAdminSuppliers";
+import type { ProductPriceTags } from "@/types/admin/product.types";
 import { ArrowLeft, Loader2, Package, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -42,6 +43,9 @@ export function CreateProductForm() {
   const [productType, setProductType] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [denomAmount, setDenomAmount] = useState<number | "">("");
+  const [userPrice, setUserPrice] = useState<number | "">("");
+  const [resellerPrice, setResellerPrice] = useState<number | "">("");
+  const [apiPrice, setApiPrice] = useState<number | "">("");
   const [dataMb, setDataMb] = useState<number | undefined>();
   const [validityDays, setValidityDays] = useState<number | undefined>();
   const [isActive, setIsActive] = useState(true);
@@ -79,12 +83,31 @@ export function CreateProductForm() {
       }
     }
 
+    const hasCustomPriceTags =
+      typeof userPrice === "number" ||
+      typeof resellerPrice === "number" ||
+      typeof apiPrice === "number";
+
+    const priceTags: ProductPriceTags | undefined = hasCustomPriceTags
+      ? {
+          ...(typeof userPrice === "number" ? { user: userPrice } : {}),
+          ...(typeof resellerPrice === "number"
+            ? { reseller: resellerPrice }
+            : {}),
+          ...(typeof apiPrice === "number" ? { api: apiPrice } : {}),
+        }
+      : undefined;
+
     const payload = {
       operatorId,
       productCode,
       name,
       productType,
       denomAmount: typeof denomAmount === "number" ? denomAmount : 0,
+      ...(priceTags ? { priceTags } : {}),
+      ...(typeof userPrice === "number" ? { userPrice } : {}),
+      ...(typeof resellerPrice === "number" ? { resellerPrice } : {}),
+      ...(typeof apiPrice === "number" ? { apiPrice } : {}),
       dataMb,
       validityDays,
       isActive,
@@ -221,6 +244,59 @@ export function CreateProductForm() {
                   placeholder="Enter amount"
                   required
                 />
+              </div>
+            </div>
+
+            <div className="space-y-4 rounded-lg border p-4">
+              <div className="space-y-1">
+                <Label className="text-base">Role-Based Prices</Label>
+                <p className="text-muted-foreground text-xs">
+                  Optional. Leave these empty to keep the product amount as the
+                  fallback for all roles.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="userPrice">User Price (₦)</Label>
+                  <Input
+                    id="userPrice"
+                    type="number"
+                    value={userPrice}
+                    onChange={(e) =>
+                      setUserPrice(e.target.value ? Number(e.target.value) : "")
+                    }
+                    placeholder="Fallback: amount"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="resellerPrice">Reseller Price (₦)</Label>
+                  <Input
+                    id="resellerPrice"
+                    type="number"
+                    value={resellerPrice}
+                    onChange={(e) =>
+                      setResellerPrice(
+                        e.target.value ? Number(e.target.value) : ""
+                      )
+                    }
+                    placeholder="Fallback: user price"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="apiPrice">API Price (₦)</Label>
+                  <Input
+                    id="apiPrice"
+                    type="number"
+                    value={apiPrice}
+                    onChange={(e) =>
+                      setApiPrice(e.target.value ? Number(e.target.value) : "")
+                    }
+                    placeholder="Fallback: reseller price"
+                  />
+                </div>
               </div>
             </div>
 

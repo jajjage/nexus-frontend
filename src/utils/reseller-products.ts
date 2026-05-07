@@ -98,6 +98,20 @@ export function convertDenomAmountToNumber(
 }
 
 /**
+ * Resolve the customer-facing price for a product.
+ * Prefer the backend-calculated resolved price, then role price tags,
+ * and finally the legacy denomAmount fallback.
+ */
+export function getResolvedProductPrice(product: PublicProduct): number | null {
+  if (typeof product.resolvedPrice === "number" && product.resolvedPrice > 0) {
+    return product.resolvedPrice;
+  }
+
+  const denomPrice = convertDenomAmountToNumber(product.denomAmount, 0);
+  return denomPrice > 0 ? denomPrice : null;
+}
+
+/**
  * Format price from denomAmount or discountedPrice
  * Handles string, number, or null values
  *
@@ -105,10 +119,9 @@ export function convertDenomAmountToNumber(
  * @returns Formatted price as number, or null if not available
  */
 export function getProductPrice(product: PublicProduct): number | null {
-  // Prefer denomAmount if it's a fixed price
-  if (isFixedPriceProduct(product)) {
-    const amount = product.denomAmount;
-    return convertDenomAmountToNumber(amount);
+  const resolvedPrice = getResolvedProductPrice(product);
+  if (resolvedPrice !== null) {
+    return resolvedPrice;
   }
 
   // Fall back to discountedPrice if available
