@@ -61,6 +61,8 @@ export interface Product {
   priceTags?: ProductPriceTags;
   resolvedPrice?: number;
   resolvedPriceTag?: keyof ProductPriceTags | null;
+  bundleBaseProductId?: string | null;
+  bundleRepeatCount?: number | null;
   operator: Operator;
   supplierOffers: SupplierOffer[];
   // Category

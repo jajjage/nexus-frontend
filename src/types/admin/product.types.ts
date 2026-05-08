@@ -24,6 +24,8 @@ export interface Product {
   priceTags?: ProductPriceTags;
   resolvedPrice?: number;
   resolvedPriceTag?: keyof ProductPriceTags | null;
+  bundleBaseProductId?: string | null;
+  bundleRepeatCount?: number | null;
   metadata?: Record<string, unknown>;
   slug?: string | null;
   createdAt?: string;
@@ -83,6 +85,8 @@ export interface CreateProductRequest {
   dataMb?: number;
   validityDays?: number;
   isActive?: boolean;
+  bundleBaseProductId?: string | null;
+  bundleRepeatCount?: number | null;
   metadata?: Record<string, unknown>;
   // Cashback fields
   has_cashback?: boolean;
@@ -111,6 +115,8 @@ export interface UpdateProductRequest {
   dataMb?: number;
   validityDays?: number;
   isActive?: boolean;
+  bundleBaseProductId?: string | null;
+  bundleRepeatCount?: number | null;
   has_cashback?: boolean;
   cashback_percentage?: number;
   metadata?: Record<string, unknown>;

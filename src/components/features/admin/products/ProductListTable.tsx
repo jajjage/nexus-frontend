@@ -41,6 +41,10 @@ export function ProductListTable() {
 
   const allProducts = data?.data?.products || [];
   const operators = operatorsData?.data?.operators || [];
+  const productById = useMemo(
+    () => new Map(allProducts.map((product) => [product.id, product])),
+    [allProducts]
+  );
 
   // Client-side filtering for search, operator, and type
   const filteredProducts = useMemo(() => {
@@ -169,6 +173,14 @@ export function ProductListTable() {
                         product.denomAmount
                       )?.toLocaleString()}
                     </div>
+                    {product.bundleBaseProductId && (
+                      <div className="text-muted-foreground text-[11px] leading-tight">
+                        Bundle:{" "}
+                        {productById.get(product.bundleBaseProductId)?.name ||
+                          product.bundleBaseProductId}{" "}
+                        × {product.bundleRepeatCount || 2}
+                      </div>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">

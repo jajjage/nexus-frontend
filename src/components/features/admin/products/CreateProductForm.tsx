@@ -21,18 +21,22 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminCategories } from "@/hooks/admin/useAdminCategories";
 import { useAdminOperators } from "@/hooks/admin/useAdminOperators";
-import { useCreateProduct } from "@/hooks/admin/useAdminProducts";
+import {
+  useAdminProducts,
+  useCreateProduct,
+} from "@/hooks/admin/useAdminProducts";
 import { useAdminSuppliers } from "@/hooks/admin/useAdminSuppliers";
 import type { ProductPriceTags } from "@/types/admin/product.types";
 import { ArrowLeft, Loader2, Package, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export function CreateProductForm() {
   const router = useRouter();
   const createMutation = useCreateProduct();
   const { data: operatorsData } = useAdminOperators();
+  const { data: productsData } = useAdminProducts();
   const { data: suppliersData } = useAdminSuppliers();
   const { data: categoriesData } = useAdminCategories();
 
@@ -46,6 +50,8 @@ export function CreateProductForm() {
   const [userPrice, setUserPrice] = useState<number | "">("");
   const [resellerPrice, setResellerPrice] = useState<number | "">("");
   const [apiPrice, setApiPrice] = useState<number | "">("");
+  const [bundleBaseProductId, setBundleBaseProductId] = useState("__none");
+  const [bundleRepeatCount, setBundleRepeatCount] = useState<number | "">(2);
   const [dataMb, setDataMb] = useState<number | undefined>();
   const [validityDays, setValidityDays] = useState<number | undefined>();
   const [isActive, setIsActive] = useState(true);
@@ -64,8 +70,31 @@ export function CreateProductForm() {
   const [mappingIsActive, setMappingIsActive] = useState(true);
 
   const operators = operatorsData?.data?.operators || [];
+  const allProducts = productsData?.data?.products || [];
   const suppliers = suppliersData?.data?.suppliers || [];
   const categories = categoriesData || [];
+
+  const bundleBaseProducts = useMemo(() => {
+    return allProducts
+      .filter((product) => {
+        const sameOperator = operatorId
+          ? product.operatorId === operatorId
+          : true;
+
+        return sameOperator && product.isActive && !product.bundleBaseProductId;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allProducts, operatorId]);
+
+  useEffect(() => {
+    if (
+      bundleBaseProductId !== "__none" &&
+      !bundleBaseProducts.some((product) => product.id === bundleBaseProductId)
+    ) {
+      setBundleBaseProductId("__none");
+      setBundleRepeatCount(2);
+    }
+  }, [bundleBaseProductId, bundleBaseProducts]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,6 +145,13 @@ export function CreateProductForm() {
         hasCashback && cashbackPercentage
           ? parseFloat(cashbackPercentage)
           : undefined,
+      ...(bundleBaseProductId !== "__none"
+        ? {
+            bundleBaseProductId,
+            bundleRepeatCount:
+              typeof bundleRepeatCount === "number" ? bundleRepeatCount : 2,
+          }
+        : {}),
       metadata: parsedMetadata,
       categoryId: categoryId || undefined,
       // Include supplier mapping if enabled
@@ -298,6 +334,75 @@ export function CreateProductForm() {
                   />
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-4 rounded-lg border border-dashed p-4">
+              <div className="space-y-1">
+                <Label className="text-base">Bundle Fulfillment</Label>
+                <p className="text-muted-foreground text-xs">
+                  Optional. Select an existing active product to use as the
+                  hidden supplier base for this product. The selected base
+                  product will be purchased repeatedly behind the scenes.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="bundleBaseProductId">Base Product</Label>
+                  <Select
+                    value={bundleBaseProductId}
+                    onValueChange={(value) =>
+                      setBundleBaseProductId(
+                        value === "__none" ? "__none" : value
+                      )
+                    }
+                    disabled={bundleBaseProducts.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          bundleBaseProducts.length > 0
+                            ? "No bundle"
+                            : "No eligible base products"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">No bundle</SelectItem>
+                      {bundleBaseProducts.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name} ({product.productCode})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bundleRepeatCount">Repeat Count</Label>
+                  <Input
+                    id="bundleRepeatCount"
+                    type="number"
+                    min={2}
+                    step={1}
+                    value={bundleRepeatCount}
+                    onChange={(e) =>
+                      setBundleRepeatCount(
+                        e.target.value ? Number(e.target.value) : ""
+                      )
+                    }
+                    placeholder="2"
+                    disabled={!bundleBaseProductId}
+                  />
+                </div>
+              </div>
+
+              {bundleBaseProductId && (
+                <p className="text-muted-foreground text-xs">
+                  This product will be treated as a wrapper and fulfilled using
+                  the selected base product.
+                </p>
+              )}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">

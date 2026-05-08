@@ -32,6 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
   useAdminProduct,
+  useAdminProducts,
   useMapProductToSupplier,
   useUpdateProduct,
   useUpdateProductSupplierMapping,
@@ -48,7 +49,7 @@ import {
   Package,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 interface ProductDetailViewProps {
   productId: string;
@@ -56,6 +57,7 @@ interface ProductDetailViewProps {
 
 export function ProductDetailView({ productId }: ProductDetailViewProps) {
   const { data, isLoading, isError, refetch } = useAdminProduct(productId);
+  const { data: productsData } = useAdminProducts();
   const { data: suppliersData } = useAdminSuppliers();
   const updateMutation = useUpdateProduct();
   const mapMutation = useMapProductToSupplier();
@@ -74,6 +76,11 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
   const [editUserPrice, setEditUserPrice] = useState<number | "">("");
   const [editResellerPrice, setEditResellerPrice] = useState<number | "">("");
   const [editApiPrice, setEditApiPrice] = useState<number | "">("");
+  const [editBundleBaseProductId, setEditBundleBaseProductId] =
+    useState("__none");
+  const [editBundleRepeatCount, setEditBundleRepeatCount] = useState<
+    number | ""
+  >(2);
   const [editDataMb, setEditDataMb] = useState<number | undefined>();
   const [editValidityDays, setEditValidityDays] = useState<
     number | undefined
@@ -109,7 +116,41 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
   const [editMappingIsActive, setEditMappingIsActive] = useState(true);
 
   const product = data?.data;
+  const allProducts = productsData?.data?.products || [];
   const suppliers = suppliersData?.data?.suppliers || [];
+  const baseProductById = useMemo(
+    () => new Map(allProducts.map((candidate) => [candidate.id, candidate])),
+    [allProducts]
+  );
+  const bundleBaseProducts = useMemo(() => {
+    if (!product) return [];
+
+    const validBaseProducts = allProducts.filter((candidate) => {
+      return (
+        candidate.id !== product.id &&
+        candidate.operatorId === product.operatorId &&
+        candidate.isActive &&
+        !candidate.bundleBaseProductId
+      );
+    });
+
+    if (
+      product.bundleBaseProductId &&
+      !validBaseProducts.some(
+        (candidate) => candidate.id === product.bundleBaseProductId
+      )
+    ) {
+      const currentBase = allProducts.find(
+        (candidate) => candidate.id === product.bundleBaseProductId
+      );
+
+      if (currentBase) {
+        return [...validBaseProducts, currentBase];
+      }
+    }
+
+    return validBaseProducts;
+  }, [allProducts, product]);
 
   const handleEdit = () => {
     if (product) {
@@ -120,6 +161,8 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
       setEditUserPrice(product.priceTags?.user ?? "");
       setEditResellerPrice(product.priceTags?.reseller ?? "");
       setEditApiPrice(product.priceTags?.api ?? "");
+      setEditBundleBaseProductId(product.bundleBaseProductId ?? "__none");
+      setEditBundleRepeatCount(product.bundleRepeatCount ?? 2);
       setEditDataMb(product.dataMb ?? undefined);
       setEditValidityDays(product.validityDays ?? undefined);
       setEditIsActive(product.isActive);
@@ -160,6 +203,14 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
         ? { resellerPrice: editResellerPrice }
         : {}),
       ...(typeof editApiPrice === "number" ? { apiPrice: editApiPrice } : {}),
+      bundleBaseProductId:
+        editBundleBaseProductId !== "__none" ? editBundleBaseProductId : null,
+      bundleRepeatCount:
+        editBundleBaseProductId !== "__none"
+          ? typeof editBundleRepeatCount === "number"
+            ? editBundleRepeatCount
+            : 2
+          : null,
       dataMb: editDataMb,
       validityDays: editValidityDays,
       isActive: editIsActive,
@@ -651,6 +702,57 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
                     </div>
                   </div>
                 </div>
+                <div className="space-y-4 rounded-lg border border-dashed p-4">
+                  <div className="space-y-1">
+                    <Label className="text-base">Bundle Fulfillment</Label>
+                    <p className="text-muted-foreground text-xs">
+                      Optional. Attach this product to an existing active base
+                      product and repeat it behind the scenes.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Base Product</Label>
+                      <Select
+                        value={editBundleBaseProductId}
+                        onValueChange={(value) =>
+                          setEditBundleBaseProductId(
+                            value === "__none" ? "__none" : value
+                          )
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="No bundle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none">No bundle</SelectItem>
+                          {bundleBaseProducts.map((candidate) => (
+                            <SelectItem key={candidate.id} value={candidate.id}>
+                              {candidate.name} ({candidate.productCode})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Repeat Count</Label>
+                      <Input
+                        type="number"
+                        min={2}
+                        step={1}
+                        value={editBundleRepeatCount}
+                        onChange={(e) =>
+                          setEditBundleRepeatCount(
+                            e.target.value ? Number(e.target.value) : ""
+                          )
+                        }
+                        disabled={editBundleBaseProductId === "__none"}
+                      />
+                    </div>
+                  </div>
+                </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Data (MB)</Label>
@@ -758,6 +860,15 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
               label="Amount"
               value={`₦${product.denomAmount?.toLocaleString()}`}
             />
+            {product.bundleBaseProductId && (
+              <InfoRow
+                label="Bundle"
+                value={`${
+                  baseProductById.get(product.bundleBaseProductId)?.name ||
+                  product.bundleBaseProductId
+                } × ${product.bundleRepeatCount || 2}`}
+              />
+            )}
             <div className="space-y-3 rounded-lg border p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Role-Based Prices</span>
