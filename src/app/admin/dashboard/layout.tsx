@@ -34,6 +34,7 @@ import {
   ServerIcon,
   ShieldCheckIcon,
   ShieldIcon,
+  TvIcon,
   UsersIcon,
   WalletIcon,
   WebhookIcon,
@@ -86,6 +87,11 @@ const navItems = [
     title: "Topups",
     href: "/admin/dashboard/topups",
     icon: WalletIcon,
+  },
+  {
+    title: "Bills & Cable",
+    href: "/admin/dashboard/bills",
+    icon: TvIcon,
   },
   {
     title: "Webhooks",

@@ -7,6 +7,7 @@
 
 import { adminAnalyticsService } from "@/services/admin/analytics.service";
 import {
+  DailyBillPaymentSnapshotResponse,
   DailyProductSnapshotResponse,
   DailyMetricsParams,
   DateRangeParams,
@@ -33,7 +34,15 @@ const analyticsKeys = {
   dailyMetrics: (params: DailyMetricsParams) =>
     [...analyticsKeys.all, "daily-metrics", params] as const,
   topupProductDailySnapshot: (params: DateRangeParams) =>
-    [...analyticsKeys.all, "topup", "products", "daily-snapshot", params] as const,
+    [
+      ...analyticsKeys.all,
+      "topup",
+      "products",
+      "daily-snapshot",
+      params,
+    ] as const,
+  billPaymentDailySnapshot: (params: DateRangeParams) =>
+    [...analyticsKeys.all, "bill-payments", "daily-snapshot", params] as const,
   revenue: (params?: DateRangeParams) =>
     [...analyticsKeys.all, "revenue", params] as const,
   operatorPerformance: (params?: DateRangeParams) =>
@@ -204,6 +213,19 @@ export function useTopupProductDailySnapshot(params: DateRangeParams) {
     queryFn: () => adminAnalyticsService.getTopupProductDailySnapshot(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
     select: (data): DailyProductSnapshotResponse | undefined => data.data,
+    enabled: !!params.fromDate && !!params.toDate,
+  });
+}
+
+/**
+ * Fetch date-range bill/cable payment performance
+ */
+export function useBillPaymentDailySnapshot(params: DateRangeParams) {
+  return useQuery({
+    queryKey: analyticsKeys.billPaymentDailySnapshot(params),
+    queryFn: () => adminAnalyticsService.getBillPaymentDailySnapshot(params),
+    staleTime: 5 * 60 * 1000,
+    select: (data): DailyBillPaymentSnapshotResponse | undefined => data.data,
     enabled: !!params.fromDate && !!params.toDate,
   });
 }

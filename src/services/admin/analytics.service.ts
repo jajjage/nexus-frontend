@@ -7,6 +7,7 @@ import apiClient from "@/lib/api-client";
 import { isAxiosError } from "axios";
 import {
   ChartData,
+  DailyBillPaymentSnapshotResponse,
   DailyProductSnapshotResponse,
   DailyMetric,
   DailyMetricsParams,
@@ -170,6 +171,20 @@ export const adminAnalyticsService = {
 
       throw error;
     }
+  },
+
+  /**
+   * Get date-range bill/cable payment performance snapshots
+   */
+  getBillPaymentDailySnapshot: async (
+    params: DateRangeParams
+  ): Promise<ApiResponse<DailyBillPaymentSnapshotResponse>> => {
+    const response = await apiClient.get<
+      ApiResponse<DailyBillPaymentSnapshotResponse>
+    >(`${BASE_PATH}/bill-payments/daily-snapshot`, {
+      params,
+    });
+    return response.data;
   },
 
   /**

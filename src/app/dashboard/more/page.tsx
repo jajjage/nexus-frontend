@@ -8,27 +8,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, Rocket, Sparkles, Zap } from "lucide-react";
+import { ArrowLeft, GraduationCap, Rocket } from "lucide-react";
 import Link from "next/link";
 
 export default function MoreServicesPage() {
   const upcomingFeatures = [
     {
-      title: "Utility Payments",
-      description:
-        "Pay for electricity, water, and other utility bills instantly.",
-      icon: Zap,
-    },
-    {
-      title: "Cable TV Subscription",
-      description:
-        "Renew your DSTV, GOtv, and StarTimes subscriptions with ease.",
-      icon: Rocket,
-    },
-    {
       title: "Educational Pins",
       description: "Purchase WAEC, NECO, and JAMB result checker pins.",
-      icon: Sparkles,
+      icon: GraduationCap,
     },
   ];
 
@@ -51,13 +39,14 @@ export default function MoreServicesPage() {
           </div>
           <CardTitle className="text-2xl">Coming Soon!</CardTitle>
           <CardDescription>
-            We are working hard to bring you more amazing services. Stay tuned!
+            Electricity and cable TV are now available from the main dashboard.
+            More services are still on the way.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
           <div className="space-y-4">
             <h3 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-              What to expect:
+              What to expect next:
             </h3>
             <div className="grid gap-4">
               {upcomingFeatures.map((feature) => (

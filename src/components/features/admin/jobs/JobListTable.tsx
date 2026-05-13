@@ -31,7 +31,7 @@ import {
   useRetryJob,
 } from "@/hooks/admin/useAdminJobs";
 import { Job, JobStatus } from "@/types/admin/job.types";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, isValid } from "date-fns";
 import {
   ChevronLeft,
   ChevronRight,
@@ -55,6 +55,17 @@ const statusVariants: Record<
   completed: "outline",
   failed: "destructive",
 };
+
+function formatRelativeDate(value?: string | null) {
+  if (!value) return "Unknown";
+
+  const date = new Date(value);
+  if (!isValid(date)) return "Unknown";
+
+  return formatDistanceToNow(date, {
+    addSuffix: true,
+  });
+}
 
 export function JobListTable() {
   const searchParams = useSearchParams();
@@ -188,9 +199,7 @@ export function JobListTable() {
                       {job.attempts}/{job.maxAttempts}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {formatDistanceToNow(new Date(job.createdAt), {
-                        addSuffix: true,
-                      })}
+                      {formatRelativeDate(job.createdAt)}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

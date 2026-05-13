@@ -514,7 +514,8 @@ apiClient.interceptors.response.use(
 
     const isVerificationEndpoint =
       originalRequest.url?.includes("/biometric/auth/verify") ||
-      originalRequest.url?.includes("/user/topup");
+      originalRequest.url?.includes("/user/topup") ||
+      originalRequest.url?.includes("/bills/pay");
 
     if (isVerificationEndpoint && !isAuthEndpoint) {
       // Verification endpoints may return 401 for two very different reasons:

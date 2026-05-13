@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
 
 const baseNavItems = [
   { label: "Home", icon: Home, href: "/dashboard" },
-  { label: "Referral", icon: Users, href: "/dashboard/referrals" },
+  { label: "Agent", icon: Users, href: "/dashboard/agent" },
   { label: "Rewards", icon: Trophy, href: "/dashboard/rewards" },
   { label: "Profile", icon: User, href: "/dashboard/profile" },
 ];

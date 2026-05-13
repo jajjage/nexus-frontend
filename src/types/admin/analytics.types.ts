@@ -136,6 +136,25 @@ export interface TodaySnapshot {
     reversed: number;
     reversedCount: number;
   };
+  billPayments?: {
+    attemptedCount: number;
+    attemptedVolume: number;
+    count: number;
+    volume: number;
+    profit: number;
+    successful: number;
+    successCount: number;
+    failed: number;
+    failedCount: number;
+    pending: number;
+    pendingCount: number;
+    reversed: number;
+    reversedCount: number;
+    electricityCount: number;
+    electricityVolume: number;
+    cableCount: number;
+    cableVolume: number;
+  };
   newUsers: number;
   activeUsers: number;
   walletDeposits: number;
@@ -156,6 +175,12 @@ export interface TodaySnapshot {
     pendingTransactionsDeltaPercent: string;
     reversedTransactionsDelta: number;
     reversedTransactionsDeltaPercent: string;
+    billPaymentsDelta?: number;
+    billPaymentsDeltaPercent?: string;
+    successfulBillPaymentsDelta?: number;
+    successfulBillPaymentsDeltaPercent?: string;
+    billPaymentVolumeDelta?: number;
+    billPaymentVolumeDeltaPercent?: string;
 
     volumeDelta: number;
     volumeDeltaPercent: string;
@@ -196,6 +221,62 @@ export interface DailyProductSnapshotResponse {
     topProducts: ProductSalesRow[];
   };
   dailySnapshots: DailyProductSnapshot[];
+}
+
+export interface BillPaymentBillerSnapshot {
+  billerId: string;
+  billerCode: string;
+  billerName: string;
+  categoryType: "electricity" | "cable";
+  categoryName: string;
+  supplierSlug?: string | null;
+  attemptedCount: number;
+  attemptedAmount: number;
+  successfulCount: number;
+  totalAmount: number;
+  failedCount: number;
+  pendingCount: number;
+  reversedCount: number;
+  profit: number;
+}
+
+export interface DailyBillPaymentSnapshot {
+  date: string;
+  totalAttemptedPayments: number;
+  totalSuccessfulPayments: number;
+  totalFailedPayments: number;
+  totalPendingPayments: number;
+  totalReversedPayments: number;
+  totalAmount: number;
+  totalAttemptedAmount: number;
+  totalProfit: number;
+  electricity: { count: number; amount: number };
+  cable: { count: number; amount: number };
+  bestPerformingBiller: Pick<
+    BillPaymentBillerSnapshot,
+    | "billerId"
+    | "billerCode"
+    | "billerName"
+    | "categoryType"
+    | "successfulCount"
+    | "totalAmount"
+  > | null;
+  billers: BillPaymentBillerSnapshot[];
+}
+
+export interface DailyBillPaymentSnapshotResponse {
+  period: {
+    from: string;
+    to: string;
+  };
+  summary: {
+    totalAttemptedPayments: number;
+    totalSuccessfulPayments: number;
+    totalAmount: number;
+    totalProfit: number;
+    topBillers: BillPaymentBillerSnapshot[];
+  };
+  dailySnapshots: DailyBillPaymentSnapshot[];
 }
 
 // 8. Daily Metrics Time Series
