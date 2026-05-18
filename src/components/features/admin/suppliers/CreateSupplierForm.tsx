@@ -25,19 +25,47 @@ export function CreateSupplierForm() {
   const [slug, setSlug] = useState("");
   const [apiBase, setApiBase] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [vtpassApiKey, setVtpassApiKey] = useState("");
+  const [vtpassPublicKey, setVtpassPublicKey] = useState("");
+  const [vtpassSecretKey, setVtpassSecretKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
   const [priorityInt, setPriorityInt] = useState(1);
   const [isActive, setIsActive] = useState(true);
 
+  const normalizedSlug = slug.trim().toLowerCase();
+  const isVtpass = normalizedSlug === "vtpass";
+  const resolvedApiKey = isVtpass
+    ? JSON.stringify({
+        apiKey: vtpassApiKey.trim(),
+        publicKey: vtpassPublicKey.trim(),
+        secretKey: vtpassSecretKey.trim(),
+      })
+    : apiKey.trim();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name || !slug || !apiBase || !apiKey) {
+    if (!name || !slug || !apiBase) {
+      return;
+    }
+
+    if (isVtpass && (!vtpassApiKey || !vtpassPublicKey || !vtpassSecretKey)) {
+      return;
+    }
+
+    if (!isVtpass && !apiKey) {
       return;
     }
 
     createMutation.mutate(
-      { name, slug, apiBase, apiKey, priorityInt, isActive },
+      {
+        name,
+        slug,
+        apiBase,
+        apiKey: resolvedApiKey,
+        priorityInt,
+        isActive,
+      },
       {
         onSuccess: () => {
           router.push("/admin/dashboard/suppliers");
@@ -51,6 +79,13 @@ export function CreateSupplierForm() {
     setName(value);
     if (!slug || slug === name.toLowerCase().replace(/\s+/g, "-")) {
       setSlug(value.toLowerCase().replace(/\s+/g, "-"));
+    }
+  };
+
+  const handleSlugChange = (value: string) => {
+    setSlug(value);
+    if (value.trim().toLowerCase() === "vtpass" && !apiBase) {
+      setApiBase("https://vtpass.com/api");
     }
   };
 
@@ -92,7 +127,7 @@ export function CreateSupplierForm() {
                 <Input
                   id="slug"
                   value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
+                  onChange={(e) => handleSlugChange(e.target.value)}
                   placeholder="my-supplier"
                   className="font-mono"
                   required
@@ -115,33 +150,82 @@ export function CreateSupplierForm() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="apiKey">API Key</Label>
-              <div className="relative">
-                <Input
-                  id="apiKey"
-                  type={showApiKey ? "text" : "password"}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk_live_..."
-                  className="pr-10"
-                  required
+            {isVtpass ? (
+              <div className="space-y-3 rounded-lg border p-4">
+                <div>
+                  <Label>VTpass API Keys</Label>
+                  <p className="text-muted-foreground text-xs">
+                    GET requests use API Key + Public Key. POST requests use API
+                    Key + Secret Key.
+                  </p>
+                </div>
+                <SecretInput
+                  id="vtpassApiKey"
+                  label="Static API Key"
+                  value={vtpassApiKey}
+                  onChange={setVtpassApiKey}
+                  placeholder="xxxxxxxxxxxxxxxxxxxx"
+                  visible={showApiKey}
+                />
+                <SecretInput
+                  id="vtpassPublicKey"
+                  label="Public Key"
+                  value={vtpassPublicKey}
+                  onChange={setVtpassPublicKey}
+                  placeholder="PK_xxxxxxxxxxxxxxxxx"
+                  visible={showApiKey}
+                />
+                <SecretInput
+                  id="vtpassSecretKey"
+                  label="Secret Key"
+                  value={vtpassSecretKey}
+                  onChange={setVtpassSecretKey}
+                  placeholder="SK_xxxxxxxxxxxxxxxxx"
+                  visible={showApiKey}
                 />
                 <Button
                   type="button"
                   variant="ghost"
-                  size="icon"
-                  className="absolute top-0 right-0 h-full px-3 hover:bg-transparent"
+                  size="sm"
                   onClick={() => setShowApiKey(!showApiKey)}
                 >
                   {showApiKey ? (
-                    <EyeOff className="text-muted-foreground h-4 w-4" />
+                    <EyeOff className="mr-2 h-4 w-4" />
                   ) : (
-                    <Eye className="text-muted-foreground h-4 w-4" />
+                    <Eye className="mr-2 h-4 w-4" />
                   )}
+                  {showApiKey ? "Hide keys" : "Show keys"}
                 </Button>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">API Key</Label>
+                <div className="relative">
+                  <Input
+                    id="apiKey"
+                    type={showApiKey ? "text" : "password"}
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="sk_live_..."
+                    className="pr-10"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-0 right-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                  >
+                    {showApiKey ? (
+                      <EyeOff className="text-muted-foreground h-4 w-4" />
+                    ) : (
+                      <Eye className="text-muted-foreground h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -189,6 +273,37 @@ export function CreateSupplierForm() {
           </form>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function SecretInput({
+  id,
+  label,
+  value,
+  onChange,
+  placeholder,
+  visible,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  visible: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        type={visible ? "text" : "password"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="font-mono"
+        required
+      />
     </div>
   );
 }
