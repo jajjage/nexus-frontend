@@ -42,17 +42,24 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
   const [editName, setEditName] = useState("");
   const [editApiBase, setEditApiBase] = useState("");
   const [editApiKey, setEditApiKey] = useState("");
+  const [editVtpassApiKey, setEditVtpassApiKey] = useState("");
+  const [editVtpassPublicKey, setEditVtpassPublicKey] = useState("");
+  const [editVtpassSecretKey, setEditVtpassSecretKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
   const [editPriority, setEditPriority] = useState(1);
   const [editIsActive, setEditIsActive] = useState(true);
 
   const supplier = data?.data;
+  const isVtpass = supplier?.slug?.toLowerCase() === "vtpass";
 
   const handleEdit = () => {
     if (supplier) {
       setEditName(supplier.name);
       setEditApiBase(supplier.apiBase);
       setEditApiKey("");
+      setEditVtpassApiKey("");
+      setEditVtpassPublicKey("");
+      setEditVtpassSecretKey("");
       setEditPriority(supplier.priorityInt);
       setEditIsActive(supplier.isActive);
       setIsEditOpen(true);
@@ -60,13 +67,35 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
   };
 
   const handleSave = () => {
+    const hasAnyVtpassKey =
+      editVtpassApiKey || editVtpassPublicKey || editVtpassSecretKey;
+
+    if (
+      isVtpass &&
+      hasAnyVtpassKey &&
+      (!editVtpassApiKey || !editVtpassPublicKey || !editVtpassSecretKey)
+    ) {
+      return;
+    }
+
+    const vtpassKeyPayload =
+      isVtpass && hasAnyVtpassKey
+        ? JSON.stringify({
+            apiKey: editVtpassApiKey.trim(),
+            publicKey: editVtpassPublicKey.trim(),
+            secretKey: editVtpassSecretKey.trim(),
+          })
+        : "";
+
     updateMutation.mutate(
       {
         supplierId,
         data: {
           name: editName,
           apiBase: editApiBase,
-          ...(editApiKey && { apiKey: editApiKey }),
+          ...(isVtpass
+            ? vtpassKeyPayload && { apiKey: vtpassKeyPayload }
+            : editApiKey && { apiKey: editApiKey }),
           priorityInt: editPriority,
           isActive: editIsActive,
         },
@@ -130,8 +159,8 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
             <DialogHeader>
               <DialogTitle>Edit Supplier</DialogTitle>
               <DialogDescription>
-                Update supplier configuration. Leave API Key empty to keep
-                current.
+                Update supplier configuration. Leave credential fields empty to
+                keep current keys.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -152,32 +181,79 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
                   className="font-mono"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="apiKey">API Key (leave empty to keep)</Label>
-                <div className="relative">
-                  <Input
-                    id="apiKey"
-                    type={showApiKey ? "text" : "password"}
-                    value={editApiKey}
-                    onChange={(e) => setEditApiKey(e.target.value)}
-                    placeholder="••••••••"
-                    className="pr-10"
+              {isVtpass && (
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <Label>VTpass API Keys</Label>
+                      <p className="text-muted-foreground mt-1 text-xs">
+                        Fill all three only when rotating credentials.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                    >
+                      {showApiKey ? (
+                        <EyeOff className="text-muted-foreground h-4 w-4" />
+                      ) : (
+                        <Eye className="text-muted-foreground h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <SecretInput
+                    id="vtpassApiKey"
+                    label="Static API Key"
+                    value={editVtpassApiKey}
+                    visible={showApiKey}
+                    onChange={setEditVtpassApiKey}
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-0 right-0 h-full px-3 hover:bg-transparent"
-                    onClick={() => setShowApiKey(!showApiKey)}
-                  >
-                    {showApiKey ? (
-                      <EyeOff className="text-muted-foreground h-4 w-4" />
-                    ) : (
-                      <Eye className="text-muted-foreground h-4 w-4" />
-                    )}
-                  </Button>
+                  <SecretInput
+                    id="vtpassPublicKey"
+                    label="Public Key"
+                    value={editVtpassPublicKey}
+                    visible={showApiKey}
+                    onChange={setEditVtpassPublicKey}
+                  />
+                  <SecretInput
+                    id="vtpassSecretKey"
+                    label="Secret Key"
+                    value={editVtpassSecretKey}
+                    visible={showApiKey}
+                    onChange={setEditVtpassSecretKey}
+                  />
                 </div>
-              </div>
+              )}
+              {!isVtpass && (
+                <div className="space-y-2">
+                  <Label htmlFor="apiKey">API Key (leave empty to keep)</Label>
+                  <div className="relative">
+                    <Input
+                      id="apiKey"
+                      type={showApiKey ? "text" : "password"}
+                      value={editApiKey}
+                      onChange={(e) => setEditApiKey(e.target.value)}
+                      placeholder="••••••••"
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-0 right-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                    >
+                      {showApiKey ? (
+                        <EyeOff className="text-muted-foreground h-4 w-4" />
+                      ) : (
+                        <Eye className="text-muted-foreground h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="priority">Priority (lower = higher)</Label>
                 <Input
@@ -251,6 +327,33 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function SecretInput({
+  id,
+  label,
+  value,
+  visible,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  visible: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        type={visible ? "text" : "password"}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="leave empty to keep current"
+      />
     </div>
   );
 }
