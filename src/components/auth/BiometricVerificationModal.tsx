@@ -35,6 +35,18 @@ interface BiometricVerificationModalProps {
   isVerifying?: boolean;
 }
 
+function formatTransactionAmount(amount?: string) {
+  if (!amount) return null;
+
+  const parsed = Number.parseFloat(amount.replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(parsed)) return null;
+
+  return parsed.toLocaleString("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 /**
 
  * BiometricVerificationModal Component
@@ -274,10 +286,11 @@ export function BiometricVerificationModal({
   // Determine actual loading state
 
   const isBusy = loading || isVerifying;
+  const formattedTransactionAmount = formatTransactionAmount(transactionAmount);
 
   return (
     <Dialog open={open} onOpenChange={isBusy ? undefined : onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[380px]">
         {/* Hide content during initialization or transition to prevent flashing */}
 
         {(!supportedChecked || isTransitioning) && !errorMessage ? (
@@ -294,7 +307,7 @@ export function BiometricVerificationModal({
               <DialogTitle>Verify with {label}</DialogTitle>
             </DialogHeader>
 
-            <div className="flex flex-col gap-4 py-4">
+            <div className="flex flex-col gap-3 py-3">
               {/* Error Display - Shows for 2 seconds before transition */}
 
               {errorMessage && (
@@ -318,9 +331,9 @@ export function BiometricVerificationModal({
                   {/* Biometric Icon */}
 
                   <div className="flex justify-center">
-                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-linear-to-br from-blue-50 to-indigo-50">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-blue-50 to-indigo-50">
                       <SmartBiometricIcon
-                        size={48}
+                        size={42}
                         className="text-indigo-600"
                       />
                     </div>
@@ -370,8 +383,8 @@ export function BiometricVerificationModal({
 
                         <p className="text-sm text-gray-600">
                           Use your {label.toLowerCase()} to verify this{" "}
-                          {transactionAmount
-                            ? `₦ ${parseFloat(transactionAmount).toFixed(2)} transaction`
+                          {formattedTransactionAmount
+                            ? `₦ ${formattedTransactionAmount} transaction`
                             : "transaction"}
                         </p>
                       </>
@@ -380,25 +393,21 @@ export function BiometricVerificationModal({
 
                   {/* Amount Display */}
 
-                  {transactionAmount && (
-                    <div className="rounded-lg bg-gray-50 p-3 text-center">
+                  {formattedTransactionAmount && (
+                    <div className="rounded-lg bg-gray-50 p-2.5 text-center">
                       <p className="text-xs text-gray-600">
                         Transaction Amount
                       </p>
 
                       <p className="text-lg font-semibold text-gray-900">
-                        ₦{" "}
-                        {parseFloat(transactionAmount).toLocaleString("en-NG", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                        ₦ {formattedTransactionAmount}
                       </p>
                     </div>
                   )}
 
                   {/* Action Buttons */}
 
-                  <div className="flex flex-col gap-2 pt-2">
+                  <div className="flex flex-col gap-2 pt-1">
                     <Button
                       onClick={handleBiometricVerification}
                       disabled={isBusy || !isBiometricSupported}

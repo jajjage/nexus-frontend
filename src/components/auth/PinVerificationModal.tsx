@@ -37,6 +37,15 @@ interface PinVerificationModalProps {
   onForgotPin?: () => void;
 }
 
+function formatTransactionAmount(amount?: string) {
+  if (!amount) return null;
+
+  const parsed = Number.parseFloat(amount.replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(parsed)) return null;
+
+  return parsed.toLocaleString("en-NG");
+}
+
 /**
 
  * PinVerificationModal Component
@@ -105,6 +114,7 @@ export function PinVerificationModal({
   // Combine internal validation errors with external API errors
 
   const displayError = internalError || errorMessage;
+  const formattedTransactionAmount = formatTransactionAmount(transactionAmount);
 
   const { isBlocked } = useSecurityStore();
 
@@ -244,12 +254,12 @@ export function PinVerificationModal({
         <div className="space-y-4 py-4">
           {/* Transaction Details (if provided) */}
 
-          {transactionAmount && (
+          {formattedTransactionAmount && (
             <div className="bg-primary/10 rounded-lg p-3">
               <p className="text-sm text-slate-600">Amount</p>
 
               <p className="text-xl font-semibold text-slate-900">
-                ₦{parseFloat(transactionAmount).toLocaleString("en-NG")}
+                ₦{formattedTransactionAmount}
               </p>
             </div>
           )}

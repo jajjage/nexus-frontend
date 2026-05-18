@@ -55,12 +55,17 @@ interface BillPaymentFlowProps {
   category: BillCategoryType;
 }
 
+const parseAmount = (value: string) => {
+  const parsed = Number.parseFloat(value.replace(/[^0-9.]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-NG", {
     style: "currency",
     currency: "NGN",
     maximumFractionDigits: 0,
-  }).format(value || 0);
+  }).format(Number.isFinite(value) ? value : 0);
 
 const serviceCopy = {
   electricity: {
@@ -158,7 +163,7 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
     }
   }, [category, selectedVariation]);
 
-  const parsedAmount = Number(amount);
+  const parsedAmount = parseAmount(amount);
   const canValidate =
     Boolean(selectedBillerCode) &&
     customerIdentifier.trim().length >= 4 &&
@@ -594,7 +599,7 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
           setShowBiometricModal(false);
           setShowPinSetupModal(true);
         }}
-        transactionAmount={formatCurrency(parsedAmount)}
+        transactionAmount={String(parsedAmount)}
         productCode={selectedBiller?.name}
         phoneNumber={phone}
         isVerifying={payMutation.isPending}
@@ -606,7 +611,7 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
         onSuccess={(pin) => submitPayment({ pin })}
         useCashback={false}
         reason="transaction"
-        transactionAmount={formatCurrency(parsedAmount)}
+        transactionAmount={String(parsedAmount)}
         productCode={selectedBiller?.name}
         phoneNumber={phone}
         isVerifying={payMutation.isPending}

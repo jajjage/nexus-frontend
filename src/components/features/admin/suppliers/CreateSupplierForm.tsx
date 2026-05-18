@@ -10,6 +10,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useCreateSupplier } from "@/hooks/admin/useAdminSuppliers";
 import { ArrowLeft, Eye, EyeOff, Loader2, Save } from "lucide-react";
@@ -25,9 +32,14 @@ export function CreateSupplierForm() {
   const [slug, setSlug] = useState("");
   const [apiBase, setApiBase] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [vtpassAuthType, setVtpassAuthType] = useState<"apiKey" | "basic">(
+    "apiKey"
+  );
   const [vtpassApiKey, setVtpassApiKey] = useState("");
   const [vtpassPublicKey, setVtpassPublicKey] = useState("");
   const [vtpassSecretKey, setVtpassSecretKey] = useState("");
+  const [vtpassUsername, setVtpassUsername] = useState("");
+  const [vtpassPassword, setVtpassPassword] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
   const [priorityInt, setPriorityInt] = useState(1);
   const [isActive, setIsActive] = useState(true);
@@ -35,11 +47,16 @@ export function CreateSupplierForm() {
   const normalizedSlug = slug.trim().toLowerCase();
   const isVtpass = normalizedSlug === "vtpass";
   const resolvedApiKey = isVtpass
-    ? JSON.stringify({
-        apiKey: vtpassApiKey.trim(),
-        publicKey: vtpassPublicKey.trim(),
-        secretKey: vtpassSecretKey.trim(),
-      })
+    ? vtpassAuthType === "apiKey"
+      ? JSON.stringify({
+          apiKey: vtpassApiKey.trim(),
+          publicKey: vtpassPublicKey.trim(),
+          secretKey: vtpassSecretKey.trim(),
+        })
+      : JSON.stringify({
+          username: vtpassUsername.trim(),
+          password: vtpassPassword.trim(),
+        })
     : apiKey.trim();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -49,7 +66,19 @@ export function CreateSupplierForm() {
       return;
     }
 
-    if (isVtpass && (!vtpassApiKey || !vtpassPublicKey || !vtpassSecretKey)) {
+    if (
+      isVtpass &&
+      vtpassAuthType === "apiKey" &&
+      (!vtpassApiKey || !vtpassPublicKey || !vtpassSecretKey)
+    ) {
+      return;
+    }
+
+    if (
+      isVtpass &&
+      vtpassAuthType === "basic" &&
+      (!vtpassUsername || !vtpassPassword)
+    ) {
       return;
     }
 
@@ -153,36 +182,78 @@ export function CreateSupplierForm() {
             {isVtpass ? (
               <div className="space-y-3 rounded-lg border p-4">
                 <div>
-                  <Label>VTpass API Keys</Label>
+                  <Label>VTpass Authentication</Label>
                   <p className="text-muted-foreground text-xs">
-                    GET requests use API Key + Public Key. POST requests use API
-                    Key + Secret Key.
+                    API keys are preferred. Basic auth is available for older
+                    VTpass account setups.
                   </p>
                 </div>
-                <SecretInput
-                  id="vtpassApiKey"
-                  label="Static API Key"
-                  value={vtpassApiKey}
-                  onChange={setVtpassApiKey}
-                  placeholder="xxxxxxxxxxxxxxxxxxxx"
-                  visible={showApiKey}
-                />
-                <SecretInput
-                  id="vtpassPublicKey"
-                  label="Public Key"
-                  value={vtpassPublicKey}
-                  onChange={setVtpassPublicKey}
-                  placeholder="PK_xxxxxxxxxxxxxxxxx"
-                  visible={showApiKey}
-                />
-                <SecretInput
-                  id="vtpassSecretKey"
-                  label="Secret Key"
-                  value={vtpassSecretKey}
-                  onChange={setVtpassSecretKey}
-                  placeholder="SK_xxxxxxxxxxxxxxxxx"
-                  visible={showApiKey}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="vtpassAuthType">Auth Type</Label>
+                  <Select
+                    value={vtpassAuthType}
+                    onValueChange={(value) =>
+                      setVtpassAuthType(value as "apiKey" | "basic")
+                    }
+                  >
+                    <SelectTrigger id="vtpassAuthType">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="apiKey">API keys</SelectItem>
+                      <SelectItem value="basic">
+                        Basic username/password
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {vtpassAuthType === "apiKey" ? (
+                  <>
+                    <SecretInput
+                      id="vtpassApiKey"
+                      label="Static API Key"
+                      value={vtpassApiKey}
+                      onChange={setVtpassApiKey}
+                      placeholder="xxxxxxxxxxxxxxxxxxxx"
+                      visible={showApiKey}
+                    />
+                    <SecretInput
+                      id="vtpassPublicKey"
+                      label="Public Key"
+                      value={vtpassPublicKey}
+                      onChange={setVtpassPublicKey}
+                      placeholder="PK_xxxxxxxxxxxxxxxxx"
+                      visible={showApiKey}
+                    />
+                    <SecretInput
+                      id="vtpassSecretKey"
+                      label="Secret Key"
+                      value={vtpassSecretKey}
+                      onChange={setVtpassSecretKey}
+                      placeholder="SK_xxxxxxxxxxxxxxxxx"
+                      visible={showApiKey}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <SecretInput
+                      id="vtpassUsername"
+                      label="Username / Email"
+                      value={vtpassUsername}
+                      onChange={setVtpassUsername}
+                      placeholder="merchant@example.com"
+                      visible={showApiKey}
+                    />
+                    <SecretInput
+                      id="vtpassPassword"
+                      label="Password"
+                      value={vtpassPassword}
+                      onChange={setVtpassPassword}
+                      placeholder="VTpass password"
+                      visible={showApiKey}
+                    />
+                  </>
+                )}
                 <Button
                   type="button"
                   variant="ghost"
