@@ -32,7 +32,17 @@ import { ProductCard } from "../shared/product-card";
 import { ShareTransactionDialog } from "../transactions/share-transaction-dialog";
 import { CategoryTabs } from "./category-tabs";
 
-export function DataPlans() {
+type DataPlansProps = {
+  productType?: string;
+  title?: string;
+  returnUrl?: string;
+};
+
+export function DataPlans({
+  productType = "data",
+  title = "Data Plans",
+  returnUrl = "/dashboard/data",
+}: DataPlansProps) {
   const router = useRouter();
   const { user, refetch: refetchUser } = useAuth();
   const { recordPinAttempt, isBlocked: _isBlocked } = useSecurityStore();
@@ -88,7 +98,7 @@ export function DataPlans() {
 
   // Fetch all data products.
   const { data, isLoading, error } = useProducts(
-    { productType: "data", isActive: true },
+    { productType, isActive: true },
     { staleTime: 5 * 60 * 1000 } // 5 minutes - allow offer updates to reflect
   );
 
@@ -201,7 +211,7 @@ export function DataPlans() {
 
     // First filter by network and product type
     const networkProducts = products.filter((product: Product) => {
-      if (product.productType !== "data") return false;
+      if (product.productType !== productType) return false;
       if (product.operator?.name !== selectedNetwork) return false;
       return true;
     });
@@ -229,7 +239,7 @@ export function DataPlans() {
     });
 
     return sorted;
-  }, [products, selectedNetwork, selectedCategory]);
+  }, [products, productType, selectedNetwork, selectedCategory]);
 
   // Handle Plan Click
   const handlePlanClick = (product: Product) => {
@@ -537,7 +547,7 @@ export function DataPlans() {
 
       {/* Header & View Toggle */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Data Plans</h1>
+        <h1 className="text-xl font-bold">{title}</h1>
         <div className="flex gap-1 rounded-lg border p-1">
           <Button
             variant={viewMode === "grid" ? "secondary" : "ghost"}
@@ -694,7 +704,7 @@ export function DataPlans() {
         errorMessage={errorMessage}
         onForgotPin={() =>
           router.push(
-            "/dashboard/profile/security/pin?returnUrl=/dashboard/data"
+            `/dashboard/profile/security/pin?returnUrl=${encodeURIComponent(returnUrl)}`
           )
         }
       />

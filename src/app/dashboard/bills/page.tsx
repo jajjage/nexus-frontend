@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Tv, Zap } from "lucide-react";
+import { ArrowLeft, GraduationCap, Tv, Zap } from "lucide-react";
 import Link from "next/link";
 
 const billOptions = [
@@ -15,6 +15,12 @@ const billOptions = [
     description: "Renew or change cable subscriptions.",
     href: "/dashboard/cable",
     icon: Tv,
+  },
+  {
+    title: "Exam Pins",
+    description: "Buy WAEC and JAMB registration pins.",
+    href: "/dashboard/education",
+    icon: GraduationCap,
   },
 ];
 

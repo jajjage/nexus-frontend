@@ -42,6 +42,7 @@ import {
   BadgeCheck,
   CheckCircle2,
   CreditCard,
+  GraduationCap,
   Loader2,
   ReceiptText,
   ShieldCheck,
@@ -86,6 +87,15 @@ const serviceCopy = {
     icon: Tv,
     emptyText: "No cable TV providers are available yet.",
   },
+  education: {
+    title: "Exam Pins",
+    description: "Buy WAEC and JAMB registration or result checker pins.",
+    identifierLabel: "Profile ID",
+    identifierPlaceholder: "Enter JAMB profile ID",
+    amountLabel: "Amount",
+    icon: GraduationCap,
+    emptyText: "No exam pin providers are available yet.",
+  },
 } as const;
 
 export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
@@ -105,6 +115,7 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
     "change"
   );
   const [selectedVariationCode, setSelectedVariationCode] = useState("");
+  const [quantity, setQuantity] = useState("1");
   const [amount, setAmount] = useState("");
   const [phone, setPhone] = useState(user?.phoneNumber || "");
   const [validation, setValidation] = useState<BillValidationResult | null>(
@@ -125,7 +136,9 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
 
   const { data: variations = [], isLoading: isLoadingVariations } =
     useBillVariations(
-      category === "cable" && selectedBiller?.supportsVariations
+      ((category === "cable" && subscriptionType === "change") ||
+        category === "education") &&
+        selectedBiller?.supportsVariations
         ? selectedBiller.code
         : undefined
     );
@@ -151,29 +164,45 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
     meterType,
     selectedVariationCode,
     subscriptionType,
+    quantity,
   ]);
 
   useEffect(() => {
-    if (
-      category === "cable" &&
+    const selectedAmount =
       selectedVariation?.amount !== null &&
       selectedVariation?.amount !== undefined
+        ? Number(selectedVariation.amount)
+        : null;
+
+    if (
+      selectedAmount !== null &&
+      Number.isFinite(selectedAmount) &&
+      (category === "education" ||
+        (category === "cable" && subscriptionType === "change"))
     ) {
-      setAmount(String(selectedVariation.amount));
+      const multiplier =
+        category === "education" ? Math.max(Number(quantity) || 1, 1) : 1;
+      setAmount(String(selectedAmount * multiplier));
     }
-  }, [category, selectedVariation]);
+  }, [category, quantity, selectedVariation, subscriptionType]);
 
   const parsedAmount = parseAmount(amount);
+  const parsedQuantity = Math.max(Number.parseInt(quantity, 10) || 1, 1);
+  const isJamb = category === "education" && selectedBiller?.code === "jamb";
+  const requiresValidation = category !== "education" || isJamb;
   const canValidate =
     Boolean(selectedBillerCode) &&
-    customerIdentifier.trim().length >= 4 &&
+    (!requiresValidation || customerIdentifier.trim().length >= 4) &&
     !validateMutation.isPending;
   const isAmountValid = Number.isFinite(parsedAmount) && parsedAmount > 0;
   const canCheckout =
-    Boolean(validation?.isValid) &&
+    (!requiresValidation || Boolean(validation?.isValid)) &&
     isAmountValid &&
     phone.trim().length >= 11 &&
-    (category !== "cable" || subscriptionType === "renew" || selectedVariation);
+    (category !== "cable" ||
+      subscriptionType === "renew" ||
+      selectedVariation) &&
+    (category !== "education" || selectedVariation);
 
   const handleValidate = () => {
     if (!canValidate) {
@@ -186,6 +215,8 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
         billerCode: selectedBillerCode,
         customerIdentifier: customerIdentifier.trim(),
         meterType: category === "electricity" ? meterType : undefined,
+        variationCode:
+          category === "education" ? selectedVariationCode : undefined,
       },
       {
         onSuccess: (response) => {
@@ -234,14 +265,19 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
     payMutation.mutate(
       {
         billerCode: selectedBiller.code,
-        customerIdentifier: customerIdentifier.trim(),
+        customerIdentifier:
+          category === "education" && !isJamb
+            ? phone.trim()
+            : customerIdentifier.trim(),
         meterType: category === "electricity" ? meterType : undefined,
         variationCode:
-          category === "cable" && subscriptionType === "change"
+          category === "education" ||
+          (category === "cable" && subscriptionType === "change")
             ? selectedVariationCode
             : undefined,
         subscriptionType: category === "cable" ? subscriptionType : undefined,
         amount: parsedAmount,
+        quantity: category === "education" ? parsedQuantity : undefined,
         phone: phone.trim(),
         idempotencyKey: `${category}-${Date.now()}-${Math.random()
           .toString(36)
@@ -325,12 +361,16 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
         <CardContent className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="biller">
-              {category === "electricity" ? "Disco" : "Provider"}
+              {category === "electricity"
+                ? "Disco"
+                : category === "education"
+                  ? "Exam Service"
+                  : "Provider"}
             </Label>
             {renderBillerSelector()}
           </div>
 
-          {category === "electricity" ? (
+          {category === "education" ? null : category === "electricity" ? (
             <div className="space-y-2">
               <Label htmlFor="meterType">Meter Type</Label>
               <Select
@@ -368,22 +408,34 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="customerIdentifier">{copy.identifierLabel}</Label>
-            <Input
-              id="customerIdentifier"
-              value={customerIdentifier}
-              onChange={(event) => setCustomerIdentifier(event.target.value)}
-              placeholder={copy.identifierPlaceholder}
-              inputMode="numeric"
-            />
-          </div>
+          {(category !== "education" || isJamb) && (
+            <div className="space-y-2">
+              <Label htmlFor="customerIdentifier">
+                {category === "education"
+                  ? "JAMB Profile ID"
+                  : copy.identifierLabel}
+              </Label>
+              <Input
+                id="customerIdentifier"
+                value={customerIdentifier}
+                onChange={(event) => setCustomerIdentifier(event.target.value)}
+                placeholder={
+                  category === "education"
+                    ? "Enter JAMB profile ID"
+                    : copy.identifierPlaceholder
+                }
+                inputMode="numeric"
+              />
+            </div>
+          )}
 
-          {category === "cable" &&
-            subscriptionType === "change" &&
+          {((category === "cable" && subscriptionType === "change") ||
+            category === "education") &&
             selectedBiller?.supportsVariations && (
               <div className="space-y-2">
-                <Label htmlFor="variation">Bouquet</Label>
+                <Label htmlFor="variation">
+                  {category === "education" ? "Exam Type" : "Bouquet"}
+                </Label>
                 {isLoadingVariations ? (
                   <Skeleton className="h-11 w-full" />
                 ) : (
@@ -408,6 +460,19 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
                 )}
               </div>
             )}
+
+          {category === "education" && (
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity</Label>
+              <Input
+                id="quantity"
+                value={quantity}
+                onChange={(event) => setQuantity(event.target.value)}
+                placeholder="1"
+                inputMode="numeric"
+              />
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -438,7 +503,7 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
             </div>
           </div>
 
-          {validation?.isValid && (
+          {validation?.isValid && requiresValidation && (
             <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-900/40 dark:bg-green-950/30 dark:text-green-100">
               <BadgeCheck className="h-4 w-4" />
               <AlertTitle>Customer validated</AlertTitle>
@@ -448,20 +513,26 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
             </Alert>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleValidate}
-              disabled={!canValidate}
-            >
-              {validateMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <ShieldCheck className="mr-2 h-4 w-4" />
-              )}
-              Validate Customer
-            </Button>
+          <div
+            className={`grid gap-3 ${requiresValidation ? "sm:grid-cols-2" : ""}`}
+          >
+            {requiresValidation && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleValidate}
+                disabled={!canValidate}
+              >
+                {validateMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                )}
+                {category === "education"
+                  ? "Validate Profile"
+                  : "Validate Customer"}
+              </Button>
+            )}
             <Button type="button" onClick={handleOpenCheckout}>
               <CreditCard className="mr-2 h-4 w-4" />
               Continue
@@ -500,7 +571,7 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
               {lastPayment.tokenPayload?.token && (
                 <div className="rounded-lg border p-3">
                   <p className="text-muted-foreground text-xs uppercase">
-                    Token
+                    PIN / Token
                   </p>
                   <p className="font-mono text-lg font-semibold">
                     {lastPayment.tokenPayload.token}
@@ -509,6 +580,35 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
                     <p className="text-muted-foreground text-sm">
                       Units: {lastPayment.tokenPayload.units}
                     </p>
+                  )}
+                </div>
+              )}
+              {Array.isArray(lastPayment.tokenPayload?.cards) && (
+                <div className="space-y-2 rounded-lg border p-3">
+                  <p className="text-muted-foreground text-xs uppercase">
+                    Cards
+                  </p>
+                  {lastPayment.tokenPayload.cards.map(
+                    (card: any, index: number) => (
+                      <div key={index} className="font-mono text-sm">
+                        Serial: {card.Serial || card.serial} / PIN:{" "}
+                        {card.Pin || card.pin}
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+              {Array.isArray(lastPayment.tokenPayload?.tokens) && (
+                <div className="space-y-2 rounded-lg border p-3">
+                  <p className="text-muted-foreground text-xs uppercase">
+                    Tokens
+                  </p>
+                  {lastPayment.tokenPayload.tokens.map(
+                    (token: string, index: number) => (
+                      <div key={index} className="font-mono text-sm">
+                        {token}
+                      </div>
+                    )
                   )}
                 </div>
               )}
@@ -542,21 +642,33 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
                   </span>
                   <span className="font-medium">{selectedBiller?.name}</span>
                 </div>
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-muted-foreground text-sm">
-                    Customer
-                  </span>
-                  <span className="text-right font-medium">
-                    {validation?.customerName || customerIdentifier}
-                  </span>
-                </div>
+                {(requiresValidation || customerIdentifier) && (
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-muted-foreground text-sm">
+                      {category === "education" ? "Profile" : "Customer"}
+                    </span>
+                    <span className="text-right font-medium">
+                      {validation?.customerName || customerIdentifier}
+                    </span>
+                  </div>
+                )}
                 {selectedVariation && (
                   <div className="mb-3 flex items-center justify-between">
                     <span className="text-muted-foreground text-sm">
-                      Bouquet
+                      {category === "education" ? "Exam Type" : "Bouquet"}
                     </span>
                     <span className="text-right font-medium">
                       {selectedVariation.name}
+                    </span>
+                  </div>
+                )}
+                {category === "education" && (
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-muted-foreground text-sm">
+                      Quantity
+                    </span>
+                    <span className="text-right font-medium">
+                      {parsedQuantity}
                     </span>
                   </div>
                 )}

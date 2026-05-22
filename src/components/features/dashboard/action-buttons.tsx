@@ -1,13 +1,26 @@
 "use client";
 
-import { Phone, Tv, Wifi, Zap } from "lucide-react";
+import {
+  BadgeCheck,
+  FileText,
+  GraduationCap,
+  MoreHorizontal,
+  Phone,
+  Tv,
+  Wifi,
+  Zap,
+} from "lucide-react";
 import Link from "next/link";
 
 const actions = [
   { label: "Data", icon: Wifi, href: "/dashboard/data" },
   { label: "Airtime", icon: Phone, href: "/dashboard/airtime" },
+  { label: "Subscription", icon: BadgeCheck, href: "/dashboard/subscription" },
+  { label: "Bills", icon: FileText, href: "/dashboard/bills" },
   { label: "Electricity", icon: Zap, href: "/dashboard/electricity" },
   { label: "Cable TV", icon: Tv, href: "/dashboard/cable" },
+  { label: "Exam Pins", icon: GraduationCap, href: "/dashboard/education" },
+  { label: "More", icon: MoreHorizontal, href: "/dashboard/more" },
 ];
 
 export function ActionButtons() {
