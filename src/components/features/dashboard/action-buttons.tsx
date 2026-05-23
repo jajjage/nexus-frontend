@@ -15,7 +15,7 @@ import Link from "next/link";
 const actions = [
   { label: "Data", icon: Wifi, href: "/dashboard/data" },
   { label: "Airtime", icon: Phone, href: "/dashboard/airtime" },
-  { label: "Subscription", icon: BadgeCheck, href: "/dashboard/subscription" },
+  { label: "Call Sub", icon: BadgeCheck, href: "/dashboard/subscription" },
   { label: "Bills", icon: FileText, href: "/dashboard/bills" },
   { label: "Electricity", icon: Zap, href: "/dashboard/electricity" },
   { label: "Cable TV", icon: Tv, href: "/dashboard/cable" },

@@ -44,6 +44,7 @@ export function DataPlans({
   returnUrl = "/dashboard/data",
 }: DataPlansProps) {
   const router = useRouter();
+  const showCategories = productType === "data";
   const { user, refetch: refetchUser } = useAuth();
   const { recordPinAttempt, isBlocked: _isBlocked } = useSecurityStore();
   const topupMutation = useTopup();
@@ -147,11 +148,11 @@ export function DataPlans({
 
   // Set default selected category to first category from DB
   useEffect(() => {
-    if (!selectedCategory && categories.length > 0) {
+    if (showCategories && !selectedCategory && categories.length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: one-time initialization
       setSelectedCategory(categories[0].slug);
     }
-  }, [categories, selectedCategory]);
+  }, [categories, selectedCategory, showCategories]);
 
   // Handle Smart Network Detection - defined with useCallback before effects that use it
   const handleNetworkDetected = useCallback(
@@ -216,10 +217,12 @@ export function DataPlans({
       return true;
     });
 
-    // Apply category filter using category.slug
-    const categoryFiltered = networkProducts.filter(
-      (product: Product) => product.category?.slug === selectedCategory
-    );
+    // Apply category filter using category.slug when this product type uses categories.
+    const categoryFiltered = showCategories
+      ? networkProducts.filter(
+          (product: Product) => product.category?.slug === selectedCategory
+        )
+      : networkProducts;
 
     // CRITICAL: Deduplicate by product ID to prevent duplicates
     const seen = new Set<string>();
@@ -239,7 +242,13 @@ export function DataPlans({
     });
 
     return sorted;
-  }, [products, productType, selectedNetwork, selectedCategory]);
+  }, [
+    products,
+    productType,
+    selectedNetwork,
+    selectedCategory,
+    showCategories,
+  ]);
 
   // Handle Plan Click
   const handlePlanClick = (product: Product) => {
@@ -584,12 +593,14 @@ export function DataPlans({
       )}
 
       {/* Category Tabs */}
-      <CategoryTabs
-        categories={categories}
-        selectedCategory={selectedCategory || ""}
-        onSelect={setSelectedCategory}
-        isLoading={isCategoriesLoading}
-      />
+      {showCategories && (
+        <CategoryTabs
+          categories={categories}
+          selectedCategory={selectedCategory || ""}
+          onSelect={setSelectedCategory}
+          isLoading={isCategoriesLoading}
+        />
+      )}
 
       {/* Data Grid */}
       {isLoading ? (
