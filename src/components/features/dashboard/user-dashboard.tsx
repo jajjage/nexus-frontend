@@ -243,6 +243,7 @@ export function UserDashboard() {
                 virtualAccountNumber={user.virtualAccountNumber}
                 virtualAccountBankName={user.virtualAccountBankName}
                 virtualAccountAccountName={user.virtualAccountAccountName}
+                virtualAccounts={user.virtualAccounts}
                 onAccountCreated={refetchUser}
               />
 
