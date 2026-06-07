@@ -57,12 +57,20 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
   const [editVtpassSecretKey, setEditVtpassSecretKey] = useState("");
   const [editVtpassUsername, setEditVtpassUsername] = useState("");
   const [editVtpassPassword, setEditVtpassPassword] = useState("");
+  const [editMssUsername, setEditMssUsername] = useState("");
+  const [editMssPassword, setEditMssPassword] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
   const [editPriority, setEditPriority] = useState(1);
   const [editIsActive, setEditIsActive] = useState(true);
 
   const supplier = data?.data;
   const isVtpass = supplier?.slug?.toLowerCase() === "vtpass";
+  const isMssDataSub =
+    supplier?.slug?.toLowerCase() === "mssdata" ||
+    supplier?.slug?.toLowerCase() === "mss-data" ||
+    supplier?.slug?.toLowerCase() === "mssdatasub" ||
+    supplier?.slug?.toLowerCase() === "mss-data-sub" ||
+    supplier?.slug?.toLowerCase() === "mss data sub";
 
   const handleEdit = () => {
     if (supplier) {
@@ -75,6 +83,8 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
       setEditVtpassSecretKey("");
       setEditVtpassUsername("");
       setEditVtpassPassword("");
+      setEditMssUsername("");
+      setEditMssPassword("");
       setEditPriority(supplier.priorityInt);
       setEditIsActive(supplier.isActive);
       setIsEditOpen(true);
@@ -86,6 +96,8 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
       editVtpassApiKey || editVtpassPublicKey || editVtpassSecretKey;
     const hasAnyVtpassBasicKey = editVtpassUsername || editVtpassPassword;
     const hasAnyVtpassKey = hasAnyVtpassApiKey || hasAnyVtpassBasicKey;
+
+    const hasAnyMssKey = editMssUsername || editMssPassword;
 
     if (
       isVtpass &&
@@ -105,6 +117,14 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
       return;
     }
 
+    if (
+      isMssDataSub &&
+      hasAnyMssKey &&
+      (!editMssUsername || !editMssPassword)
+    ) {
+      return;
+    }
+
     const vtpassKeyPayload =
       isVtpass && hasAnyVtpassKey
         ? editVtpassAuthType === "apiKey"
@@ -119,6 +139,14 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
             })
         : "";
 
+    const mssKeyPayload =
+      isMssDataSub && hasAnyMssKey
+        ? JSON.stringify({
+            username: editMssUsername.trim(),
+            password: editMssPassword.trim(),
+          })
+        : "";
+
     updateMutation.mutate(
       {
         supplierId,
@@ -127,7 +155,9 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
           apiBase: editApiBase,
           ...(isVtpass
             ? vtpassKeyPayload && { apiKey: vtpassKeyPayload }
-            : editApiKey && { apiKey: editApiKey }),
+            : isMssDataSub
+              ? mssKeyPayload && { apiKey: mssKeyPayload }
+              : editApiKey && { apiKey: editApiKey }),
           priorityInt: editPriority,
           isActive: editIsActive,
         },
@@ -299,7 +329,45 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
                   )}
                 </div>
               )}
-              {!isVtpass && (
+              {isMssDataSub && (
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <Label>Mssdatasub Credentials</Label>
+                      <p className="text-muted-foreground mt-1 text-xs">
+                        Fill both fields only when rotating credentials.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                    >
+                      {showApiKey ? (
+                        <EyeOff className="text-muted-foreground h-4 w-4" />
+                      ) : (
+                        <Eye className="text-muted-foreground h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <SecretInput
+                    id="mssUsername"
+                    label="Username"
+                    value={editMssUsername}
+                    visible={showApiKey}
+                    onChange={setEditMssUsername}
+                  />
+                  <SecretInput
+                    id="mssPassword"
+                    label="Password"
+                    value={editMssPassword}
+                    visible={showApiKey}
+                    onChange={setEditMssPassword}
+                  />
+                </div>
+              )}
+              {!isVtpass && !isMssDataSub && (
                 <div className="space-y-2">
                   <Label htmlFor="apiKey">API Key (leave empty to keep)</Label>
                   <div className="relative">

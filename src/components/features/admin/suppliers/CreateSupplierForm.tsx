@@ -40,12 +40,20 @@ export function CreateSupplierForm() {
   const [vtpassSecretKey, setVtpassSecretKey] = useState("");
   const [vtpassUsername, setVtpassUsername] = useState("");
   const [vtpassPassword, setVtpassPassword] = useState("");
+  const [mssUsername, setMssUsername] = useState("");
+  const [mssPassword, setMssPassword] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
   const [priorityInt, setPriorityInt] = useState(1);
   const [isActive, setIsActive] = useState(true);
 
   const normalizedSlug = slug.trim().toLowerCase();
   const isVtpass = normalizedSlug === "vtpass";
+  const isMssDataSub =
+    normalizedSlug === "mssdata" ||
+    normalizedSlug === "mss-data" ||
+    normalizedSlug === "mssdatasub" ||
+    normalizedSlug === "mss-data-sub" ||
+    normalizedSlug === "mss data sub";
   const resolvedApiKey = isVtpass
     ? vtpassAuthType === "apiKey"
       ? JSON.stringify({
@@ -57,7 +65,12 @@ export function CreateSupplierForm() {
           username: vtpassUsername.trim(),
           password: vtpassPassword.trim(),
         })
-    : apiKey.trim();
+    : isMssDataSub
+      ? JSON.stringify({
+          username: mssUsername.trim(),
+          password: mssPassword.trim(),
+        })
+      : apiKey.trim();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +95,11 @@ export function CreateSupplierForm() {
       return;
     }
 
-    if (!isVtpass && !apiKey) {
+    if (isMssDataSub && (!mssUsername || !mssPassword)) {
+      return;
+    }
+
+    if (!isVtpass && !isMssDataSub && !apiKey) {
       return;
     }
 
@@ -115,6 +132,18 @@ export function CreateSupplierForm() {
     setSlug(value);
     if (value.trim().toLowerCase() === "vtpass" && !apiBase) {
       setApiBase("https://vtpass.com/api");
+    }
+    if (
+      [
+        "mssdata",
+        "mss-data",
+        "mssdatasub",
+        "mss-data-sub",
+        "mss data sub",
+      ].includes(value.trim().toLowerCase()) &&
+      !apiBase
+    ) {
+      setApiBase("https://mssdatasub.com/api");
     }
   };
 
@@ -266,6 +295,44 @@ export function CreateSupplierForm() {
                     <Eye className="mr-2 h-4 w-4" />
                   )}
                   {showApiKey ? "Hide keys" : "Show keys"}
+                </Button>
+              </div>
+            ) : isMssDataSub ? (
+              <div className="space-y-3 rounded-lg border p-4">
+                <div>
+                  <Label>Mssdatasub Credentials</Label>
+                  <p className="text-muted-foreground text-xs">
+                    Please provide the username and password for Mssdatasub.
+                  </p>
+                </div>
+                <SecretInput
+                  id="mssUsername"
+                  label="Username"
+                  value={mssUsername}
+                  onChange={setMssUsername}
+                  placeholder="Mssdatasub username"
+                  visible={showApiKey}
+                />
+                <SecretInput
+                  id="mssPassword"
+                  label="Password"
+                  value={mssPassword}
+                  onChange={setMssPassword}
+                  placeholder="Mssdatasub password"
+                  visible={showApiKey}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                >
+                  {showApiKey ? (
+                    <EyeOff className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Eye className="mr-2 h-4 w-4" />
+                  )}
+                  {showApiKey ? "Hide credentials" : "Show credentials"}
                 </Button>
               </div>
             ) : (
