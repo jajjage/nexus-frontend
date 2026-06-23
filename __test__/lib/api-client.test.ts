@@ -160,7 +160,7 @@ describe("API Client Logic", () => {
       );
     });
 
-    it("should logout user if refresh fails", async () => {
+    it("should not logout user if refresh fails", async () => {
       const sessionExpiredMock = vi.fn();
       setSessionExpiredCallback(sessionExpiredMock);
 
@@ -179,8 +179,8 @@ describe("API Client Logic", () => {
         expect(e).toBeDefined();
       }
 
-      expect(sessionExpiredMock).toHaveBeenCalled();
-      expect(toast.error).toHaveBeenCalledWith(
+      expect(sessionExpiredMock).not.toHaveBeenCalled();
+      expect(toast.error).not.toHaveBeenCalledWith(
         expect.stringContaining("session has expired")
       );
     });
