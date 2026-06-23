@@ -110,9 +110,7 @@ function getStoredLoginUrl(): string {
  * - 401 errors are handled by axios interceptor
  */
 function useCurrentUserQuery() {
-  const { setUser, setIsLoading, markSessionAsExpired, setIsSessionExpired } =
-    useAuthContext();
-  const router = useRouter();
+  const { setUser, setIsLoading } = useAuthContext();
 
   // Check if user was previously authenticated (cached in localStorage)
   // This is more reliable than checking cookies, as it only exists when user successfully logged in
@@ -188,52 +186,12 @@ function useCurrentUserQuery() {
         errorData: query.error?.response?.data,
       });
 
-      // Mark session as expired on auth errors
-      // The axios interceptor has already attempted refresh on 401
-      // If we still get 401 here, it means refresh failed
-      if (
-        status === 401 ||
-        status === 400 ||
-        status === 403 ||
-        status === 404
-      ) {
-        console.error(
-          "[AUTH] Auth error detected - marking session as expired",
-          { status }
-        );
-
-        // Mark session as expired
-        markSessionAsExpired();
-        setIsSessionExpired(true);
-
-        // For 404 (user deleted), immediately trigger redirect
-        if (status === 404) {
-          toast.error("Sorry ", {
-            description: "You can try login again",
-          });
-          console.error(
-            "[AUTH] User not found (404) - forcing immediate redirect"
-          );
-          setTimeout(() => {
-            console.log("[AUTH] Executing immediate 404 redirect");
-            if (typeof window !== "undefined") {
-              const loginUrl = getStoredLoginUrl();
-              console.log("[AUTH] Redirecting to", loginUrl);
-              window.location.href = loginUrl;
-            }
-          }, 0);
-        }
-      }
-
+      console.warn("[AUTH] Keeping current session after profile error", {
+        status,
+      });
       setIsLoading(false);
     }
-  }, [
-    query.isError,
-    query.error,
-    markSessionAsExpired,
-    setIsSessionExpired,
-    setIsLoading,
-  ]);
+  }, [query.isError, query.error, setIsLoading]);
 
   return query;
 }

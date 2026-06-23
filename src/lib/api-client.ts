@@ -297,23 +297,7 @@ apiClient.interceptors.response.use(
           attempts: refreshAttemptCount,
         });
 
-        // Signal that we're redirecting due to invalid session
-        if (authLoadingCallback) {
-          authLoadingCallback(true, "redirecting");
-        }
-        if (redirectReasonCallback) {
-          redirectReasonCallback("session-invalid");
-        }
-
-        // Notify React components that session has expired
-        if (sessionExpiredCallback) {
-          sessionExpiredCallback();
-        }
-
-        // Clear cookies and session state
-        clearSessionCookies();
-
-        return Promise.reject(new Error("Session expired"));
+        return Promise.reject(error);
       }
 
       // If already refreshing, queue this request
@@ -396,32 +380,7 @@ apiClient.interceptors.response.use(
             maxAttempts: MAX_REFRESH_ATTEMPTS,
           });
 
-          // Set redirect reason based on status
-          if (redirectReasonCallback) {
-            if (refreshStatus === 404) {
-              redirectReasonCallback("user-deleted");
-            } else {
-              redirectReasonCallback("session-invalid");
-            }
-          }
-
-          // Signal that we're redirecting
-          if (authLoadingCallback) {
-            authLoadingCallback(true, "redirecting");
-          }
-
-          // Notify React components
-          if (sessionExpiredCallback) {
-            console.log(
-              "[AUTH] Calling sessionExpiredCallback from api-client"
-            );
-            sessionExpiredCallback();
-          } else {
-            console.error("[AUTH] sessionExpiredCallback is not set!");
-          }
-
-          clearSessionCookies();
-          return Promise.reject(new Error("Session expired"));
+          return Promise.reject(refreshError);
         }
 
         // Temporary error - clear loading state and retry
@@ -465,23 +424,7 @@ apiClient.interceptors.response.use(
         url: originalRequest.url,
       });
 
-      // Set redirect reason
-      if (redirectReasonCallback) {
-        redirectReasonCallback("session-invalid");
-      }
-
-      // Signal that we're redirecting
-      if (authLoadingCallback) {
-        authLoadingCallback(true, "redirecting");
-      }
-
-      // Notify React components
-      if (sessionExpiredCallback) {
-        sessionExpiredCallback();
-      }
-
-      clearSessionCookies();
-      return Promise.reject(new Error("Access forbidden - session invalid"));
+      return Promise.reject(error);
     }
 
     // ========================================================================
@@ -568,13 +511,7 @@ apiClient.interceptors.response.use(
           isWebAuthnBusinessError,
         });
 
-        if (looksLikeAuthFailure) {
-          if (sessionExpiredCallback) {
-            sessionExpiredCallback();
-          }
-
-          clearSessionCookies();
-        } else {
+        if (!looksLikeAuthFailure) {
           // Business logic 401 - do not expire session; let caller handle it
           AUTH_DEBUG.log(
             "Verification endpoint returned business 401 - not expiring session",
