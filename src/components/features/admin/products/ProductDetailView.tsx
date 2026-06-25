@@ -94,7 +94,7 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
   // Map to supplier form state
   const [mapSupplierId, setMapSupplierId] = useState("");
   const [mapSupplierProductCode, setMapSupplierProductCode] = useState("");
-  const [mapSupplierPrice, setMapSupplierPrice] = useState(0);
+  const [mapSupplierPrice, setMapSupplierPrice] = useState<number | "">("");
   const [mapMinOrder, setMapMinOrder] = useState<number | undefined>();
   const [mapMaxOrder, setMapMaxOrder] = useState<number | undefined>();
   const [mapLeadTime, setMapLeadTime] = useState<number | undefined>();
@@ -240,7 +240,7 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
         data: {
           supplierId: mapSupplierId,
           supplierProductCode: mapSupplierProductCode,
-          supplierPrice: mapSupplierPrice,
+          supplierPrice: Number(mapSupplierPrice),
           minOrderAmount: mapMinOrder,
           maxOrderAmount: mapMaxOrder,
           leadTimeSeconds: mapLeadTime,
@@ -253,7 +253,7 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
           // Reset form
           setMapSupplierId("");
           setMapSupplierProductCode("");
-          setMapSupplierPrice(0);
+          setMapSupplierPrice("");
           setMapMinOrder(undefined);
           setMapMaxOrder(undefined);
           setMapLeadTime(undefined);
@@ -407,8 +407,12 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
                   <Input
                     type="number"
                     value={mapSupplierPrice}
+                    min={0}
+                    step="0.01"
                     onChange={(e) =>
-                      setMapSupplierPrice(Number(e.target.value))
+                      setMapSupplierPrice(
+                        e.target.value ? Number(e.target.value) : ""
+                      )
                     }
                   />
                 </div>
