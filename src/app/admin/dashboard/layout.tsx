@@ -38,6 +38,7 @@ import {
   UsersIcon,
   WalletIcon,
   WebhookIcon,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -52,6 +53,11 @@ const navItems = [
     title: "Analytics",
     href: "/admin/dashboard/analytics",
     icon: BarChart3Icon,
+  },
+  {
+    title: "Supplier Errors",
+    href: "/admin/dashboard/supplier-errors",
+    icon: AlertTriangle,
   },
   {
     title: "Audit Log",

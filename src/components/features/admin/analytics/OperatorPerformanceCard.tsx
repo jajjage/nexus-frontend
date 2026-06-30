@@ -88,7 +88,7 @@ export function OperatorPerformanceCard({
               </TableHeader>
               <TableBody>
                 {operators.map((op) => (
-                  <TableRow key={op.name}>
+                  <TableRow key={`${op.name}-${op.supplierSlug}`}>
                     <TableCell className="font-medium">
                       {op.name}
                       <span className="text-muted-foreground block text-xs">
