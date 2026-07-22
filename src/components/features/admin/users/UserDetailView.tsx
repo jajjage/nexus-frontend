@@ -64,6 +64,8 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { UserActivityTable } from "../audit/UserActivityTable";
+import { AdminActivityOverviewCard } from "./AdminActivityOverviewCard";
+import { AdminUserActivityTabs } from "./AdminUserActivityTabs";
 import { Setup2FAModal } from "./Setup2FAModal";
 
 interface UserDetailViewProps {
@@ -178,6 +180,9 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
           </Badge>
         </div>
       </div>
+
+      {/* Admin Activity Overview */}
+      <AdminActivityOverviewCard userId={userId} />
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Profile Card */}
@@ -596,6 +601,9 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* User Activity Tabs */}
+      <AdminUserActivityTabs userId={userId} />
 
       {/* User Activity Log */}
       <UserActivityTable userId={userId} />

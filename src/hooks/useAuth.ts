@@ -174,16 +174,19 @@ function useCurrentUserQuery() {
 
   // Handle error - mark session as expired if auth error
   useEffect(() => {
-    if (query.isError) {
-      const status = query.error?.response?.status;
+    if (query.isError && query.error) {
+      const err = query.error as any;
+      const status = err?.response?.status ?? err?.status ?? "NO_STATUS";
       const message =
-        (query.error?.response?.data as any)?.message ||
-        (query.error as any)?.message;
+        err?.response?.data?.message ||
+        err?.message ||
+        "Unknown error fetching user profile";
+      const errorData = err?.response?.data ?? null;
 
       console.error("[AUTH] User profile fetch error", {
         status,
         message,
-        errorData: query.error?.response?.data,
+        errorData,
       });
 
       console.warn("[AUTH] Keeping current session after profile error", {
