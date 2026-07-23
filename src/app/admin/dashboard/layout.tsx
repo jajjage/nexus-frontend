@@ -145,6 +145,11 @@ const navItems = [
     icon: PackageIcon,
   },
   {
+    title: "Categories",
+    href: "/admin/dashboard/categories",
+    icon: PackageIcon,
+  },
+  {
     title: "Offers",
     href: "/admin/dashboard/offers",
     icon: GiftIcon,

@@ -21,6 +21,7 @@ export interface CreateCategoryRequest {
   name: string;
   slug?: string;
   description?: string;
+  iconUrl?: string;
   priority?: number;
   isActive?: boolean;
 }
@@ -29,6 +30,7 @@ export interface UpdateCategoryRequest {
   name?: string;
   slug?: string;
   description?: string;
+  iconUrl?: string;
   priority?: number;
   isActive?: boolean;
 }
