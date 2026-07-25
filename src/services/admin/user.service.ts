@@ -22,7 +22,7 @@ const BASE_PATH = "/admin/users";
 const mapFromApiUser = (apiUser: any): AdminUser => {
   return {
     id: apiUser.id,
-    userId: apiUser.user_id || apiUser.userId,
+    userId: apiUser.user_id || apiUser.userId || apiUser.id,
     fullName: apiUser.full_name || apiUser.fullName,
     email: apiUser.email,
     phoneNumber: apiUser.phone_number || apiUser.phoneNumber,

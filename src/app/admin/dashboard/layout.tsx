@@ -28,6 +28,7 @@ import {
   HomeIcon,
   LandmarkIcon,
   LogOutIcon,
+  MegaphoneIcon,
   PackageIcon,
   PercentIcon,
   RadioIcon,
@@ -158,6 +159,11 @@ const navItems = [
     title: "Notifications",
     href: "/admin/dashboard/notifications",
     icon: BellIcon,
+  },
+  {
+    title: "Announcements",
+    href: "/admin/dashboard/announcements",
+    icon: MegaphoneIcon,
   },
   {
     title: "Biometric",
