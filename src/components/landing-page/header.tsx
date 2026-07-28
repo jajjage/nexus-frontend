@@ -25,7 +25,8 @@ export function Header() {
   const navLinks = [
     { href: "#services", label: "Services" },
     { href: "#pricing", label: "Pricing" },
-    { href: "#about", label: "About Us" },
+    { href: "/reseller-products", label: "Reseller Catalog" },
+    { href: "/reseller-api-docs", label: "API Docs" },
     { href: "#faq", label: "FAQs" },
   ];
 

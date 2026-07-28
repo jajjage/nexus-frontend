@@ -4,11 +4,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useProducts } from "@/hooks/useProducts";
+import { getResolvedProductPrice } from "@/utils/reseller-products";
 import {
-  convertDenomAmountToNumber,
-  getResolvedProductPrice,
-} from "@/utils/reseller-products";
-import { Download, ExternalLink, Search } from "lucide-react";
+  Check,
+  Copy,
+  Download,
+  ExternalLink,
+  Search,
+  ShieldCheck,
+} from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 export default function ResellerProductsPage() {
@@ -17,8 +22,9 @@ export default function ResellerProductsPage() {
     "all"
   );
   const [selectedOperator, setSelectedOperator] = useState<string>("all");
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
-  // Fetch all products
+  // Fetch all active products for tenant
   const { data, isLoading } = useProducts({
     isActive: true,
     perPage: 200,
@@ -26,7 +32,7 @@ export default function ResellerProductsPage() {
 
   const products = data?.products || [];
 
-  // Filter products based on search and type
+  // Filter products based on search, product type, and operator
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const matchesSearch =
@@ -46,9 +52,9 @@ export default function ResellerProductsPage() {
     });
   }, [products, searchQuery, selectedType, selectedOperator]);
 
-  // Get unique operators
+  // Get unique operators from returned tenant products
   const operators = useMemo(() => {
-    const unique = new Map();
+    const unique = new Map<string, string>();
     products.forEach((p) => {
       if (p.operator && !unique.has(p.operatorId)) {
         unique.set(p.operatorId, p.operator.name);
@@ -57,7 +63,14 @@ export default function ResellerProductsPage() {
     return Array.from(unique.entries());
   }, [products]);
 
-  // Export as CSV
+  // Handle copying product code
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  // Export filtered products as CSV
   const exportCSV = () => {
     const headers = [
       "Product Name",
@@ -102,39 +115,47 @@ export default function ResellerProductsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
-      <div className="border-b bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-bold text-gray-900">
-            Reseller Product Catalog
-          </h1>
-          <p className="mt-2 text-lg text-gray-600">
-            Browse all available products and their API codes for integration
-          </p>
-          <p className="mt-1 text-sm text-gray-500">
-            Use the{" "}
-            <code className="rounded bg-gray-100 px-2 py-1 font-mono text-xs">
-              product_code
-            </code>{" "}
-            in your Reseller API requests
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      {/* Header Banner */}
+      <div className="border-b bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                <ShieldCheck className="h-3.5 w-3.5" /> Tenant Isolated API
+              </div>
+              <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+                Reseller Product Catalog
+              </h1>
+              <p className="mt-2 text-base text-slate-600 dark:text-slate-400">
+                Discover available data bundles, airtime plans, and API product
+                codes for integration.
+              </p>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3 md:mt-0">
+              <Button asChild variant="default" className="gap-2">
+                <Link href="/reseller-api-docs">
+                  <ExternalLink className="h-4 w-4" /> View API Docs
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Controls */}
-        <div className="mb-8 rounded-lg bg-white p-6 shadow">
+        {/* Controls & Search */}
+        <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
+              <Search className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search by name, code, or operator..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 py-2 pr-4 pl-10 text-black placeholder-gray-400 focus:border-transparent focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-slate-300 bg-white py-2 pr-4 pl-10 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
               />
             </div>
 
@@ -144,7 +165,7 @@ export default function ResellerProductsPage() {
               onChange={(e) =>
                 setSelectedType(e.target.value as "all" | "data" | "airtime")
               }
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-black focus:border-transparent focus:ring-2 focus:ring-blue-500"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             >
               <option value="all">All Product Types</option>
               <option value="data">Data Bundles</option>
@@ -155,7 +176,7 @@ export default function ResellerProductsPage() {
             <select
               value={selectedOperator}
               onChange={(e) => setSelectedOperator(e.target.value)}
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-black focus:border-transparent focus:ring-2 focus:ring-blue-500"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             >
               <option value="all">All Operators</option>
               {operators.map(([id, name]) => (
@@ -166,9 +187,13 @@ export default function ResellerProductsPage() {
             </select>
           </div>
 
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              Showing {filteredProducts.length} of {products.length} products
+          <div className="flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Showing{" "}
+              <span className="font-semibold text-slate-900 dark:text-white">
+                {filteredProducts.length}
+              </span>{" "}
+              of {products.length} products
             </p>
             <Button
               variant="outline"
@@ -184,14 +209,19 @@ export default function ResellerProductsPage() {
 
         {/* Products Grid */}
         {isLoading ? (
-          <div className="py-12 text-center">
-            <div className="inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Loading products...</p>
+          <div className="py-16 text-center">
+            <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+            <p className="mt-4 text-slate-600 dark:text-slate-400">
+              Loading catalog...
+            </p>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <Card className="p-8 text-center">
-            <p className="text-gray-600">
+          <Card className="p-12 text-center">
+            <p className="text-lg font-semibold text-slate-700 dark:text-slate-300">
               No products found matching your criteria
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Try adjusting your search terms or filter selections.
             </p>
           </Card>
         ) : (
@@ -199,17 +229,17 @@ export default function ResellerProductsPage() {
             {filteredProducts.map((product) => (
               <Card
                 key={product.id}
-                className="overflow-hidden bg-gray-900 transition-shadow hover:shadow-lg"
+                className="overflow-hidden border border-slate-200 bg-white transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
               >
-                <div className="p-6 text-white">
+                <div className="p-6">
                   {/* Header */}
                   <div className="mb-4 flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-white">
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                         {product.name}
                       </h3>
-                      <p className="mt-1 text-xs text-gray-300">
-                        {product.operator?.name || "Unknown Operator"}
+                      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                        {product.operator?.name || "Network Operator"}
                       </p>
                     </div>
                     <Badge
@@ -224,63 +254,85 @@ export default function ResellerProductsPage() {
                     </Badge>
                   </div>
 
-                  {/* Product Code (Most Important for Resellers) */}
-                  <div className="mb-4 rounded-lg border border-yellow-400 bg-yellow-900 p-3">
-                    <p className="text-xs font-semibold tracking-wider text-yellow-300 uppercase">
-                      API Product Code
-                    </p>
-                    <code className="font-mono text-base font-bold break-all text-yellow-100">
+                  {/* API Product Code */}
+                  <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/40">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold tracking-wider text-amber-800 uppercase dark:text-amber-300">
+                        API Product Code
+                      </p>
+                      <button
+                        onClick={() => handleCopyCode(product.productCode)}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-200"
+                      >
+                        {copiedCode === product.productCode ? (
+                          <>
+                            <Check className="h-3.5 w-3.5 text-green-600" />{" "}
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3.5 w-3.5" /> Copy Code
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <code className="mt-1 block font-mono text-sm font-bold break-all text-amber-950 dark:text-amber-100">
                       {product.productCode}
                     </code>
                   </div>
 
                   {/* Price */}
                   <div className="mb-4">
-                    <p className="text-xs font-semibold tracking-wider text-gray-300 uppercase">
+                    <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
                       Price
                     </p>
                     {(() => {
                       const price = getResolvedProductPrice(product) ?? 0;
                       return price > 0 ? (
-                        <p className="text-2xl font-bold text-green-400">
+                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                           ₦{price.toLocaleString()}
                         </p>
                       ) : (
-                        <p className="text-base text-gray-400 italic">
-                          Variable/Range Product
+                        <p className="text-sm font-medium text-slate-500 italic">
+                          Variable Amount
                         </p>
                       );
                     })()}
                   </div>
 
-                  {/* Details */}
-                  <div className="mb-4 grid grid-cols-2 gap-3">
-                    {product.dataMb && (
+                  {/* Product Details Grid */}
+                  <div className="mb-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+                    {product.dataMb ? (
                       <div>
-                        <p className="text-xs font-semibold tracking-wider text-gray-300 uppercase">
+                        <p className="text-xs font-semibold text-slate-500 uppercase dark:text-slate-400">
                           Data
                         </p>
-                        <p className="text-sm font-bold text-white">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">
                           {product.dataMb.toLocaleString()} MB
                         </p>
                       </div>
-                    )}
-                    {product.validityDays && (
+                    ) : null}
+                    {product.validityDays ? (
                       <div>
-                        <p className="text-xs font-semibold tracking-wider text-gray-300 uppercase">
+                        <p className="text-xs font-semibold text-slate-500 uppercase dark:text-slate-400">
                           Validity
                         </p>
-                        <p className="text-sm font-bold text-white">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">
                           {product.validityDays} days
                         </p>
                       </div>
-                    )}
+                    ) : null}
                   </div>
 
-                  {/* Status */}
-                  <div className="border-t border-gray-700 pt-4">
+                  {/* Status Indicator */}
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
                     <Badge
-                      variant={product.isActive ? "default" : "destructive"}
+                      variant={product.isActive ? "outline" : "destructive"}
+                      className={
+                        product.isActive
+                          ? "border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400"
+                          : ""
+                      }
                     >
                       {product.isActive ? "✓ Available" : "✗ Unavailable"}
                     </Badge>
@@ -291,53 +343,41 @@ export default function ResellerProductsPage() {
           </div>
         )}
 
-        {/* Footer Info */}
-        <div className="mt-12 rounded-lg border border-blue-200 bg-blue-50 p-6">
-          <h3 className="mb-3 text-lg font-bold text-blue-900">
-            Using the Reseller API
+        {/* Integration Instructions */}
+        <div className="mt-12 rounded-xl border border-blue-200 bg-blue-50/70 p-6 dark:border-blue-900/50 dark:bg-blue-950/30">
+          <h3 className="mb-3 text-lg font-bold text-blue-950 dark:text-blue-200">
+            Integrating with the Reseller API
           </h3>
-          <ul className="space-y-2 text-sm text-blue-800">
-            <li>
-              ✓ Copy the <strong>Product Code</strong> from above
+          <ul className="space-y-2 text-sm text-blue-900 dark:text-blue-300">
+            <li className="flex items-start gap-2">
+              <span className="font-bold">1.</span> Copy the{" "}
+              <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs font-semibold dark:bg-slate-800">
+                product_code
+              </code>{" "}
+              for the bundle you want to purchase.
             </li>
-            <li>
-              ✓ Use it in your API request:{" "}
-              <code className="rounded bg-white px-2 py-1 font-mono text-xs">
-                product_code: "MTN_5GB_SME_SHARE"
+            <li className="flex items-start gap-2">
+              <span className="font-bold">2.</span> Include the code in your API
+              request body:{" "}
+              <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs font-semibold dark:bg-slate-800">
+                {
+                  '{ "product_code": "MTN_5GB_SME_SHARE", "phone_number": "08012345678" }'
+                }
               </code>
+              .
             </li>
-            <li>
-              ✓ Include your <strong>X-API-KEY</strong> and{" "}
-              <strong>X-Idempotency-Key</strong> headers
-            </li>
-            <li>
-              ✓ View the{" "}
-              <a
-                href="/reseller-api-docs"
-                className="font-semibold underline hover:text-blue-900"
-              >
-                interactive API documentation
-              </a>{" "}
-              for complete integration details
+            <li className="flex items-start gap-2">
+              <span className="font-bold">3.</span> Send your requests with your{" "}
+              <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs font-semibold dark:bg-slate-800">
+                X-API-KEY
+              </code>{" "}
+              and{" "}
+              <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs font-semibold dark:bg-slate-800">
+                X-Idempotency-Key
+              </code>{" "}
+              headers.
             </li>
           </ul>
-        </div>
-
-        {/* Links */}
-        <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-          <a
-            href="/reseller-api-docs"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
-          >
-            <ExternalLink className="h-4 w-4" />
-            View API Documentation
-          </a>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-200 px-6 py-3 font-semibold text-gray-900 transition-colors hover:bg-gray-300"
-          >
-            Back to Home
-          </a>
         </div>
       </div>
     </div>
