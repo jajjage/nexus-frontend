@@ -132,44 +132,60 @@ export const adminResellerApiService = {
         : [];
 
     const breakers = rawList.map((item: any) => {
-      const circuit = item?.circuit ?? {};
-      return {
+      const circuit = item?.circuit;
+      const openedAtRaw =
+        item?.openedAt ?? item?.opened_at ?? circuit?.openedAt;
+      const lastFailureAtRaw =
+        item?.lastFailureAt ??
+        item?.last_failure_at ??
+        circuit?.lastFailureTime;
+
+      const base = {
         supplier:
           item?.supplierName ||
           item?.supplier ||
           item?.supplierKey ||
           item?.supplierSlug ||
           "Unknown",
-        supplierKey:
-          item?.supplierKey || item?.supplierSlug || item?.id || "default",
-        supplierSlug: item?.supplierSlug || null,
-        supplierName: item?.supplierName || item?.supplier || null,
-        state: (circuit.state || item?.state || "closed").toLowerCase(),
+        state: (circuit?.state || item?.state || "closed").toLowerCase(),
         failureCount: Number(
-          circuit.failureCount ?? item?.failureCount ?? item?.failure_count ?? 0
+          circuit?.failureCount ??
+            item?.failureCount ??
+            item?.failure_count ??
+            0
         ),
         successCount: Number(
-          circuit.successCount ?? item?.successCount ?? item?.success_count ?? 0
+          circuit?.successCount ??
+            item?.successCount ??
+            item?.success_count ??
+            0
         ),
-        openedAt: circuit.openedAt
-          ? new Date(circuit.openedAt).toISOString()
-          : item?.openedAt
-            ? new Date(item.openedAt).toISOString()
-            : null,
-        lastFailureAt: circuit.lastFailureTime
-          ? new Date(circuit.lastFailureTime).toISOString()
-          : item?.lastFailureAt
-            ? new Date(item.lastFailureAt).toISOString()
-            : null,
-        lastFailureReason:
-          circuit.lastFailureReason || item?.lastFailureReason || null,
-        recoveryReady: Boolean(
-          circuit.recoveryReady ?? item?.recoveryReady ?? false
-        ),
-        blockingRequests: Boolean(
-          circuit.blockingRequests ?? item?.blockingRequests ?? false
-        ),
+        openedAt: openedAtRaw ? new Date(openedAtRaw).toISOString() : null,
+        lastFailureAt: lastFailureAtRaw
+          ? new Date(lastFailureAtRaw).toISOString()
+          : null,
+        nextAttemptAt: item?.nextAttemptAt ?? item?.next_attempt_at ?? null,
       };
+
+      if (circuit || item?.supplierKey || item?.supplierSlug) {
+        return {
+          ...base,
+          supplierKey:
+            item?.supplierKey || item?.supplierSlug || item?.id || "default",
+          supplierSlug: item?.supplierSlug || null,
+          supplierName: item?.supplierName || item?.supplier || null,
+          lastFailureReason:
+            circuit?.lastFailureReason || item?.lastFailureReason || null,
+          recoveryReady: Boolean(
+            circuit?.recoveryReady ?? item?.recoveryReady ?? false
+          ),
+          blockingRequests: Boolean(
+            circuit?.blockingRequests ?? item?.blockingRequests ?? false
+          ),
+        };
+      }
+
+      return base;
     });
 
     return {
