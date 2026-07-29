@@ -4,8 +4,15 @@ import { adminResellerApiService } from "@/services/admin/reseller-api.service";
 import {
   AdminResellerPurchaseAnalyticsQueryParams,
   ResellerApiCallbackDeliveriesQueryParams,
+  ResetCircuitBreakerPayload,
+  ToggleCircuitBreakerPayload,
 } from "@/types/admin/reseller-api.types";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 const resellerApiKeys = {
   all: ["admin", "reseller-api"] as const,
@@ -43,6 +50,32 @@ export function useResellerApiCircuitBreakers() {
     queryKey: resellerApiKeys.circuitBreakers(),
     queryFn: () => adminResellerApiService.getCircuitBreakers(),
     staleTime: 30 * 1000,
+  });
+}
+
+export function useResetCircuitBreaker() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload?: ResetCircuitBreakerPayload) =>
+      adminResellerApiService.resetCircuitBreaker(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: resellerApiKeys.circuitBreakers(),
+      });
+    },
+  });
+}
+
+export function useToggleCircuitBreaker() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ToggleCircuitBreakerPayload) =>
+      adminResellerApiService.toggleCircuitBreaker(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: resellerApiKeys.circuitBreakers(),
+      });
+    },
   });
 }
 

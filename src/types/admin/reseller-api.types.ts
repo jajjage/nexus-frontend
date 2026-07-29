@@ -53,16 +53,32 @@ export interface ResellerApiCallbackDeliveriesQueryParams {
 
 export interface ResellerApiCircuitBreaker {
   supplier: string;
+  supplierKey?: string;
+  supplierSlug?: string | null;
+  supplierName?: string | null;
   state: "closed" | "open" | "half_open" | string;
   failureCount: number;
   successCount: number;
   openedAt?: string | null;
   lastFailureAt?: string | null;
+  lastFailureReason?: string | null;
   nextAttemptAt?: string | null;
+  recoveryReady?: boolean;
+  blockingRequests?: boolean;
 }
 
 export interface ResellerApiCircuitBreakersResponse {
   breakers: ResellerApiCircuitBreaker[];
+}
+
+export interface ResetCircuitBreakerPayload {
+  supplierKey?: string;
+  supplierKeys?: string[];
+}
+
+export interface ToggleCircuitBreakerPayload {
+  enabled: boolean;
+  supplierKey?: string;
 }
 
 export interface AdminResellerPurchaseAnalyticsQueryParams {

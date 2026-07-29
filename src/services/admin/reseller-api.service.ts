@@ -7,6 +7,8 @@ import {
   ResellerApiCallbackDeliveriesResponse,
   ResellerApiCallbacksOverview,
   ResellerApiCircuitBreakersResponse,
+  ResetCircuitBreakerPayload,
+  ToggleCircuitBreakerPayload,
 } from "@/types/admin/reseller-api.types";
 
 const BASE_PATH = "/admin/reseller-api";
@@ -123,22 +125,77 @@ export const adminResellerApiService = {
       `${BASE_PATH}/circuit-breakers`
     );
     const raw = response.data?.data ?? {};
-    const breakers = Array.isArray(raw.breakers)
-      ? raw.breakers.map((item: any) => ({
-          supplier: item?.supplier ?? item?.supplierName ?? "Unknown",
-          state: item?.state ?? "closed",
-          failureCount: item?.failureCount ?? item?.failure_count ?? 0,
-          successCount: item?.successCount ?? item?.success_count ?? 0,
-          openedAt: item?.openedAt ?? item?.opened_at ?? null,
-          lastFailureAt: item?.lastFailureAt ?? item?.last_failure_at ?? null,
-          nextAttemptAt: item?.nextAttemptAt ?? item?.next_attempt_at ?? null,
-        }))
-      : [];
+    const rawList = Array.isArray(raw.suppliers)
+      ? raw.suppliers
+      : Array.isArray(raw.breakers)
+        ? raw.breakers
+        : [];
+
+    const breakers = rawList.map((item: any) => {
+      const circuit = item?.circuit ?? {};
+      return {
+        supplier:
+          item?.supplierName ||
+          item?.supplier ||
+          item?.supplierKey ||
+          item?.supplierSlug ||
+          "Unknown",
+        supplierKey:
+          item?.supplierKey || item?.supplierSlug || item?.id || "default",
+        supplierSlug: item?.supplierSlug || null,
+        supplierName: item?.supplierName || item?.supplier || null,
+        state: (circuit.state || item?.state || "closed").toLowerCase(),
+        failureCount: Number(
+          circuit.failureCount ?? item?.failureCount ?? item?.failure_count ?? 0
+        ),
+        successCount: Number(
+          circuit.successCount ?? item?.successCount ?? item?.success_count ?? 0
+        ),
+        openedAt: circuit.openedAt
+          ? new Date(circuit.openedAt).toISOString()
+          : item?.openedAt
+            ? new Date(item.openedAt).toISOString()
+            : null,
+        lastFailureAt: circuit.lastFailureTime
+          ? new Date(circuit.lastFailureTime).toISOString()
+          : item?.lastFailureAt
+            ? new Date(item.lastFailureAt).toISOString()
+            : null,
+        lastFailureReason:
+          circuit.lastFailureReason || item?.lastFailureReason || null,
+        recoveryReady: Boolean(
+          circuit.recoveryReady ?? item?.recoveryReady ?? false
+        ),
+        blockingRequests: Boolean(
+          circuit.blockingRequests ?? item?.blockingRequests ?? false
+        ),
+      };
+    });
 
     return {
       ...response.data,
       data: { breakers },
     };
+  },
+
+  resetCircuitBreaker: async (
+    payload?: ResetCircuitBreakerPayload
+  ): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post<ApiResponse<any>>(
+      `${BASE_PATH}/circuit-breakers/reset`,
+      payload ?? {}
+    );
+    return response.data;
+  },
+
+  toggleCircuitBreaker: async (
+    payload: ToggleCircuitBreakerPayload
+  ): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post<ApiResponse<any>>(
+      `${BASE_PATH}/circuit-breakers/toggle`,
+      payload
+    );
+    return response.data;
   },
 
   getPurchaseAnalyticsOverview: async (
