@@ -503,16 +503,26 @@ export function DataPlans({
             (msg.toLowerCase().includes("pin") ||
               msg.toLowerCase().includes("invalid"))
           ) {
-            recordPinAttempt(false);
-            setErrorMessage(msg);
-            // Keep PIN modal open to show error
+            const isExceeded = recordPinAttempt(false);
+            if (isExceeded) {
+              setShowPinModal(false);
+              setShowBiometricModal(false);
+              setIsCheckoutOpen(false);
+              toast.error(
+                "3 incorrect PIN attempts. Redirecting to change PIN page..."
+              );
+              router.push(
+                "/dashboard/profile/security/pin?returnUrl=/dashboard/data"
+              );
+            } else {
+              setErrorMessage(msg);
+            }
           } else {
-            // Other error - close verification modals and show failure in checkout modal
             setShowPinModal(false);
             setShowBiometricModal(false);
             setIsFailed(true);
             setFailureMessage(msg);
-            setIsCheckoutOpen(true); // Show checkout modal with failure state
+            setIsCheckoutOpen(true);
           }
         },
       }

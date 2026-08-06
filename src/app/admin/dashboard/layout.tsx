@@ -32,6 +32,7 @@ import {
   PackageIcon,
   PercentIcon,
   RadioIcon,
+  RefreshCwIcon,
   ServerIcon,
   ShieldCheckIcon,
   ShieldIcon,
@@ -164,6 +165,11 @@ const navItems = [
     title: "Announcements",
     href: "/admin/dashboard/announcements",
     icon: MegaphoneIcon,
+  },
+  {
+    title: "App Updates",
+    href: "/admin/dashboard/app-updates",
+    icon: RefreshCwIcon,
   },
   {
     title: "Biometric",

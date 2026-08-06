@@ -11,142 +11,105 @@ import {
 import { useSecurityStore } from "@/store/securityStore";
 import "@/styles/pin-cursor.css";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 interface PinVerificationModalProps {
   open: boolean;
-
   onClose: () => void;
-
-  onSuccess: (pin: string) => void; // Pass PIN back to parent
-
+  onSuccess: (pin: string) => void;
   useCashback: boolean;
-
   reason: "soft-lock" | "transaction";
-
   transactionAmount?: string;
-
   productCode?: string;
-
   phoneNumber?: string;
-
   isVerifying?: boolean;
-
   errorMessage?: string;
-
   onForgotPin?: () => void;
 }
 
 function formatTransactionAmount(amount?: string) {
   if (!amount) return null;
-
   const parsed = Number.parseFloat(amount.replace(/[^0-9.]/g, ""));
   if (!Number.isFinite(parsed)) return null;
-
   return parsed.toLocaleString("en-NG");
 }
 
-/**
-
- * PinVerificationModal Component
-
- *
-
- * PIN entry modal (4-digit) for transaction verification
-
- *
-
- * Features:
-
- * - Auto-submit when 4 digits entered
-
- * - PIN attempt tracking (3 failures = 5 min block)
-
- * - Clear error handling
-
- * - Keyboard support (Backspace to delete)
-
- *
-
- * Note: This is FALLBACK for transactions when:
-
- * - User doesn't have biometric enrolled
-
- * - User doesn't have biometric device available
-
- * - User explicitly chooses PIN verification
-
- */
-
 export function PinVerificationModal({
   open,
-
   onClose,
-
   onSuccess,
-
   reason,
-
   useCashback,
-
   transactionAmount,
-
   productCode,
-
   phoneNumber,
-
   isVerifying = false,
-
   errorMessage,
-
   onForgotPin,
 }: PinVerificationModalProps) {
+  const router = useRouter();
   const [pin, setPin] = useState("");
-
   const [loading, setLoading] = useState(false);
-
   const [internalError, setInternalError] = useState("");
-
-  const [showPin, setShowPin] = useState(false);
-
   const [isFocused, setIsFocused] = useState(false);
-
-  // Combine internal validation errors with external API errors
 
   const displayError = internalError || errorMessage;
   const formattedTransactionAmount = formatTransactionAmount(transactionAmount);
 
-  const { isBlocked } = useSecurityStore();
-
+  const { isBlocked, recordPinAttempt, resetPinAttempts } = useSecurityStore();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Focus input on mount
-
+  // Clear PIN state when modal opens or closes
   useEffect(() => {
     if (open) {
-      inputRef.current?.focus();
+      setPin("");
+      setInternalError("");
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [open]);
 
   // Clear internal error when pin changes
-
   useEffect(() => {
     if (internalError) setInternalError("");
   }, [pin]);
 
   // Auto-submit when PIN reaches 4 digits
-
   useEffect(() => {
     if (pin.length === 4) {
       handleSubmit();
     }
   }, [pin]);
 
+  // Check external error message for failed attempt
+  useEffect(() => {
+    if (
+      errorMessage &&
+      (errorMessage.toLowerCase().includes("pin") ||
+        errorMessage.toLowerCase().includes("invalid"))
+    ) {
+      const isExceeded = recordPinAttempt(false);
+      if (isExceeded) {
+        toast.error(
+          "3 incorrect PIN attempts. Redirecting to change PIN page..."
+        );
+        onClose();
+        if (onForgotPin) {
+          onForgotPin();
+        } else {
+          router.push("/dashboard/profile/security/pin");
+        }
+      }
+    }
+  }, [errorMessage, recordPinAttempt, onClose, onForgotPin, router]);
+
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.slice(0, 4).replace(/\D/g, "");
-
     setPin(value);
-
     setInternalError("");
   };
 
@@ -157,87 +120,51 @@ export function PinVerificationModal({
   };
 
   const handleSubmit = async () => {
-    console.log("[PinVerificationModal] handleSubmit called", {
-      pinLength: pin.length,
-
-      loading,
-
-      isVerifying,
-
-      isBlocked,
-    });
-
-    if (loading || isVerifying) {
-      console.log(
-        "[PinVerificationModal] Skipping submit - already loading/verifying"
-      );
-
-      return;
-    }
+    if (loading || isVerifying) return;
 
     if (pin.length !== 4) {
-      console.log(
-        "[PinVerificationModal] Validation failed - PIN length not 4"
-      );
-
       setInternalError("PIN must be 4 digits");
-
-      return;
-    }
-
-    if (isBlocked) {
-      console.log("[PinVerificationModal] Blocked - too many attempts");
-
-      setInternalError("Too many failed attempts. Please try again later.");
-
       return;
     }
 
     setLoading(true);
-
     setInternalError("");
 
     try {
-      console.log("[PinVerificationModal] Verifying PIN");
-
-      // Simply validate that a PIN was entered
-
-      if (pin.length !== 4) {
-        setInternalError("PIN must be exactly 4 digits");
-
-        return;
-      }
-
-      // Call onSuccess with the PIN - parent will handle payment
-      console.log("[PinVerificationModal] PIN submitted to parent");
       onSuccess(pin);
-
-      // Clear PIN immediately so it's empty whether success (modal closes) or error (modal stays open)
       setPin("");
     } catch (err: any) {
       console.error("[PinVerificationModal] Error", err);
-      setInternalError(err.message || "Verification failed. Please try again.");
-      setPin("");
+      const isExceeded = recordPinAttempt(false);
+      if (isExceeded) {
+        toast.error(
+          "3 incorrect PIN attempts. Redirecting to change PIN page..."
+        );
+        onClose();
+        if (onForgotPin) {
+          onForgotPin();
+        } else {
+          router.push("/dashboard/profile/security/pin");
+        }
+      } else {
+        setInternalError(
+          err.message || "Verification failed. Please try again."
+        );
+        setPin("");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Keep input focused when not loading/verifying
-  useEffect(() => {
-    if (open && !loading && !isVerifying && !isBlocked) {
-      // Small timeout to ensure DOM is ready and not conflicting with disable state updates
-      const timer = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 10);
-      return () => clearTimeout(timer);
-    }
-  }, [open, loading, isVerifying, isBlocked]);
-
   return (
     <Dialog
       open={open}
-      onOpenChange={isVerifying || loading ? undefined : onClose}
+      onOpenChange={(isOpen) => {
+        if (!isOpen && !isVerifying && !loading) {
+          onClose();
+        }
+      }}
     >
       <DialogContent className="max-w-sm">
         <DialogHeader>
@@ -252,26 +179,20 @@ export function PinVerificationModal({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Transaction Details (if provided) */}
-
           {formattedTransactionAmount && (
             <div className="bg-primary/10 rounded-lg p-3">
               <p className="text-sm text-slate-600">Amount</p>
-
               <p className="text-xl font-semibold text-slate-900">
                 ₦{formattedTransactionAmount}
               </p>
             </div>
           )}
 
-          {/* PIN Input - 4 Individual Digit Boxes */}
-
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-slate-700">
                 4-Digit PIN
               </label>
-
               {onForgotPin && (
                 <button
                   onClick={onForgotPin}
@@ -290,16 +211,11 @@ export function PinVerificationModal({
                   className="flex h-16 w-14 items-center justify-center rounded-lg border-2 border-slate-300 bg-white text-2xl font-bold text-slate-900"
                 >
                   {pin[index] ? "•" : ""}
-
-                  {/* Blinking cursor */}
-
                   {isFocused && pin.length === index && (
                     <span className="cursor-blink text-primary ml-1">|</span>
                   )}
                 </div>
               ))}
-
-              {/* Hidden transparent input overlay */}
 
               <input
                 ref={inputRef}
@@ -310,7 +226,7 @@ export function PinVerificationModal({
                 onKeyDown={handleKeyDown}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                disabled={loading || isBlocked || isVerifying}
+                disabled={loading || isVerifying}
                 maxLength={4}
                 className="absolute inset-0 cursor-text opacity-0"
                 placeholder=""
@@ -324,27 +240,12 @@ export function PinVerificationModal({
             </p>
           </div>
 
-          {/* Error Message */}
-
           {displayError && (
             <div className="flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
-
               <p className="text-sm text-red-700">{displayError}</p>
             </div>
           )}
-
-          {/* Blocked Warning */}
-
-          {isBlocked && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-              <p className="text-sm text-amber-700">
-                Too many failed attempts. Please try again later.
-              </p>
-            </div>
-          )}
-
-          {/* Buttons */}
 
           <div className="flex gap-3 pt-2">
             <Button
@@ -357,7 +258,7 @@ export function PinVerificationModal({
 
             <Button
               onClick={handleSubmit}
-              disabled={pin.length !== 4 || loading || isBlocked || isVerifying}
+              disabled={pin.length !== 4 || loading || isVerifying}
               className="bg-primary hover:bg-primary/90 flex-1"
             >
               {loading || isVerifying ? (
@@ -371,8 +272,6 @@ export function PinVerificationModal({
             </Button>
           </div>
         </div>
-
-        {/* Helper Text */}
 
         <div className="border-t pt-3 text-center text-xs text-slate-500">
           <p>Your PIN is encrypted and secure</p>

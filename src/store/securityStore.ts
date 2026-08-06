@@ -11,7 +11,8 @@ interface SecurityState {
 
   // Actions
   initialize: () => void;
-  recordPinAttempt: (success: boolean) => void;
+  recordPinAttempt: (success: boolean) => boolean; // Returns true if max attempts (3) exceeded
+  resetPinAttempts: () => void;
   cleanup: () => void;
 }
 
@@ -28,7 +29,6 @@ export const useSecurityStore = create<SecurityState>()(
        * - Set up check interval for unblocking
        */
       initialize: () => {
-        // Set up check interval
         const checkInterval = setInterval(() => {
           const state = get();
           const now = Date.now();
@@ -52,11 +52,23 @@ export const useSecurityStore = create<SecurityState>()(
       },
 
       /**
+       * Reset PIN attempts explicitly
+       */
+      resetPinAttempts: () => {
+        console.log("[Security] Resetting PIN attempts");
+        set({
+          pinAttempts: 0,
+          isBlocked: false,
+          blockExpireTime: null,
+        });
+      },
+
+      /**
        * Track PIN attempts for transactions
        * - Success: Clear attempts
-       * - Failure: Increment and block after 5 attempts
+       * - Failure: Increment. After 3 attempts, reset state and return true to signal redirect.
        */
-      recordPinAttempt: (success: boolean) => {
+      recordPinAttempt: (success: boolean): boolean => {
         if (success) {
           console.log("[Security] PIN attempt successful");
           set({
@@ -64,26 +76,33 @@ export const useSecurityStore = create<SecurityState>()(
             isBlocked: false,
             blockExpireTime: null,
           });
+          return false;
         } else {
           const currentAttempts = get().pinAttempts;
           const newAttempts = currentAttempts + 1;
 
           console.log("[Security] PIN attempt failed", {
             attempt: newAttempts,
-            maxAttempts: 5,
+            maxAttempts: 3,
           });
 
-          if (newAttempts >= 5) {
-            // Block for 5 minutes after 5 failed attempts
-            const blockUntil = Date.now() + 5 * 60 * 1000;
-            console.log("[Security] PIN blocked for 5 minutes");
+          if (newAttempts >= 3) {
+            console.log(
+              "[Security] Max failed PIN attempts reached (3). Resetting state so next attempt works normally."
+            );
+            set({
+              pinAttempts: 0,
+              isBlocked: false,
+              blockExpireTime: null,
+            });
+            return true; // Exceeded max attempts -> redirect user
+          } else {
             set({
               pinAttempts: newAttempts,
-              isBlocked: true,
-              blockExpireTime: blockUntil,
+              isBlocked: false,
+              blockExpireTime: null,
             });
-          } else {
-            set({ pinAttempts: newAttempts });
+            return false;
           }
         }
       },
@@ -102,7 +121,6 @@ export const useSecurityStore = create<SecurityState>()(
     {
       name: "security-store",
       partialize: (state: any) => ({
-        // We only persist blocking state to prevent bypassing block by refresh
         pinAttempts: state.pinAttempts,
         isBlocked: state.isBlocked,
         blockExpireTime: state.blockExpireTime,

@@ -50,6 +50,8 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSecurityStore } from "@/store/securityStore";
 import { toast } from "sonner";
 
 interface BillPaymentFlowProps {
@@ -101,8 +103,10 @@ const serviceCopy = {
 export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
   const copy = serviceCopy[category];
   const ServiceIcon = copy.icon;
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { recordPinAttempt } = useSecurityStore();
   const { data: billers = [], isLoading: isLoadingBillers } =
     useBillers(category);
   const validateMutation = useValidateBillCustomer();
@@ -304,7 +308,20 @@ export function BillPaymentFlow({ category }: BillPaymentFlowProps) {
             (message.toLowerCase().includes("pin") ||
               message.toLowerCase().includes("invalid"))
           ) {
-            setErrorMessage(message);
+            const isExceeded = recordPinAttempt(false);
+            if (isExceeded) {
+              setShowPinModal(false);
+              setShowBiometricModal(false);
+              setIsCheckoutOpen(false);
+              toast.error(
+                "3 incorrect PIN attempts. Redirecting to change PIN page..."
+              );
+              router.push(
+                "/dashboard/profile/security/pin?returnUrl=/dashboard/bills"
+              );
+            } else {
+              setErrorMessage(message);
+            }
             return;
           }
 

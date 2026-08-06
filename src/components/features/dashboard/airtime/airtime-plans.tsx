@@ -250,8 +250,20 @@ export function AirtimePlans() {
             (msg.toLowerCase().includes("pin") ||
               msg.toLowerCase().includes("invalid"))
           ) {
-            recordPinAttempt(false);
-            setErrorMessage(msg);
+            const isExceeded = recordPinAttempt(false);
+            if (isExceeded) {
+              setShowPinModal(false);
+              setShowBiometricModal(false);
+              setIsCheckoutOpen(false);
+              toast.error(
+                "3 incorrect PIN attempts. Redirecting to change PIN page..."
+              );
+              router.push(
+                "/dashboard/profile/security/pin?returnUrl=/dashboard/airtime"
+              );
+            } else {
+              setErrorMessage(msg);
+            }
           } else {
             setShowPinModal(false);
             setShowBiometricModal(false);
