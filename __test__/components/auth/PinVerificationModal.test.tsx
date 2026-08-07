@@ -3,6 +3,17 @@ import { useSecurityStore } from "@/store/securityStore";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MockedFunction } from "vitest";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+}));
+
 vi.mock("@/store/securityStore");
 vi.mock("sonner", () => ({
   toast: {

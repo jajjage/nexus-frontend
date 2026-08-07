@@ -55,11 +55,14 @@ export function PinVerificationModal({
   const [internalError, setInternalError] = useState("");
   const [isFocused, setIsFocused] = useState(false);
 
-  const displayError = internalError || errorMessage;
-  const formattedTransactionAmount = formatTransactionAmount(transactionAmount);
-
   const { isBlocked, recordPinAttempt, resetPinAttempts } = useSecurityStore();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const displayError =
+    (isBlocked ? "Too many failed attempts. Please try again later." : "") ||
+    internalError ||
+    errorMessage;
+  const formattedTransactionAmount = formatTransactionAmount(transactionAmount);
 
   // Clear PIN state when modal opens or closes
   useEffect(() => {
@@ -226,7 +229,7 @@ export function PinVerificationModal({
                 onKeyDown={handleKeyDown}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                disabled={loading || isVerifying}
+                disabled={loading || isVerifying || isBlocked}
                 maxLength={4}
                 className="absolute inset-0 cursor-text opacity-0"
                 placeholder=""
@@ -258,7 +261,7 @@ export function PinVerificationModal({
 
             <Button
               onClick={handleSubmit}
-              disabled={pin.length !== 4 || loading || isVerifying}
+              disabled={pin.length !== 4 || loading || isVerifying || isBlocked}
               className="bg-primary hover:bg-primary/90 flex-1"
             >
               {loading || isVerifying ? (

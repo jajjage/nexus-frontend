@@ -56,10 +56,12 @@ describe("useSecurityStore", () => {
     it("should record successful PIN attempt", () => {
       const { result } = renderHook(() => useSecurityStore());
 
+      let isExceeded = true;
       act(() => {
-        result.current.recordPinAttempt(true);
+        isExceeded = result.current.recordPinAttempt(true);
       });
 
+      expect(isExceeded).toBe(false);
       expect(result.current.pinAttempts).toBe(0);
       expect(result.current.isBlocked).toBe(false);
     });
@@ -67,40 +69,62 @@ describe("useSecurityStore", () => {
     it("should increment PIN attempts on failure", () => {
       const { result } = renderHook(() => useSecurityStore());
 
+      let isExceeded = true;
       act(() => {
-        result.current.recordPinAttempt(false);
+        isExceeded = result.current.recordPinAttempt(false);
       });
 
+      expect(isExceeded).toBe(false);
       expect(result.current.pinAttempts).toBe(1);
       expect(result.current.isBlocked).toBe(false);
     });
 
-    it("should block after 5 failed attempts", () => {
+    it("should reset state and return true when max attempts (3) reached", () => {
       const { result } = renderHook(() => useSecurityStore());
 
+      let res1: boolean = false;
+      let res2: boolean = false;
+      let res3: boolean = false;
+
       act(() => {
-        result.current.recordPinAttempt(false);
-        result.current.recordPinAttempt(false);
-        result.current.recordPinAttempt(false);
-        result.current.recordPinAttempt(false);
-        result.current.recordPinAttempt(false);
+        res1 = result.current.recordPinAttempt(false); // 1
+        res2 = result.current.recordPinAttempt(false); // 2
       });
 
-      expect(result.current.pinAttempts).toBe(5);
-      expect(result.current.isBlocked).toBe(true);
-      expect(result.current.blockExpireTime).not.toBeNull();
+      expect(res1).toBe(false);
+      expect(res2).toBe(false);
+      expect(result.current.pinAttempts).toBe(2);
+
+      act(() => {
+        res3 = result.current.recordPinAttempt(false); // 3
+      });
+
+      expect(res3).toBe(true);
+      expect(result.current.pinAttempts).toBe(0);
+      expect(result.current.isBlocked).toBe(false);
     });
 
-    it("should unblock after expiration time", () => {
+    it("should reset PIN attempts explicitly", () => {
       const { result } = renderHook(() => useSecurityStore());
 
       act(() => {
+        result.current.recordPinAttempt(false);
+        result.current.resetPinAttempts();
+      });
+
+      expect(result.current.pinAttempts).toBe(0);
+      expect(result.current.isBlocked).toBe(false);
+    });
+
+    it("should unblock after expiration time when blocked", () => {
+      const { result } = renderHook(() => useSecurityStore());
+
+      act(() => {
+        useSecurityStore.setState({
+          isBlocked: true,
+          blockExpireTime: Date.now() + 5 * 60 * 1000,
+        });
         result.current.initialize();
-        result.current.recordPinAttempt(false);
-        result.current.recordPinAttempt(false);
-        result.current.recordPinAttempt(false);
-        result.current.recordPinAttempt(false);
-        result.current.recordPinAttempt(false);
       });
 
       expect(result.current.isBlocked).toBe(true);
