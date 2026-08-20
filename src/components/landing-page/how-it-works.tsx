@@ -16,9 +16,11 @@ export function HowItWorks() {
         </p>
       </div>
       <div className="mt-12 grid gap-8 md:grid-cols-3">
-        <Card className="text-center">
+        <Card className="group hover:border-primary/20 text-center transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-md">
           <CardHeader>
-            <div className="text-primary text-4xl font-bold">1</div>
+            <div className="text-primary text-4xl font-bold transition-transform duration-200 ease-out group-hover:scale-110">
+              1
+            </div>
           </CardHeader>
           <CardContent>
             <CardTitle>Create an Account</CardTitle>
@@ -27,9 +29,11 @@ export function HowItWorks() {
             </CardDescription>
           </CardContent>
         </Card>
-        <Card className="text-center">
+        <Card className="group hover:border-primary/20 text-center transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-md">
           <CardHeader>
-            <div className="text-primary text-4xl font-bold">2</div>
+            <div className="text-primary text-4xl font-bold transition-transform duration-200 ease-out group-hover:scale-110">
+              2
+            </div>
           </CardHeader>
           <CardContent>
             <CardTitle>Fund Your Wallet</CardTitle>
@@ -39,9 +43,11 @@ export function HowItWorks() {
             </CardDescription>
           </CardContent>
         </Card>
-        <Card className="text-center">
+        <Card className="group hover:border-primary/20 text-center transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-md">
           <CardHeader>
-            <div className="text-primary text-4xl font-bold">3</div>
+            <div className="text-primary text-4xl font-bold transition-transform duration-200 ease-out group-hover:scale-110">
+              3
+            </div>
           </CardHeader>
           <CardContent>
             <CardTitle>Pay & Go</CardTitle>

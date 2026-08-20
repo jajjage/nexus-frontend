@@ -46,10 +46,10 @@ export function Services() {
         {services.map((service) => (
           <Card
             key={service.title}
-            className="text-center transition-shadow hover:shadow-lg"
+            className="group hover:border-primary/20 text-center transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-xl"
           >
             <CardHeader>
-              <div className="bg-primary/10 mx-auto rounded-full p-4">
+              <div className="bg-primary/10 mx-auto rounded-full p-4 transition-transform duration-200 ease-out group-hover:scale-110">
                 {service.icon}
               </div>
             </CardHeader>

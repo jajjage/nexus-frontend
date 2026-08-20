@@ -36,19 +36,19 @@ export function Footer() {
             <div className="mt-4 flex space-x-4">
               <Link
                 href="#"
-                className="hover:text-foreground transition-colors"
+                className="hover:text-foreground transition-all duration-150 ease-out hover:scale-110"
               >
                 <Facebook className="h-6 w-6" />
               </Link>
               <Link
                 href="#"
-                className="hover:text-foreground transition-colors"
+                className="hover:text-foreground transition-all duration-150 ease-out hover:scale-110"
               >
                 <Twitter className="h-6 w-6" />
               </Link>
               <Link
                 href="#"
-                className="hover:text-foreground transition-colors"
+                className="hover:text-foreground transition-all duration-150 ease-out hover:scale-110"
               >
                 <Instagram className="h-6 w-6" />
               </Link>
