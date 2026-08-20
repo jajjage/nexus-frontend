@@ -361,3 +361,30 @@ export function useVerifyUser() {
     },
   });
 }
+
+/**
+ * Reset user password mutation
+ */
+export function useResetUserPassword() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      userId,
+      ...data
+    }: {
+      userId: string;
+      newPassword?: string;
+      autoGenerate?: boolean;
+      mustChangePassword?: boolean;
+    }) => adminUserService.resetPassword(userId, data),
+    onSuccess: (response) => {
+      toast.success(response.message || "Password reset successfully");
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.all });
+    },
+    onError: (error: AxiosError<any>) => {
+      const serverError = error.response?.data;
+      toast.error(serverError?.message || "Failed to reset user password");
+    },
+  });
+}

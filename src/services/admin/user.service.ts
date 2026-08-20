@@ -82,6 +82,28 @@ export const adminUserService = {
   /**
    * Update user details
    */
+  resetPassword: async (
+    userId: string,
+    data: {
+      newPassword?: string;
+      autoGenerate?: boolean;
+      mustChangePassword?: boolean;
+    }
+  ): Promise<
+    ApiResponse<{
+      userId: string;
+      resetPassword: string;
+      mustChangePassword: boolean;
+      sessionsRevoked: boolean;
+    }>
+  > => {
+    const response = await apiClient.post<any>(
+      `${BASE_PATH}/${userId}/reset-password`,
+      data
+    );
+    return response.data;
+  },
+
   updateUser: async (
     userId: string,
     data: UpdateUserRequest
