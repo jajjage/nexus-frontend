@@ -51,6 +51,7 @@ export interface SupplierProductMapping {
   minOrderAmount?: string;
   maxOrderAmount?: string;
   leadTimeSeconds?: number;
+  priority?: number;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -100,7 +101,9 @@ export interface CreateProductRequest {
   minOrderAmount?: number;
   maxOrderAmount?: number;
   leadTimeSeconds?: number;
+  priority?: number;
   mappingIsActive?: boolean;
+  mappings?: MapProductToSupplierRequest[];
 }
 
 export interface UpdateProductRequest {
@@ -122,6 +125,7 @@ export interface UpdateProductRequest {
   metadata?: Record<string, unknown>;
   // Category
   categoryId?: string;
+  mappings?: MapProductToSupplierRequest[];
 }
 
 export interface MapProductToSupplierRequest {
@@ -131,6 +135,7 @@ export interface MapProductToSupplierRequest {
   minOrderAmount?: number;
   maxOrderAmount?: number;
   leadTimeSeconds?: number;
+  priority?: number;
   isActive?: boolean;
 }
 
@@ -141,6 +146,7 @@ export interface UpdateProductSupplierMappingRequest {
   minOrderAmount?: number;
   maxOrderAmount?: number;
   leadTimeSeconds?: number;
+  priority?: number;
   isActive?: boolean;
 }
 

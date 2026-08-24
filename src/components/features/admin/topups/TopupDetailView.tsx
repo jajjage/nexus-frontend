@@ -534,6 +534,69 @@ export function TopupDetailView({ requestId }: TopupDetailViewProps) {
         </CardContent>
       </Card>
 
+      {/* Failover History Audit Trail */}
+      {Array.isArray(
+        (request.requestPayload as any)?.failover_history ||
+          (request.requestPayload as any)?.failoverHistory
+      ) &&
+        (
+          ((request.requestPayload as any)?.failover_history ||
+            (request.requestPayload as any)?.failoverHistory) as any[]
+        ).length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5" />
+                Supplier Failover History
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {(
+                  ((request.requestPayload as any)?.failover_history ||
+                    (request.requestPayload as any)?.failoverHistory) as any[]
+                ).map((item: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold">
+                          Attempt {item.attempt}:{" "}
+                          {item.supplierSlug || item.supplierId}
+                        </span>
+                        <Badge
+                          variant={
+                            item.status === "success"
+                              ? "default"
+                              : item.status === "skipped"
+                                ? "outline"
+                                : "destructive"
+                          }
+                          className="text-xs capitalize"
+                        >
+                          {item.status}
+                        </Badge>
+                      </div>
+                      {item.error && (
+                        <p className="text-muted-foreground text-xs">
+                          {item.error}
+                        </p>
+                      )}
+                    </div>
+                    {item.timestamp && (
+                      <span className="text-muted-foreground shrink-0 text-xs">
+                        {format(new Date(item.timestamp), "PP p")}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
       {/* Responses (if any) */}
       {request.responses && request.responses.length > 0 && (
         <Card>

@@ -98,6 +98,7 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
   const [mapMinOrder, setMapMinOrder] = useState<number | undefined>();
   const [mapMaxOrder, setMapMaxOrder] = useState<number | undefined>();
   const [mapLeadTime, setMapLeadTime] = useState<number | undefined>();
+  const [mapPriority, setMapPriority] = useState<number | "">(1);
   const [mapIsActive, setMapIsActive] = useState(true);
 
   // Edit mapping form state
@@ -113,6 +114,9 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
   const [editMappingLeadTime, setEditMappingLeadTime] = useState<
     number | undefined
   >();
+  const [editMappingPriority, setEditMappingPriority] = useState<number | "">(
+    1
+  );
   const [editMappingIsActive, setEditMappingIsActive] = useState(true);
 
   const product = data?.data;
@@ -244,6 +248,7 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
           minOrderAmount: mapMinOrder,
           maxOrderAmount: mapMaxOrder,
           leadTimeSeconds: mapLeadTime,
+          priority: typeof mapPriority === "number" ? mapPriority : 1,
           isActive: mapIsActive,
         },
       },
@@ -257,6 +262,7 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
           setMapMinOrder(undefined);
           setMapMaxOrder(undefined);
           setMapLeadTime(undefined);
+          setMapPriority(1);
           setMapIsActive(true);
         },
       }
@@ -275,6 +281,7 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
       mapping.maxOrderAmount ? parseFloat(mapping.maxOrderAmount) : undefined
     );
     setEditMappingLeadTime(mapping.leadTimeSeconds);
+    setEditMappingPriority(mapping.priority ?? 1);
     setEditMappingIsActive(mapping.isActive);
     setIsEditMappingOpen(true);
   };
@@ -289,6 +296,8 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
       minOrderAmount: editMappingMinOrder,
       maxOrderAmount: editMappingMaxOrder,
       leadTimeSeconds: editMappingLeadTime,
+      priority:
+        typeof editMappingPriority === "number" ? editMappingPriority : 1,
       isActive: editMappingIsActive,
     };
 
@@ -309,6 +318,7 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
           setEditMappingMinOrder(undefined);
           setEditMappingMaxOrder(undefined);
           setEditMappingLeadTime(undefined);
+          setEditMappingPriority(1);
           setEditMappingIsActive(true);
         },
       }
@@ -457,6 +467,25 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
                     placeholder="Optional"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Failover Priority</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={mapPriority}
+                    onChange={(e) =>
+                      setMapPriority(
+                        e.target.value ? Number(e.target.value) : ""
+                      )
+                    }
+                    placeholder="1 (1 = Primary, 2 = Secondary, 3 = Tertiary)"
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    Determines execution order during automated failover (1 is
+                    tried first).
+                  </p>
+                </div>
                 <div className="flex items-center justify-between">
                   <Label>Mapping Active</Label>
                   <Switch
@@ -578,6 +607,25 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
                     }
                     placeholder="Optional"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label>Failover Priority</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={editMappingPriority}
+                    onChange={(e) =>
+                      setEditMappingPriority(
+                        e.target.value ? Number(e.target.value) : ""
+                      )
+                    }
+                    placeholder="1 (1 = Primary, 2 = Secondary, 3 = Tertiary)"
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    Determines execution order during automated failover (1 is
+                    tried first).
+                  </p>
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Mapping Active</Label>
@@ -999,6 +1047,16 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
                         className="text-xs"
                       >
                         {mapping.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                      <Badge variant="outline" className="font-mono text-xs">
+                        Priority: {mapping.priority ?? 1}
+                        {mapping.priority === 1
+                          ? " (Primary)"
+                          : mapping.priority === 2
+                            ? " (Secondary)"
+                            : mapping.priority === 3
+                              ? " (Tertiary)"
+                              : ""}
                       </Badge>
                     </div>
                     <div className="text-muted-foreground flex flex-wrap gap-4 text-sm">

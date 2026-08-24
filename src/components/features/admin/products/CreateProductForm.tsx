@@ -67,6 +67,7 @@ export function CreateProductForm() {
   const [minOrderAmount, setMinOrderAmount] = useState<number | undefined>();
   const [maxOrderAmount, setMaxOrderAmount] = useState<number | undefined>();
   const [leadTimeSeconds, setLeadTimeSeconds] = useState<number | undefined>();
+  const [mappingPriority, setMappingPriority] = useState<number | "">(1);
   const [mappingIsActive, setMappingIsActive] = useState(true);
 
   const operators = operatorsData?.data?.operators || [];
@@ -164,6 +165,7 @@ export function CreateProductForm() {
             minOrderAmount,
             maxOrderAmount,
             leadTimeSeconds,
+            priority: typeof mappingPriority === "number" ? mappingPriority : 1,
             mappingIsActive,
           }
         : {}),
@@ -595,13 +597,33 @@ export function CreateProductForm() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <Label>Mapping Active</Label>
-                  <Switch
-                    checked={mappingIsActive}
-                    onCheckedChange={setMappingIsActive}
+                <div className="space-y-2">
+                  <Label>Failover Priority</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={mappingPriority}
+                    onChange={(e) =>
+                      setMappingPriority(
+                        e.target.value ? Number(e.target.value) : ""
+                      )
+                    }
+                    placeholder="1 (1 = Primary, 2 = Secondary, 3 = Tertiary)"
                   />
+                  <p className="text-muted-foreground text-xs">
+                    Execution order during automated failover (1 is tried
+                    first).
+                  </p>
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label>Mapping Active</Label>
+                <Switch
+                  checked={mappingIsActive}
+                  onCheckedChange={setMappingIsActive}
+                />
               </div>
             </CardContent>
           )}
