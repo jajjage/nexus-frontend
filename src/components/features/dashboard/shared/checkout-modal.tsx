@@ -122,19 +122,25 @@ export function CheckoutModal({
       ? "Data"
       : product.productType === "subscription"
         ? "Subscription"
-        : "Airtime";
+        : product.productType === "plan"
+          ? "Plan"
+          : "Airtime";
   const serviceLabel =
     product.productType === "data"
       ? "Mobile Data"
       : product.productType === "subscription"
         ? "Subscription"
-        : "Airtime Recharge";
+        : product.productType === "plan"
+          ? "Plan Service"
+          : "Airtime Recharge";
   const planLabel =
     product.productType === "data"
       ? "Data Bundle"
       : product.productType === "subscription"
         ? "Subscription"
-        : "Airtime";
+        : product.productType === "plan"
+          ? "Plan Bundle"
+          : "Airtime";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
