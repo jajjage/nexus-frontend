@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useCreateSupplier } from "@/hooks/admin/useAdminSuppliers";
+import { useAdminSuppliers, useCreateSupplier } from "@/hooks/admin/useAdminSuppliers";
 import { ArrowLeft, Eye, EyeOff, Loader2, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,6 +27,7 @@ import { useState } from "react";
 export function CreateSupplierForm() {
   const router = useRouter();
   const createMutation = useCreateSupplier();
+  const suppliersQuery = useAdminSuppliers();
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -45,6 +46,7 @@ export function CreateSupplierForm() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [priorityInt, setPriorityInt] = useState(1);
   const [isActive, setIsActive] = useState(true);
+  const [parentSupplierId, setParentSupplierId] = useState("none");
 
   const normalizedSlug = slug.trim().toLowerCase();
   const isVtpass = normalizedSlug === "vtpass";
@@ -111,6 +113,8 @@ export function CreateSupplierForm() {
         apiKey: resolvedApiKey,
         priorityInt,
         isActive,
+        parentSupplierId: parentSupplierId === "none" ? null : parentSupplierId,
+        supplierKind: "child",
       },
       {
         onSuccess: () => {
@@ -206,6 +210,20 @@ export function CreateSupplierForm() {
                 className="font-mono"
                 required
               />
+            </div>
+
+            <div className="rounded-xl border border-dashed bg-muted/20 p-4 space-y-2">
+              <Label htmlFor="parentSupplier">Parent protocol / company (optional)</Label>
+              <Select value={parentSupplierId} onValueChange={setParentSupplierId}>
+                <SelectTrigger id="parentSupplier"><SelectValue placeholder="Standalone legacy supplier" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Standalone legacy supplier</SelectItem>
+                  {(suppliersQuery.data?.data?.suppliers || []).filter((supplier) => supplier.supplierKind === "parent").map((supplier) => (
+                    <SelectItem key={supplier.id} value={supplier.id}>{supplier.name} · {supplier.protocolFamilyId || "protocol configured"}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Choose a parent such as ADEX to inherit its request and response protocol. Leave this empty to keep the supplier on the legacy flow.</p>
             </div>
 
             {isVtpass ? (

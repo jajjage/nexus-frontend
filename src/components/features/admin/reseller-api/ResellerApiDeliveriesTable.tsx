@@ -92,7 +92,7 @@ export function ResellerApiDeliveriesTable() {
                 <SelectItem value="delivered">Delivered</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="retrying">Retrying</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="dead_letter">Dead letter</SelectItem>
               </SelectContent>
             </Select>
           </div>

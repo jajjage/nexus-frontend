@@ -9,6 +9,7 @@ import {
   ResellerApiCircuitBreakersResponse,
   ResetCircuitBreakerPayload,
   ToggleCircuitBreakerPayload,
+  UnifiedApiOperationsOverview,
 } from "@/types/admin/reseller-api.types";
 
 const BASE_PATH = "/admin/reseller-api";
@@ -75,6 +76,15 @@ const mapPurchaseAnalytics = (raw: any): AdminResellerPurchaseAnalytics => ({
 });
 
 export const adminResellerApiService = {
+  getOperationsOverview: async (
+    params?: AdminResellerPurchaseAnalyticsQueryParams
+  ): Promise<ApiResponse<UnifiedApiOperationsOverview>> => {
+    const response = await apiClient.get<ApiResponse<UnifiedApiOperationsOverview>>(
+      `${BASE_PATH}/operations/overview`,
+      { params }
+    );
+    return response.data;
+  },
   getCallbacksOverview: async (): Promise<
     ApiResponse<ResellerApiCallbacksOverview>
   > => {
@@ -86,10 +96,10 @@ export const adminResellerApiService = {
     return {
       ...response.data,
       data: {
-        total: raw.total ?? 0,
-        delivered: raw.delivered ?? 0,
-        failed: raw.failed ?? 0,
-        pending: raw.pending ?? 0,
+        total: raw.total ?? raw.totals?.total ?? 0,
+        delivered: raw.delivered ?? raw.totals?.delivered ?? 0,
+        failed: raw.failed ?? raw.totals?.deadLetter ?? 0,
+        pending: raw.pending ?? raw.totals?.activeBacklog ?? 0,
         successRate: raw.successRate ?? raw.success_rate,
         avgLatencyMs: raw.avgLatencyMs ?? raw.avg_latency_ms,
       },
@@ -105,8 +115,9 @@ export const adminResellerApiService = {
     );
     const raw = response.data?.data ?? {};
 
-    const deliveries = Array.isArray(raw.deliveries)
-      ? raw.deliveries.map(mapDelivery)
+    const rawDeliveries = Array.isArray(raw.deliveries) ? raw.deliveries : raw.items;
+    const deliveries = Array.isArray(rawDeliveries)
+      ? rawDeliveries.map(mapDelivery)
       : [];
 
     return {

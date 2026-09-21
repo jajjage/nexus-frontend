@@ -142,6 +142,11 @@ const navItems = [
     icon: PercentIcon,
   },
   {
+    title: "Private Prices",
+    href: "/admin/dashboard/private-pricing",
+    icon: PercentIcon,
+  },
+  {
     title: "Products",
     href: "/admin/dashboard/products",
     icon: PackageIcon,

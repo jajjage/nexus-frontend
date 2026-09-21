@@ -23,7 +23,18 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+type V1DataPlan = {
+  dataPlan?: number | null;
+  planType?: string | null;
+  name: string;
+  apiPrice?: number | null;
+  priceTags?: { api?: number | string | null } | null;
+  dataMb?: number | null;
+  validityDays?: number | null;
+  operator?: { name?: string; code?: string; networkId?: number | null } | null;
+};
 
 export default function ResellerApiDocsPage() {
   const docsUrl = "/api/v1/docs/reseller/openapi.json";
@@ -34,6 +45,43 @@ export default function ResellerApiDocsPage() {
     "curl" | "node" | "python" | "php"
   >("curl");
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
+  const [selectedPlanType, setSelectedPlanType] = useState("all");
+  const [planSearch, setPlanSearch] = useState("");
+  const [dataPlans, setDataPlans] = useState<V1DataPlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== "catalog") return;
+    let cancelled = false;
+    setPlansLoading(true);
+    fetch("/api/v1/products?productType=data&isActive=true&perPage=500")
+      .then((response) => response.json())
+      .then((payload) => {
+        if (!cancelled) setDataPlans(payload?.data?.products || []);
+      })
+      .catch(() => {
+        if (!cancelled) setDataPlans([]);
+      })
+      .finally(() => {
+        if (!cancelled) setPlansLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab]);
+
+  const planTypes = useMemo(
+    () => Array.from(new Set(dataPlans.map((plan) => plan.planType).filter(Boolean))) as string[],
+    [dataPlans]
+  );
+  const filteredPlans = useMemo(() => {
+    const query = planSearch.trim().toLowerCase();
+    return dataPlans.filter((plan) => {
+      const typeMatches = selectedPlanType === "all" || plan.planType === selectedPlanType;
+      const text = `${plan.dataPlan || ""} ${plan.name} ${plan.operator?.name || ""} ${plan.planType || ""}`.toLowerCase();
+      return typeMatches && (!query || text.includes(query));
+    });
+  }, [dataPlans, planSearch, selectedPlanType]);
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -225,14 +273,14 @@ echo $response;`,
                   <ul className="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-300">
                     <li className="flex items-start gap-2">
                       <code className="rounded bg-slate-200 px-2 py-0.5 font-mono text-xs font-bold text-slate-900 dark:bg-slate-800 dark:text-slate-200">
-                        X-API-KEY
+                        Authorization: Token
                       </code>
                       <span>
-                        Your secret reseller API Key (e.g.,{" "}
+                        Your existing API key (e.g.,{" "}
                         <code className="font-mono text-xs">
-                          res_live_xxxxxxxx
+                          nx_live_xxxxxxxx
                         </code>
-                        ).
+                        ). <code className="font-mono text-xs">X-API-KEY</code> remains supported.
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
@@ -298,6 +346,91 @@ echo $response;`,
         {/* Tab 2: Catalog Endpoints */}
         {activeTab === "catalog" && (
           <div className="space-y-6">
+            <Card className="overflow-hidden border-slate-200 shadow-sm dark:border-slate-800">
+              <CardHeader className="border-b border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/70">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <CardTitle className="text-xl">V1 Data Plans</CardTitle>
+                    <CardDescription>
+                      Choose a plan type to find the public <code>data_plan</code> value used by <code>/api/data</code>.
+                    </CardDescription>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <label className="sr-only" htmlFor="plan-type-filter">Plan type</label>
+                    <select
+                      id="plan-type-filter"
+                      value={selectedPlanType}
+                      onChange={(event) => setSelectedPlanType(event.target.value)}
+                      className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 outline-none ring-blue-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    >
+                      <option value="all">All plan types</option>
+                      {planTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+                    </select>
+                    <label className="sr-only" htmlFor="plan-search">Search plans</label>
+                    <input
+                      id="plan-search"
+                      value={planSearch}
+                      onChange={(event) => setPlanSearch(event.target.value)}
+                      placeholder="Search plans..."
+                      className="h-10 w-48 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none ring-blue-500 placeholder:text-slate-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-900 dark:text-slate-400">
+                      <tr>
+                        <th className="px-4 py-3">Data plan</th>
+                        <th className="px-4 py-3">Network</th>
+                        <th className="px-4 py-3">Plan type</th>
+                        <th className="px-4 py-3">Bundle</th>
+                        <th className="px-4 py-3">API price</th>
+                        <th className="px-4 py-3">Validity</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                      {plansLoading ? (
+                        <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">Loading data plans…</td></tr>
+                      ) : filteredPlans.length === 0 ? (
+                        <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">No plans match this filter.</td></tr>
+                      ) : filteredPlans.map((plan) => (
+                        <tr key={`${plan.dataPlan}-${plan.operator?.code}`} className="hover:bg-slate-50 dark:hover:bg-slate-900/60">
+                          <td className="px-4 py-3 font-mono font-bold text-blue-700 dark:text-blue-300">{plan.dataPlan ?? "—"}</td>
+                          <td className="px-4 py-3 font-semibold">{plan.operator?.name || plan.operator?.code || "—"}</td>
+                          <td className="px-4 py-3"><Badge variant="outline">{plan.planType || "—"}</Badge></td>
+                          <td className="px-4 py-3">{plan.name}<span className="ml-1 text-xs text-slate-500">{plan.dataMb ? `(${plan.dataMb}MB)` : ""}</span></td>
+                          <td className="px-4 py-3 font-semibold">{plan.apiPrice == null && plan.priceTags?.api == null ? "—" : `₦${Number(plan.apiPrice ?? plan.priceTags?.api).toLocaleString()}`}</td>
+                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{plan.validityDays ? `${plan.validityDays} days` : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="border-t border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-800">
+                  Showing {filteredPlans.length} of {dataPlans.length} data plans. Use the displayed <code>data_plan</code> with the matching network ID.
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Networks & Plans</CardTitle>
+                <CardDescription>These public network IDs are used in both v1 purchase payloads.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {[['9MOBILE', 4], ['AIRTEL', 2], ['GLO', 3], ['MTN', 1]].map(([network, id]) => (
+                    <div key={network} className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Network</div>
+                      <div className="mt-1 flex items-center justify-between"><span className="font-bold">{network}</span><code className="rounded bg-slate-100 px-2 py-1 font-mono dark:bg-slate-800">{id}</code></div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
@@ -385,6 +518,80 @@ echo $response;`,
         {/* Tab 3: Purchase & Status */}
         {activeTab === "purchases" && (
           <div className="space-y-6">
+            <Card className="border-blue-200 dark:border-blue-900">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-blue-600">V1</Badge>
+                  <CardTitle className="text-xl">New Data & Airtime API</CardTitle>
+                </div>
+                <CardDescription>
+                  The v1 endpoints use network IDs, data plans, VTU airtime, and a literal request-id for idempotency. The legacy reseller endpoint below remains available.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h4 className="mb-2 text-sm font-bold text-slate-900 dark:text-white">Available Parameters — data</h4>
+                  <pre className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-sm text-emerald-400">{`{
+  "network": 1,
+  "phone": "234XXXXXXXXXX",
+  "data_plan": 1,
+  "bypass": false,
+  "request-id": "Data_12345678900"
+}`}</pre>
+                </div>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div>
+                    <h4 className="mb-2 text-sm font-bold text-slate-900 dark:text-white">POST /api/data</h4>
+                    <pre className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-slate-100">{`curl -X POST "https://api.nexusdatasub.com/api/data" \\
+  -H "Authorization: Token nx_live_xxxxxxxxx" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "network": 1,
+    "phone": "07062723822",
+    "data_plan": 1,
+    "bypass": false,
+    "request-id": "Data_12345678900"
+  }'`}</pre>
+                  </div>
+                  <div>
+                    <h4 className="mb-2 text-sm font-bold text-slate-900 dark:text-white">POST /api/topup</h4>
+                    <pre className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-slate-100">{`curl -X POST "https://api.nexusdatasub.com/api/topup" \\
+  -H "Authorization: Token nx_live_xxxxxxxxx" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "network": 1,
+    "phone": "08166990365",
+    "plan_type": "VTU",
+    "amount": 100,
+    "bypass": false,
+    "request-id": "Airtime_12345678900"
+  }'`}</pre>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="mb-2 text-sm font-bold text-slate-900 dark:text-white">Expected response</h4>
+                  <pre className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-sm text-emerald-400">{`{
+  "network": "MTN",
+  "request-id": "Data_1234567890",
+  "amount": 100,
+  "dataplan": "500MB",
+  "status": "success",
+  "message": "Yello! You have gifted 500MB to 2347013397088.",
+  "response": "Yello! You have gifted 500MB to 2347013397088.",
+  "phone_number": "07013397088",
+  "oldbal": 110325,
+  "newbal": 110225,
+  "system": "API",
+  "plan_type": "GIFTING",
+  "wallet_vending": "wallet"
+}`}</pre>
+                </div>
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                  Use a unique <code>request-id</code> for every purchase. Reusing the same ID with the same payload is safe; reusing it with different purchase details is rejected.
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">

@@ -15,6 +15,9 @@ export interface Supplier {
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
+  parentSupplierId?: string | null;
+  protocolFamilyId?: string | null;
+  supplierKind?: "parent" | "child";
 }
 
 // ============= API Responses =============
@@ -32,6 +35,9 @@ export interface CreateSupplierRequest {
   apiKey: string;
   priorityInt: number;
   isActive: boolean;
+  parentSupplierId?: string | null;
+  protocolFamilyId?: string | null;
+  supplierKind?: "parent" | "child";
 }
 
 export interface UpdateSupplierRequest {

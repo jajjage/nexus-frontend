@@ -24,6 +24,8 @@ const resellerApiKeys = {
   purchaseAnalyticsOverview: (
     params?: AdminResellerPurchaseAnalyticsQueryParams
   ) => [...resellerApiKeys.all, "purchase-analytics-overview", params] as const,
+  operationsOverview: (params?: AdminResellerPurchaseAnalyticsQueryParams) =>
+    [...resellerApiKeys.all, "operations-overview", params] as const,
 };
 
 export function useResellerApiCallbacksOverview() {
@@ -85,6 +87,17 @@ export function useAdminResellerPurchaseAnalyticsOverview(
   return useQuery({
     queryKey: resellerApiKeys.purchaseAnalyticsOverview(params),
     queryFn: () => adminResellerApiService.getPurchaseAnalyticsOverview(params),
+    placeholderData: keepPreviousData,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useAdminResellerOperationsOverview(
+  params?: AdminResellerPurchaseAnalyticsQueryParams
+) {
+  return useQuery({
+    queryKey: resellerApiKeys.operationsOverview(params),
+    queryFn: () => adminResellerApiService.getOperationsOverview(params),
     placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
