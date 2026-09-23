@@ -81,6 +81,17 @@ export const ROLE_PERMISSIONS = {
     "offer.redeem",
     "topup.create",
   ],
+  api_user: [
+    "reports.create",
+    "reports.read.own",
+    "transactions.read.own",
+    "transactions.create",
+    "incidents.read",
+    "profile.read",
+    "profile.update",
+    "topup.create",
+    "api.purchase",
+  ],
 };
 
 // Permission descriptions for documentation

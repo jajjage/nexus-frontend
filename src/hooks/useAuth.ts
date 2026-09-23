@@ -402,11 +402,13 @@ export function useLogin(expectedRole?: "user" | "admin") {
 
       // STRICT ROLE ENFORCEMENT
       if (expectedRole && user?.role) {
-        // Allow "reseller" to login as "user" (they share the same dashboard)
-        const isResellerLogin =
-          expectedRole === "user" && user.role === "reseller";
+        // Resellers and API users use the normal user portal. Neither role is
+        // an administrator and neither may enter the admin portal.
+        const isUserPortalLogin =
+          expectedRole === "user" &&
+          ["reseller", "api_user"].includes(user.role);
 
-        if (expectedRole !== user.role && !isResellerLogin) {
+        if (expectedRole !== user.role && !isUserPortalLogin) {
           console.warn(
             `[AUTH] Access Denied: Role mismatch. Expected ${expectedRole}, got ${user.role}`
           );

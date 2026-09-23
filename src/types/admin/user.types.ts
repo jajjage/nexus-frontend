@@ -10,7 +10,7 @@ export interface CreateUserRequest {
   password: string;
   phoneNumber: string;
   fullName: string;
-  role: "admin" | "staff" | "user" | "reseller";
+  role: "admin" | "staff" | "user" | "reseller" | "api_user";
 }
 
 export interface UpdateUserRequest {
