@@ -25,7 +25,9 @@ export function SupplierListTable() {
   const { data, isLoading, isError, refetch } = useAdminSuppliers();
   const updateMutation = useUpdateSupplier();
 
-  const suppliers = data?.data?.suppliers || [];
+  const suppliers = (data?.data?.suppliers || []).filter(
+    (supplier) => supplier.supplierKind !== "parent" && supplier.isRoutable !== false,
+  );
 
   const handleToggleActive = (supplier: Supplier) => {
     updateMutation.mutate({

@@ -121,7 +121,9 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
 
   const product = data?.data;
   const allProducts = productsData?.data?.products || [];
-  const suppliers = suppliersData?.data?.suppliers || [];
+  const suppliers = (suppliersData?.data?.suppliers || []).filter(
+    (supplier) => supplier.supplierKind !== "parent" && supplier.isRoutable !== false,
+  );
   const baseProductById = useMemo(
     () => new Map(allProducts.map((candidate) => [candidate.id, candidate])),
     [allProducts]

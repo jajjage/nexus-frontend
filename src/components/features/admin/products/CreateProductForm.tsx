@@ -72,7 +72,9 @@ export function CreateProductForm() {
 
   const operators = operatorsData?.data?.operators || [];
   const allProducts = productsData?.data?.products || [];
-  const suppliers = suppliersData?.data?.suppliers || [];
+  const suppliers = (suppliersData?.data?.suppliers || []).filter(
+    (supplier) => supplier.supplierKind !== "parent" && supplier.isRoutable !== false,
+  );
   const categories = categoriesData || [];
 
   const bundleBaseProducts = useMemo(() => {
