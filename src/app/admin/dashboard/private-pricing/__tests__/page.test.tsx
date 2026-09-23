@@ -19,13 +19,14 @@ describe('PrivatePricingPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     apiGet.mockImplementation((path: string) => path === '/admin/users'
-      ? Promise.resolve({ data: { data: { users: [{ id: 'u1', email: 'buyer@example.com', fullName: 'Buyer' }] } } })
+      ? Promise.resolve({ data: { data: { users: [{ id: 'u1', email: 'buyer@example.com', fullName: 'Buyer', phoneNumber: '08000000000' }] } } })
       : Promise.resolve({ data: { data: { products: [{ id: 'p1', name: 'MTN 1GB', productCode: 'MTN-1GB', priceTags: { api: 450 } }] } } }));
     apiPost.mockResolvedValue({ data: { success: true } });
   });
 
   it('loads users/products and shows the current API price', async () => {
     render(<PrivatePricingPage />);
+    fireEvent.change(screen.getByLabelText('User'), { target: { value: 'buyer@example.com' } });
     expect(await screen.findByText(/buyer@example.com/)).toBeInTheDocument();
     expect(await screen.findByText(/MTN-1GB/)).toBeInTheDocument();
     expect(screen.getByText('₦450')).toBeInTheDocument();
@@ -34,7 +35,8 @@ describe('PrivatePricingPage', () => {
   it('submits the selected user, product, amount, and reason', async () => {
     render(<PrivatePricingPage />);
     await screen.findByText(/MTN-1GB/);
-    fireEvent.change(screen.getByText(/Search\/select a user/).parentElement!, { target: { value: 'u1' } });
+    fireEvent.change(screen.getByLabelText('User'), { target: { value: 'buyer@example.com' } });
+    fireEvent.click(await screen.findByText(/buyer@example.com/));
     fireEvent.change(screen.getByText(/Choose a product/).parentElement!, { target: { value: 'p1' } });
     fireEvent.change(screen.getByLabelText('Private amount'), { target: { value: '275.50' } });
     fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'Enterprise agreement' } });
@@ -47,6 +49,7 @@ describe('PrivatePricingPage', () => {
   it('does not submit a negative amount or missing reason', async () => {
     render(<PrivatePricingPage />);
     await screen.findByText(/MTN-1GB/);
+    fireEvent.change(screen.getByLabelText('User'), { target: { value: 'buyer@example.com' } });
     fireEvent.change(screen.getByLabelText('Private amount'), { target: { value: '-1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Set private price' }));
     expect(apiPost).not.toHaveBeenCalled();
