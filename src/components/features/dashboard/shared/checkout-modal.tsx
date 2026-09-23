@@ -78,7 +78,7 @@ export function CheckoutModal({
   // markupPercent can be either decimal (0.10) or percentage (10)
   // If it's less than 1, treat as decimal; otherwise divide by 100
   const actualMarkup = markupPercent < 1 ? markupPercent : markupPercent / 100;
-  const baseSellingPrice = product.resolvedPrice
+  const baseSellingPrice = product.resolvedPrice !== undefined && product.resolvedPrice !== null
     ? faceValue
     : supplierPrice + supplierPrice * actualMarkup;
 

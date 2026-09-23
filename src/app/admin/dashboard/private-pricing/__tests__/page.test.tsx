@@ -1,17 +1,25 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Children } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PrivatePricingPage from '../page';
 
-const apiGet = vi.fn();
-const apiPost = vi.fn();
+const { apiGet, apiPost } = vi.hoisted(() => ({
+  apiGet: vi.fn(),
+  apiPost: vi.fn(),
+}));
 
 vi.mock('@/lib/api-client', () => ({ default: { get: apiGet, post: apiPost } }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('@/components/ui/select', () => ({
-  Select: ({ children, value, onValueChange }: any) => <div data-value={value} onChange={(event: any) => onValueChange(event.target.value)}>{children}</div>,
-  SelectTrigger: ({ children }: any) => <div>{children}</div>,
-  SelectValue: ({ placeholder }: any) => <span>{placeholder}</span>,
-  SelectContent: ({ children }: any) => <div>{children}</div>,
+  Select: ({ children, value, onValueChange }: any) => {
+    const options = Children.toArray(children).flatMap((child: any) =>
+      child?.props?.children ? Children.toArray(child.props.children) : []
+    );
+    return <select aria-label="Product" value={value} onChange={(event) => onValueChange(event.target.value)}>{options}</select>;
+  },
+  SelectTrigger: () => null,
+  SelectValue: () => null,
+  SelectContent: ({ children }: any) => children,
   SelectItem: ({ value, children }: any) => <option value={value}>{children}</option>,
 }));
 
@@ -29,6 +37,7 @@ describe('PrivatePricingPage', () => {
     fireEvent.change(screen.getByLabelText('User'), { target: { value: 'buyer@example.com' } });
     expect(await screen.findByText(/buyer@example.com/)).toBeInTheDocument();
     expect(await screen.findByText(/MTN-1GB/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Product'), { target: { value: 'p1' } });
     expect(screen.getByText('₦450')).toBeInTheDocument();
   });
 
@@ -37,7 +46,7 @@ describe('PrivatePricingPage', () => {
     await screen.findByText(/MTN-1GB/);
     fireEvent.change(screen.getByLabelText('User'), { target: { value: 'buyer@example.com' } });
     fireEvent.click(await screen.findByText(/buyer@example.com/));
-    fireEvent.change(screen.getByText(/Choose a product/).parentElement!, { target: { value: 'p1' } });
+    fireEvent.change(screen.getByLabelText('Product'), { target: { value: 'p1' } });
     fireEvent.change(screen.getByLabelText('Private amount'), { target: { value: '275.50' } });
     fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'Enterprise agreement' } });
     fireEvent.click(screen.getByRole('button', { name: 'Set private price' }));

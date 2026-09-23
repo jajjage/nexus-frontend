@@ -11,6 +11,21 @@ import { toast } from "sonner";
 
 type User = { id: string; fullName?: string; email: string; phoneNumber?: string };
 type Product = { id: string; name: string; productCode?: string; product_type?: string; priceTags?: { user?: number; reseller?: number; api?: number } };
+type PrivatePrice = {
+  id: string;
+  amount: number | string;
+  reason: string;
+  is_active?: boolean;
+  created_at?: string;
+  effective_from?: string;
+  expires_at?: string | null;
+  userFullName?: string;
+  userEmail?: string;
+  userPhoneNumber?: string;
+  productName?: string;
+  productCode?: string;
+  priceTags?: { api?: number | string };
+};
 
 export default function PrivatePricingPage() {
   const [userSearch, setUserSearch] = useState("");
@@ -23,6 +38,8 @@ export default function PrivatePricingPage() {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
+  const [privatePrices, setPrivatePrices] = useState<PrivatePrice[]>([]);
+  const [loadingPrivatePrices, setLoadingPrivatePrices] = useState(true);
   const selectedProduct = useMemo(() => products.find((product) => product.id === productId), [products, productId]);
 
   useEffect(() => {
@@ -30,6 +47,23 @@ export default function PrivatePricingPage() {
       const rawProducts = productsResponse.data?.data?.products || productsResponse.data?.data || [];
       setProducts(Array.isArray(rawProducts) ? rawProducts : []);
     }).catch(() => toast.error("Unable to load products"));
+  }, []);
+
+  async function loadPrivatePrices() {
+    setLoadingPrivatePrices(true);
+    try {
+      const response = await apiClient.get("/admin/reseller-api/private-prices", { params: { page: 1, limit: 100 } });
+      const payload = response.data?.data;
+      setPrivatePrices(Array.isArray(payload) ? payload : payload?.items || []);
+    } catch {
+      toast.error("Unable to load private prices");
+    } finally {
+      setLoadingPrivatePrices(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadPrivatePrices();
   }, []);
 
   useEffect(() => {
@@ -67,6 +101,7 @@ export default function PrivatePricingPage() {
       await apiClient.post("/admin/reseller-api/private-prices", { userId, operatorProductId: productId, amount: Number(amount), reason });
       toast.success("Private price saved");
       setAmount(""); setReason("");
+      await loadPrivatePrices();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Unable to save private price");
     } finally { setSaving(false); }
@@ -94,6 +129,22 @@ export default function PrivatePricingPage() {
       <div className="space-y-2"><Label htmlFor="private-amount">Private amount</Label><Input id="private-amount" type="number" min="0" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0.00" /></div>
       <div className="space-y-2 md:col-span-2"><Label htmlFor="private-reason">Reason</Label><Input id="private-reason" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Preferred enterprise price" /></div>
       <div className="md:col-span-2 flex justify-end"><Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Set private price"}</Button></div>
+    </CardContent></Card>
+    <Card className="border-slate-200 shadow-sm dark:border-slate-800"><CardHeader><CardTitle>Active private prices</CardTitle><p className="text-sm text-muted-foreground">User-specific overrides currently applied before normal role and API pricing.</p></CardHeader><CardContent>
+      {loadingPrivatePrices ? <p className="text-sm text-muted-foreground">Loading assigned prices…</p> : privatePrices.length === 0 ? <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">No private prices have been assigned yet.</div> : <div className="space-y-3">
+        {privatePrices.map((price) => {
+          const apiPrice = Number(price.priceTags?.api || 0);
+          const privateAmount = Number(price.amount || 0);
+          const delta = privateAmount - apiPrice;
+          return <div key={price.id} className="rounded-xl border bg-background p-4 transition-colors hover:bg-muted/30">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div className="min-w-0"><p className="font-semibold">{price.productName || "Unknown product"}</p><p className="font-mono text-xs text-muted-foreground">{price.productCode || price.id}</p><p className="mt-2 text-sm">{price.userFullName || "Unnamed user"} <span className="text-muted-foreground">· {price.userEmail || price.userPhoneNumber || "No contact"}</span></p></div>
+              <div className="text-left md:text-right"><p className="text-xl font-semibold">₦{privateAmount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}</p><p className={delta <= 0 ? "text-xs text-emerald-600" : "text-xs text-amber-600"}>{delta === 0 ? "Same as API price" : `${delta < 0 ? "₦" : "+₦"}${Math.abs(delta).toLocaleString("en-NG", { minimumFractionDigits: 2 })} vs API price`}</p></div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t pt-3 text-xs text-muted-foreground"><span>API price: ₦{apiPrice.toLocaleString("en-NG", { minimumFractionDigits: 2 })}</span><span>Reason: {price.reason}</span>{price.effective_from && <span>From: {new Date(price.effective_from).toLocaleDateString("en-NG")}</span>}</div>
+          </div>;
+        })}
+      </div>}
     </CardContent></Card>
   </div>;
 }

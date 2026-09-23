@@ -18,6 +18,7 @@ export interface Supplier {
   parentSupplierId?: string | null;
   protocolFamilyId?: string | null;
   supplierKind?: "parent" | "child";
+  isRoutable?: boolean;
 }
 
 // ============= API Responses =============
@@ -46,4 +47,8 @@ export interface UpdateSupplierRequest {
   apiKey?: string;
   priorityInt?: number;
   isActive?: boolean;
+  parentSupplierId?: string | null;
+  protocolFamilyId?: string | null;
+  supplierKind?: "parent" | "child";
+  isRoutable?: boolean;
 }

@@ -103,7 +103,7 @@ export function convertDenomAmountToNumber(
  * and finally the legacy denomAmount fallback.
  */
 export function getResolvedProductPrice(product: PublicProduct): number | null {
-  if (typeof product.resolvedPrice === "number" && product.resolvedPrice > 0) {
+  if (typeof product.resolvedPrice === "number" && product.resolvedPrice >= 0) {
     return product.resolvedPrice;
   }
 

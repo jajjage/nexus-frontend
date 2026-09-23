@@ -94,7 +94,10 @@ export function TopupListTable() {
   const isSearchActive = !!debouncedSearch.trim();
   const limit = 15;
 
-  const [prevSearch, setPrevSearch] = useState(debouncedSearch);
+  // Reset page to 1 when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   // Update URL when state changes
   useEffect(() => {
@@ -112,13 +115,6 @@ export function TopupListTable() {
       router.replace(newUrl, { scroll: false });
     }
   }, [page, debouncedSearch, status, operator, pathname, router, searchParams]);
-
-  if (debouncedSearch !== prevSearch) {
-    setPrevSearch(debouncedSearch);
-    if (page !== 1) {
-      setPage(1);
-    }
-  }
 
   // Filter change handlers that reset page
   const handleStatusChange = (value: string) => {
@@ -209,6 +205,7 @@ export function TopupListTable() {
               <SelectItem value="failed">Failed</SelectItem>
               <SelectItem value="reversed">Reversed</SelectItem>
               <SelectItem value="retry">Retry</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
           <Select value={operator} onValueChange={handleOperatorChange}>

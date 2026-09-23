@@ -30,6 +30,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
+  useAdminSuppliers,
   useAdminSupplier,
   useUpdateSupplier,
 } from "@/hooks/admin/useAdminSuppliers";
@@ -44,6 +45,7 @@ interface SupplierDetailViewProps {
 
 export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
   const { data, isLoading, isError, refetch } = useAdminSupplier(supplierId);
+  const { data: suppliersData } = useAdminSuppliers();
   const updateMutation = useUpdateSupplier();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
@@ -62,8 +64,15 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
   const [showApiKey, setShowApiKey] = useState(false);
   const [editPriority, setEditPriority] = useState(1);
   const [editIsActive, setEditIsActive] = useState(true);
+  const [editParentSupplierId, setEditParentSupplierId] = useState("none");
 
   const supplier = data?.data;
+  const parentSuppliers = (suppliersData?.data?.suppliers ?? []).filter(
+    (candidate) =>
+      candidate.id !== supplierId &&
+      candidate.supplierKind === "parent" &&
+      candidate.isRoutable !== true
+  );
   const isVtpass = supplier?.slug?.toLowerCase() === "vtpass";
   const isMssDataSub =
     supplier?.slug?.toLowerCase() === "mssdata" ||
@@ -87,6 +96,7 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
       setEditMssPassword("");
       setEditPriority(supplier.priorityInt);
       setEditIsActive(supplier.isActive);
+      setEditParentSupplierId(supplier.parentSupplierId ?? "none");
       setIsEditOpen(true);
     }
   };
@@ -160,6 +170,12 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
               : editApiKey && { apiKey: editApiKey }),
           priorityInt: editPriority,
           isActive: editIsActive,
+          parentSupplierId:
+            supplier?.supplierKind === "parent"
+              ? undefined
+              : editParentSupplierId === "none"
+                ? null
+                : editParentSupplierId,
         },
       },
       {
@@ -243,6 +259,41 @@ export function SupplierDetailView({ supplierId }: SupplierDetailViewProps) {
                   className="font-mono"
                 />
               </div>
+              {supplier.supplierKind === "parent" ? (
+                <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                  <p className="font-medium">Parent protocol supplier</p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    Parent suppliers define a protocol for their child suppliers
+                    and cannot be attached under another parent.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="parentSupplier">Protocol parent</Label>
+                  <Select
+                    value={editParentSupplierId}
+                    onValueChange={setEditParentSupplierId}
+                  >
+                    <SelectTrigger id="parentSupplier">
+                      <SelectValue placeholder="Standalone supplier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        Standalone (legacy protocol)
+                      </SelectItem>
+                      {parentSuppliers.map((parent) => (
+                        <SelectItem key={parent.id} value={parent.id}>
+                          {parent.name} ({parent.slug})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-muted-foreground text-xs">
+                    Attaching a parent makes this supplier use that parent&apos;s
+                    V1 protocol. Choose standalone to detach it.
+                  </p>
+                </div>
+              )}
               {isVtpass && (
                 <div className="space-y-3 rounded-lg border p-4">
                   <div className="flex items-center justify-between gap-3">

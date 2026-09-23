@@ -241,6 +241,20 @@ export function TopupDetailView({ requestId }: TopupDetailViewProps) {
                     </SelectContent>
                   </Select>
                 </div>
+                {selectedStatus &&
+                  (request.status === "reversed" || request.status === "failed") &&
+                  (selectedStatus === "success" || selectedStatus === "completed") && (
+                    <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                      <strong>Financial Adjustment Notice:</strong> This request was previously marked as {request.status} and refunded. Marking it as {selectedStatus} will automatically recover the refund from the user's wallet.
+                    </div>
+                  )}
+                {selectedStatus &&
+                  (request.status === "pending" || request.status === "success" || request.status === "completed") &&
+                  (selectedStatus === "reversed" || selectedStatus === "failed") && (
+                    <div className="rounded-md bg-blue-50 p-3 text-xs text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                      <strong>Auto-Refund Notice:</strong> Marking this request as {selectedStatus} will automatically refund the purchase amount to the user's wallet (if not already refunded).
+                    </div>
+                  )}
                 <div className="space-y-2">
                   <Label htmlFor="topupStatusReason">Reason</Label>
                   <Textarea

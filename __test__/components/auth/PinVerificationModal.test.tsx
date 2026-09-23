@@ -168,6 +168,28 @@ describe("PinVerificationModal", () => {
   });
 
   describe("Rate Limiting", () => {
+    it("records one failed attempt when the same error survives parent rerenders", async () => {
+      const { rerender } = renderModal({ errorMessage: "Invalid PIN" });
+
+      await waitFor(() => {
+        expect(mockRecordPinAttempt).toHaveBeenCalledTimes(1);
+      });
+
+      rerender(
+        <PinVerificationModal
+          open
+          onClose={() => undefined}
+          onSuccess={mockOnSuccess}
+          reason="transaction"
+          useCashback={false}
+          errorMessage="Invalid PIN"
+          onForgotPin={() => undefined}
+        />
+      );
+
+      expect(mockRecordPinAttempt).toHaveBeenCalledTimes(1);
+    });
+
     it("should show error when blocked", async () => {
       mockUseSecurityStore.mockReturnValue({
         isBlocked: true,

@@ -90,30 +90,32 @@ export default function ResellerApiDocsPage() {
   };
 
   const codeSnippets = {
-    curl: `curl -X POST https://api.nexusdatasub.com/api/v1/reseller/api/purchases \\
+    curl: `curl -X POST https://api.nexusdatasub.com/api/data \\
+  -H "Authorization: Token nx_live_xxxxxxxxxxxxxxxx" \\
   -H "Content-Type: application/json" \\
-  -H "X-API-KEY: res_live_xxxxxxxxxxxxxxxx" \\
-  -H "X-Idempotency-Key: tx_req_1234567890" \\
   -d '{
-    "product_code": "MTN_5GB_SME_SHARE",
-    "phone_number": "08012345678",
-    "client_reference": "REF_998123"
+    "network": 1,
+    "phone": "08012345678",
+    "data_plan": 1,
+    "bypass": false,
+    "request-id": "Data_998123"
   }'`,
     node: `import axios from 'axios';
 
 const purchaseData = async () => {
   const response = await axios.post(
-    'https://api.nexusdatasub.com/api/v1/reseller/api/purchases',
+    'https://api.nexusdatasub.com/api/data',
     {
-      product_code: 'MTN_5GB_SME_SHARE',
-      phone_number: '08012345678',
-      client_reference: 'REF_998123'
+      network: 1,
+      phone: '08012345678',
+      data_plan: 1,
+      bypass: false,
+      'request-id': 'Data_998123'
     },
     {
       headers: {
         'Content-Type': 'application/json',
-        'X-API-KEY': 'res_live_xxxxxxxxxxxxxxxx',
-        'X-Idempotency-Key': \`tx_\${Date.now()}\`
+        Authorization: 'Token nx_live_xxxxxxxxxxxxxxxx'
       }
     }
   );
@@ -122,16 +124,17 @@ const purchaseData = async () => {
     python: `import requests
 import time
 
-url = "https://api.nexusdatasub.com/api/v1/reseller/api/purchases"
+url = "https://api.nexusdatasub.com/api/data"
 headers = {
     "Content-Type": "application/json",
-    "X-API-KEY": "res_live_xxxxxxxxxxxxxxxx",
-    "X-Idempotency-Key": f"tx_{int(time.time())}"
+    "Authorization": "Token nx_live_xxxxxxxxxxxxxxxx"
 }
 payload = {
-    "product_code": "MTN_5GB_SME_SHARE",
-    "phone_number": "08012345678",
-    "client_reference": "REF_998123"
+    "network": 1,
+    "phone": "08012345678",
+    "data_plan": 1,
+    "bypass": False,
+    "request-id": "Data_998123"
 }
 
 response = requests.post(url, json=payload, headers=headers)
@@ -141,18 +144,19 @@ print(response.json())`,
 $curl = curl_init();
 
 curl_setopt_array($curl, [
-  CURLOPT_URL => "https://api.nexusdatasub.com/api/v1/reseller/api/purchases",
+  CURLOPT_URL => "https://api.nexusdatasub.com/api/data",
   CURLOPT_RETURNTRANSFER => true,
   CURLOPT_CUSTOMREQUEST => "POST",
   CURLOPT_POSTFIELDS => json_encode([
-    "product_code" => "MTN_5GB_SME_SHARE",
-    "phone_number" => "08012345678",
-    "client_reference" => "REF_998123"
+    "network" => 1,
+    "phone" => "08012345678",
+    "data_plan" => 1,
+    "bypass" => false,
+    "request-id" => "Data_998123"
   ]),
   CURLOPT_HTTPHEADER => [
     "Content-Type: application/json",
-    "X-API-KEY: res_live_xxxxxxxxxxxxxxxx",
-    "X-Idempotency-Key: tx_" . time()
+    "Authorization: Token nx_live_xxxxxxxxxxxxxxxx"
   ],
 ]);
 
@@ -255,6 +259,96 @@ echo $response;`,
         {/* Tab 1: Overview & Auth */}
         {activeTab === "overview" && (
           <div className="space-y-6">
+            <Card className="border-violet-200 dark:border-violet-900">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-violet-600">ADEX + MSORG</Badge>
+                  <CardTitle className="text-xl">Supplier protocol compatibility</CardTitle>
+                </div>
+                <CardDescription>
+                  Your integration always uses the Nexus V1 contract. We route
+                  each API key to its configured child supplier and adapt the
+                  request to ADEX or MSORG internally.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30">
+                    <h4 className="font-bold text-slate-900 dark:text-white">ADEX network IDs</h4>
+                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">MTN 1 · AIRTEL 2 · GLO 3 · 9MOBILE 4</p>
+                  </div>
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
+                    <h4 className="font-bold text-slate-900 dark:text-white">MSORG network IDs</h4>
+                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">MTN 1 · GLO 2 · 9MOBILE 3 · AIRTEL 4 · SMILE 5</p>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="mb-2 text-sm font-bold text-slate-900 dark:text-white">Stable public request contract</h4>
+                  <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">
+                    Send the same payload regardless of whether the supplier
+                    child belongs to ADEX or MSORG.
+                  </p>
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <pre className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-slate-100">{`POST /api/data
+Authorization: Token nx_live_xxxxxxxxx
+Content-Type: application/json
+
+{
+  "network": 1,
+  "phone": "07062723822",
+  "data_plan": 1,
+  "bypass": false,
+  "request-id": "Data_12345678900"
+}`}</pre>
+                    <pre className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-slate-100">{`POST /api/topup
+Authorization: Token nx_live_xxxxxxxxx
+Content-Type: application/json
+
+{
+  "network": 1,
+  "phone": "08166990365",
+  "plan_type": "VTU",
+  "amount": 100,
+  "bypass": false,
+  "request-id": "Airtime_12345678900"
+}`}</pre>
+                  </div>
+                </div>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div>
+                    <h4 className="mb-2 text-sm font-bold text-slate-900 dark:text-white">ADEX child supplier payload</h4>
+                    <pre className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-emerald-400">{`Data: { "network": 1, "phone": "07062723822", "data_plan": 1, "bypass": false, "request-id": "Data_12345678900" }
+Airtime: { "network": 1, "phone": "08166990365", "plan_type": "VTU", "amount": 100, "bypass": false, "request-id": "Airtime_12345678900" }`}</pre>
+                  </div>
+                  <div>
+                    <h4 className="mb-2 text-sm font-bold text-slate-900 dark:text-white">MSORG child supplier payload</h4>
+                    <pre className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-emerald-400">{`Data: { "network": 1, "mobile_number": "09095263835", "plan": 166, "Ported_number": true }
+Airtime: { "network": 2, "amount": "100", "mobile_number": "08162269770", "Ported_number": true, "airtime_type": "VTU" }`}</pre>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="mb-2 text-sm font-bold text-slate-900 dark:text-white">Normalized response for both protocols</h4>
+                  <pre className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-emerald-400">{`{
+  "network": "MTN",
+  "request-id": "Data_12345678900",
+  "amount": "254.4",
+  "status": "success",
+  "message": "Purchase completed",
+  "response": "Purchase completed",
+  "phone_number": "09095263835",
+  "oldbal": "30177.0",
+  "newbal": "29922.6",
+  "system": "API",
+  "plan_type": "DATA",
+  "wallet_vending": "wallet"
+}`}</pre>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                  <strong>Important:</strong> MSORG&apos;s <code>plan</code>, <code>mobile_number</code>, <code>Ported_number</code>, and <code>airtime_type</code> fields are supplier-side fields. Public API consumers should continue sending <code>data_plan</code>, <code>phone</code>, and <code>plan_type</code>. Responses remain normalized to the ADEX-style public response contract, with synchronous success/failure and status polling for pending requests.
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl">
@@ -505,8 +599,8 @@ echo $response;`,
     "name": "MTN 5GB SME Share",
     "apiPrice": 1500,
     "isFixedPrice": true,
-    "purchaseEndpoint": "/api/v1/reseller/api/purchases",
-    "purchaseField": "product_code"
+    "purchaseEndpoint": "/api/data",
+    "purchaseField": "data_plan"
   }
 }`}</pre>
                 </div>
@@ -525,7 +619,7 @@ echo $response;`,
                   <CardTitle className="text-xl">New Data & Airtime API</CardTitle>
                 </div>
                 <CardDescription>
-                  The v1 endpoints use network IDs, data plans, VTU airtime, and a literal request-id for idempotency. The legacy reseller endpoint below remains available.
+                  The v1 endpoints use network IDs, data plans, VTU airtime, and a literal request-id for idempotency. They are compatible with both ADEX and MSORG child suppliers; protocol selection is handled internally. See the protocol compatibility section in Auth & Account for network mappings and supplier payloads. The legacy reseller endpoint below remains available.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -595,16 +689,16 @@ echo $response;`,
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <Badge className="bg-emerald-600 hover:bg-emerald-700">
-                    POST
+                  <Badge className="bg-slate-600 hover:bg-slate-700">
+                    LEGACY
                   </Badge>
                   <code className="font-mono text-lg font-bold text-slate-900 dark:text-white">
                     /api/v1/reseller/api/purchases
                   </code>
                 </div>
-                <CardDescription className="mt-1">
-                  Submit a fixed-price product purchase request using
-                  product_code and phone_number.
+                  <CardDescription className="mt-1">
+                  Backward-compatible fixed-price purchase endpoint. New
+                  integrations should use the V1 data/topup endpoints above.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

@@ -54,6 +54,7 @@ export function PinVerificationModal({
   const [loading, setLoading] = useState(false);
   const [internalError, setInternalError] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const lastRecordedErrorRef = useRef<string | null>(null);
 
   const { isBlocked, recordPinAttempt, resetPinAttempts } = useSecurityStore();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -69,6 +70,7 @@ export function PinVerificationModal({
     if (open) {
       setPin("");
       setInternalError("");
+      lastRecordedErrorRef.current = null;
       const timer = setTimeout(() => {
         inputRef.current?.focus();
       }, 50);
@@ -90,11 +92,20 @@ export function PinVerificationModal({
 
   // Check external error message for failed attempt
   useEffect(() => {
+    if (!errorMessage) {
+      lastRecordedErrorRef.current = null;
+      return;
+    }
+
     if (
       errorMessage &&
+      lastRecordedErrorRef.current !== errorMessage &&
       (errorMessage.toLowerCase().includes("pin") ||
         errorMessage.toLowerCase().includes("invalid"))
     ) {
+      // Parent transaction mutations can rerender this modal several times
+      // while the same error remains in props. Count one server error once.
+      lastRecordedErrorRef.current = errorMessage;
       const isExceeded = recordPinAttempt(false);
       if (isExceeded) {
         toast.error(

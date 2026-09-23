@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { Children } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { CreateSupplierForm } from '../CreateSupplierForm';
 
@@ -9,10 +10,15 @@ vi.mock('@/hooks/admin/useAdminSuppliers', () => ({
 }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/components/ui/select', () => ({
-  Select: ({ children, value, onValueChange }: any) => <div data-value={value} onChange={(event: any) => onValueChange(event.target.value)}>{children}</div>,
-  SelectTrigger: ({ children }: any) => <div>{children}</div>,
-  SelectValue: ({ placeholder }: any) => <span>{placeholder}</span>,
-  SelectContent: ({ children }: any) => <div>{children}</div>,
+  Select: ({ children, value, onValueChange }: any) => {
+    const options = Children.toArray(children).flatMap((child: any) =>
+      child?.props?.children ? Children.toArray(child.props.children) : []
+    );
+    return <select value={value} onChange={(event) => onValueChange(event.target.value)}>{options}</select>;
+  },
+  SelectTrigger: () => null,
+  SelectValue: () => null,
+  SelectContent: ({ children }: any) => children,
   SelectItem: ({ value, children }: any) => <option value={value}>{children}</option>,
 }));
 
@@ -20,12 +26,12 @@ describe('CreateSupplierForm parent selection', () => {
   it('shows ADEX and keeps standalone creation available', () => {
     render(<CreateSupplierForm />);
     expect(screen.getByText(/ADEX · adex_v1/)).toBeInTheDocument();
-    expect(screen.getByText('Standalone legacy supplier')).toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
   it('submits a selected ADEX parent', () => {
     render(<CreateSupplierForm />);
-    fireEvent.change(screen.getByText(/Standalone legacy supplier/).parentElement!, { target: { value: 'adex-parent' } });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'adex-parent' } });
     fireEvent.change(screen.getByLabelText('Supplier Name'), { target: { value: 'ADEX Client' } });
     fireEvent.change(screen.getByLabelText('Slug'), { target: { value: 'adex-client' } });
     fireEvent.change(screen.getByLabelText('API Base URL'), { target: { value: 'https://client.example/api' } });
