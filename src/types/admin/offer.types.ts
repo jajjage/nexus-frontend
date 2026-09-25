@@ -28,6 +28,7 @@ export type DiscountType =
   | "buy_x_get_y";
 export type OfferApplyTo = "operator_product" | "supplier_product" | "all";
 export type EligibilityLogic = "all" | "any";
+export type OfferVisibilityMode = "eligible_only" | "authenticated" | "public";
 
 export interface OfferTargetCriteria {
   registrationDateRange?: {
@@ -58,6 +59,10 @@ export interface Offer {
   applyTo: OfferApplyTo;
   allowAll: boolean;
   eligibilityLogic: EligibilityLogic;
+  visibilityMode: OfferVisibilityMode;
+  priority: number;
+  allowStacking: boolean;
+  allowedChannels: string[];
   startsAt: string;
   endsAt: string;
   createdAt: string;
@@ -167,6 +172,10 @@ export interface CreateOfferRequest {
   applyTo?: OfferApplyTo;
   allowAll?: boolean;
   eligibilityLogic?: EligibilityLogic;
+  visibilityMode?: OfferVisibilityMode;
+  priority?: number;
+  allowStacking?: boolean;
+  allowedChannels?: string[];
   // Associations
   productIds?: string[];
   supplierIds?: string[];
@@ -192,6 +201,10 @@ export interface UpdateOfferRequest {
   // Rules
   allowAll?: boolean;
   eligibilityLogic?: EligibilityLogic;
+  visibilityMode?: OfferVisibilityMode;
+  priority?: number;
+  allowStacking?: boolean;
+  allowedChannels?: string[];
   rules?: OfferRule[];
 }
 

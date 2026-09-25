@@ -29,6 +29,7 @@ import {
   OfferApplyTo,
   OfferRule,
   OfferStatus,
+  OfferVisibilityMode,
 } from "@/types/admin/offer.types";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -68,6 +69,10 @@ export function CreateOfferWizard({
   const [discountValue, setDiscountValue] = useState("");
   const [perUserLimit, setPerUserLimit] = useState("");
   const [totalUsageLimit, setTotalUsageLimit] = useState("");
+  const [visibilityMode, setVisibilityMode] =
+    useState<OfferVisibilityMode>("eligible_only");
+  const [priority, setPriority] = useState("0");
+  const [allowStacking, setAllowStacking] = useState(false);
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
 
@@ -114,6 +119,9 @@ export function CreateOfferWizard({
         totalUsageLimit: totalUsageLimit
           ? parseInt(totalUsageLimit)
           : undefined,
+        visibilityMode,
+        priority: parseInt(priority || "0", 10),
+        allowStacking,
         startsAt: startsAt
           ? new Date(startsAt).toISOString()
           : new Date().toISOString(),
@@ -214,6 +222,57 @@ export function CreateOfferWizard({
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Visibility</Label>
+                  <Select
+                    value={visibilityMode}
+                    onValueChange={(v) =>
+                      setVisibilityMode(v as OfferVisibilityMode)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="eligible_only">
+                        Eligible users only
+                      </SelectItem>
+                      <SelectItem value="authenticated">
+                        All authenticated accounts
+                      </SelectItem>
+                      <SelectItem value="public">Public promotion</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-muted-foreground text-[10px]">
+                    Visibility never grants redemption permission.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Priority</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value)}
+                  />
+                  <p className="text-muted-foreground text-[10px]">
+                    Higher-priority offers win when several match.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 rounded-md border p-3">
+                <Checkbox
+                  id="allowStacking"
+                  checked={allowStacking}
+                  onCheckedChange={(checked) => setAllowStacking(!!checked)}
+                />
+                <label htmlFor="allowStacking" className="text-sm">
+                  Allow this offer to stack with another offer
+                </label>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">

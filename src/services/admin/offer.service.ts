@@ -37,8 +37,14 @@ const mapFromApiOffer = (apiOffer: any): Offer => {
     totalUsageLimit: apiOffer.total_usage_limit || apiOffer.totalUsageLimit,
     usageCount: apiOffer.usage_count || apiOffer.usageCount || 0,
     applyTo: apiOffer.apply_to || apiOffer.applyTo,
-    allowAll: apiOffer.allow_all || apiOffer.allowAll,
+    allowAll: apiOffer.allow_all ?? apiOffer.allowAll ?? true,
     eligibilityLogic: apiOffer.eligibility_logic || apiOffer.eligibilityLogic,
+    visibilityMode:
+      apiOffer.visibility_mode || apiOffer.visibilityMode || "eligible_only",
+    priority: apiOffer.priority ?? 0,
+    allowStacking: apiOffer.allow_stacking ?? apiOffer.allowStacking ?? false,
+    allowedChannels:
+      apiOffer.allowed_channels || apiOffer.allowedChannels || [],
     startsAt: apiOffer.starts_at || apiOffer.startsAt,
     endsAt: apiOffer.ends_at || apiOffer.endsAt,
     createdAt: apiOffer.created_at || apiOffer.createdAt,
@@ -66,6 +72,11 @@ const mapToApiRequest = (data: any): any => {
   if (data.startsAt) mapped.starts_at = data.startsAt;
   if (data.endsAt) mapped.ends_at = data.endsAt;
   if (data.allowedRoles) mapped.allowed_roles = data.allowedRoles;
+  if (data.visibilityMode) mapped.visibility_mode = data.visibilityMode;
+  if (data.priority !== undefined) mapped.priority = data.priority;
+  if (data.allowStacking !== undefined)
+    mapped.allow_stacking = data.allowStacking;
+  if (data.allowedChannels) mapped.allowed_channels = data.allowedChannels;
 
   // Remove camelCase keys if they interfere (though usually extra keys are ignored, better to be clean if needed,
   // but strictly speaking only mapped keys matter if backend ignores others.
@@ -80,6 +91,10 @@ const mapToApiRequest = (data: any): any => {
   delete mapped.startsAt;
   delete mapped.endsAt;
   delete mapped.allowedRoles;
+  delete mapped.visibilityMode;
+  delete mapped.priority;
+  delete mapped.allowStacking;
+  delete mapped.allowedChannels;
 
   return mapped;
 };
