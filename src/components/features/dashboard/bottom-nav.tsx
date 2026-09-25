@@ -38,8 +38,9 @@ export function BottomNav() {
   const [hasPendingUpgrade, setHasPendingUpgrade] = useState(false);
 
   // Show "Become a Reseller" only for regular users
-  const showBecomeReseller = user?.role === "user";
-  const isReseller = user?.role === "reseller";
+  const role = user?.role?.trim().toLowerCase();
+  const showBecomeReseller = role === "user";
+  const isReseller = role === "reseller" || role === "api_user";
 
   // Build nav items based on user role
   const navItems = isReseller

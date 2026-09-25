@@ -23,12 +23,14 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { AxiosError } from "axios";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 // Query keys for cache management
 const resellerKeys = {
   all: ["reseller"] as const,
   apiKeys: () => [...resellerKeys.all, "api-keys"] as const,
+  adexCredentials: () => [...resellerKeys.all, "adex-credentials"] as const,
   bulkTopups: () => [...resellerKeys.all, "bulk-topups"] as const,
   webhookConfig: () => [...resellerKeys.all, "webhook-config"] as const,
   purchaseStatus: (requestId: string) =>
@@ -138,15 +140,29 @@ export function mapResellerApiError(
 }
 
 export function useResellerApiAccess() {
-  const { user } = useAuth();
+  const { user, refetch } = useAuth();
 
-  const isReseller = user?.role === "reseller";
+  // Role changes are commonly made by an administrator in another session.
+  // Refresh once when the reseller area mounts so an upgraded account does
+  // not remain stuck with the old reseller UI until a full logout/login.
+  useEffect(() => {
+    if (user?.role?.toLowerCase() === "reseller") {
+      void refetch();
+    }
+  }, [refetch, user?.role]);
+
+  const role = user?.role?.trim().toLowerCase();
+  const isReseller = role === "reseller" || role === "api_user";
+  const isApiUser = role === "api_user";
   const hasApiPermission = Boolean(
     user?.permissions?.includes("reseller.api_access")
   );
 
   return {
-    canAccessApi: isReseller,
+    // The API console is intentionally limited to api_user. Existing reseller
+    // API keys remain valid on the backend until the account is migrated.
+    canAccessApi: isApiUser,
+    isApiUser,
     isReseller,
     hasApiPermission,
     isPermissionFallback: false,
@@ -204,6 +220,50 @@ export function useRevokeApiKey() {
     onError: (error: AxiosError<any>) => {
       toast.error(error.response?.data?.message || "Failed to revoke API key");
     },
+  });
+}
+
+export function useAdexCredentials() {
+  return useQuery({
+    queryKey: resellerKeys.adexCredentials(),
+    queryFn: () => resellerService.getAdexCredentials(),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useCreateAdexCredential() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) => resellerService.createAdexCredential(name),
+    onSuccess: () => {
+      toast.success("ADEX credential created", { description: "Save the password now; it will not be shown again." });
+      queryClient.invalidateQueries({ queryKey: resellerKeys.adexCredentials() });
+    },
+    onError: (error: AxiosError<any>) => toast.error(error.response?.data?.message || "Failed to create ADEX credential"),
+  });
+}
+
+export function useResetAdexCredential() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (credentialId: string) => resellerService.resetAdexCredential(credentialId),
+    onSuccess: () => {
+      toast.success("ADEX password reset", { description: "Save the new password now; it will not be shown again." });
+      queryClient.invalidateQueries({ queryKey: resellerKeys.adexCredentials() });
+    },
+    onError: (error: AxiosError<any>) => toast.error(error.response?.data?.message || "Failed to reset ADEX credential"),
+  });
+}
+
+export function useRevokeAdexCredential() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (credentialId: string) => resellerService.revokeAdexCredential(credentialId),
+    onSuccess: () => {
+      toast.success("ADEX credential revoked");
+      queryClient.invalidateQueries({ queryKey: resellerKeys.adexCredentials() });
+    },
+    onError: (error: AxiosError<any>) => toast.error(error.response?.data?.message || "Failed to revoke ADEX credential"),
   });
 }
 

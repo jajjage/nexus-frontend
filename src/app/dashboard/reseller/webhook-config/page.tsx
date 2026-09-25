@@ -15,9 +15,9 @@ import { redirect } from "next/navigation";
 
 export default function WebhookConfigPage() {
   const { user, isLoading } = useAuth();
-  const { canAccessApi, shouldShowProvisionWarning } = useResellerApiAccess();
+  const { canAccessApi, isApiUser, shouldShowProvisionWarning } = useResellerApiAccess();
 
-  if (!isLoading && user?.role !== "reseller") {
+  if (!isLoading && !isApiUser) {
     redirect("/dashboard");
   }
 

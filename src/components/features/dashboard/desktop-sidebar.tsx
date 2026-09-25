@@ -67,8 +67,9 @@ export function DesktopSidebar({ className }: { className?: string }) {
   const [showResellerModal, setShowResellerModal] = useState(false);
   const { getStatus, clearPending } = useResellerUpgradeStatus();
 
-  const isReseller = user?.role === "reseller";
-  const showBecomeReseller = user?.role === "user";
+  const role = user?.role?.trim().toLowerCase();
+  const isReseller = role === "reseller" || role === "api_user";
+  const showBecomeReseller = role === "user";
   const hasPendingUpgrade = !isReseller && getStatus().pending;
 
   // If user became reseller, remove stale "pending" local flag.

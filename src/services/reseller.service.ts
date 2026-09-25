@@ -7,6 +7,8 @@ import apiClient from "@/lib/api-client";
 import type { ApiResponse } from "@/types/api.types";
 import type {
   ApiKeysListData,
+  AdexCredentialsListData,
+  CreateAdexCredentialResponseData,
   ApiPurchaseStatusResponseData,
   BulkTopupRequest,
   BulkTopupResponseData,
@@ -144,6 +146,39 @@ export const resellerService = {
   revokeApiKey: async (keyId: string): Promise<ApiResponse<void>> => {
     const response = await apiClient.delete<ApiResponse<void>>(
       `/reseller/keys/${keyId}`
+    );
+    return response.data;
+  },
+
+  getAdexCredentials: async (): Promise<ApiResponse<AdexCredentialsListData>> => {
+    const response = await apiClient.get<ApiResponse<AdexCredentialsListData>>(
+      "/reseller/credentials/adex"
+    );
+    return response.data;
+  },
+
+  createAdexCredential: async (
+    name: string
+  ): Promise<ApiResponse<CreateAdexCredentialResponseData>> => {
+    const response = await apiClient.post<ApiResponse<CreateAdexCredentialResponseData>>(
+      "/reseller/credentials/adex",
+      { name }
+    );
+    return response.data;
+  },
+
+  resetAdexCredential: async (
+    credentialId: string
+  ): Promise<ApiResponse<CreateAdexCredentialResponseData>> => {
+    const response = await apiClient.post<ApiResponse<CreateAdexCredentialResponseData>>(
+      `/reseller/credentials/adex/${credentialId}/reset`
+    );
+    return response.data;
+  },
+
+  revokeAdexCredential: async (credentialId: string): Promise<ApiResponse<void>> => {
+    const response = await apiClient.delete<ApiResponse<void>>(
+      `/reseller/credentials/adex/${credentialId}`
     );
     return response.data;
   },

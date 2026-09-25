@@ -29,10 +29,10 @@ import { redirect } from "next/navigation";
  */
 export default function ResellerHubPage() {
   const { user, isLoading } = useAuth();
-  const { canAccessApi } = useResellerApiAccess();
+  const { canAccessApi, isApiUser } = useResellerApiAccess();
 
   // Check if user is a reseller
-  if (!isLoading && user?.role !== "reseller") {
+  if (!isLoading && !["reseller", "api_user"].includes(user?.role?.trim().toLowerCase() || "")) {
     redirect("/dashboard");
   }
 

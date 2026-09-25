@@ -83,6 +83,26 @@ export interface ApiKeysListData {
   keys: ApiKey[];
 }
 
+export interface AdexClientCredential {
+  id: string;
+  name: string;
+  username: string;
+  profile: string;
+  scopes: string[];
+  is_active: boolean;
+  last_used_at: string | null;
+  last_reset_at: string | null;
+  created_at: string;
+}
+
+export interface AdexCredentialsListData {
+  credentials: AdexClientCredential[];
+}
+
+export interface CreateAdexCredentialResponseData extends AdexClientCredential {
+  password: string;
+}
+
 // ============= Webhook Config Types =============
 
 export interface WebhookConfig {

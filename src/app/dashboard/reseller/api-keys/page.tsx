@@ -3,6 +3,7 @@
 import { BottomNav } from "@/components/features/dashboard/bottom-nav";
 import {
   ApiKeyList,
+  AdexCredentialList,
   ResellerApiAccessFallback,
 } from "@/components/features/reseller";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -19,10 +20,10 @@ import { redirect } from "next/navigation";
  */
 export default function ApiKeysPage() {
   const { user, isLoading } = useAuth();
-  const { canAccessApi, shouldShowProvisionWarning } = useResellerApiAccess();
+  const { canAccessApi, isApiUser, shouldShowProvisionWarning } = useResellerApiAccess();
 
-  // Check if user is a reseller
-  if (!isLoading && user?.role !== "reseller") {
+  // The API console is reserved for api_user accounts.
+  if (!isLoading && !isApiUser) {
     redirect("/dashboard");
   }
 
@@ -58,6 +59,7 @@ export default function ApiKeysPage() {
               </Alert>
             ) : null}
             <ApiKeyList />
+            <AdexCredentialList />
           </div>
         )}
       </div>

@@ -5,6 +5,7 @@
 
 export { ApiKeyCreateModal } from "./ApiKeyCreateModal";
 export { ApiKeyList } from "./ApiKeyList";
+export { AdexCredentialList } from "./AdexCredentialList";
 export { BulkTopupForm } from "./BulkTopupForm";
 export { BulkTopupReport } from "./BulkTopupReport";
 export { OneTimeSecretDialog } from "./OneTimeSecretDialog";

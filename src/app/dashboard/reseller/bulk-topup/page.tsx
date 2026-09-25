@@ -16,7 +16,7 @@ export default function BulkTopupPage() {
   const { user, isLoading } = useAuth();
 
   // Check if user is a reseller
-  if (!isLoading && user?.role !== "reseller") {
+  if (!isLoading && user?.role !== "reseller" && user?.role !== "api_user") {
     redirect("/dashboard");
   }
 

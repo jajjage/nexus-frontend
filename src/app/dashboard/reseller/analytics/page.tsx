@@ -21,7 +21,7 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export default function ResellerAnalyticsPage() {
   const { user, isLoading } = useAuth();
-  const { canAccessApi } = useResellerApiAccess();
+  const { canAccessApi, isApiUser } = useResellerApiAccess();
 
   const [fromDateInput, setFromDateInput] = useState("");
   const [toDateInput, setToDateInput] = useState("");
@@ -29,7 +29,7 @@ export default function ResellerAnalyticsPage() {
   const [queryParams, setQueryParams] =
     useState<ResellerPurchaseAnalyticsQueryParams>({});
 
-  if (!isLoading && user?.role !== "reseller") {
+  if (!isLoading && !isApiUser) {
     redirect("/dashboard");
   }
 
