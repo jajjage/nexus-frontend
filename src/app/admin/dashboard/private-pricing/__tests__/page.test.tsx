@@ -56,7 +56,7 @@ describe('PrivatePricingPage', () => {
     fireEvent.change(screen.getByLabelText('Product'), { target: { value: 'p1' } });
     fireEvent.change(screen.getByLabelText('Private amount'), { target: { value: '275.50' } });
     fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'Enterprise agreement' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Set private price' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add private price' }));
     await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/admin/reseller-api/private-prices', {
       userId: 'u1', operatorProductId: 'p1', amount: 275.5, reason: 'Enterprise agreement',
     }));
@@ -85,7 +85,7 @@ describe('PrivatePricingPage', () => {
     await screen.findByText(/MTN-1GB/);
     fireEvent.change(screen.getByLabelText('Product'), { target: { value: 'p1' } });
     fireEvent.change(screen.getByLabelText('Private amount'), { target: { value: '-1' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Set private price' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add private price' }));
     expect(apiPost).not.toHaveBeenCalled();
   });
 });
