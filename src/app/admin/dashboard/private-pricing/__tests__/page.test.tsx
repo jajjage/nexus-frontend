@@ -40,7 +40,7 @@ describe('PrivatePricingPage', () => {
 
   it('loads users/products and shows the current API price', async () => {
     render(<PrivatePricingPage />);
-    fireEvent.change(screen.getByLabelText('User'), { target: { value: 'buyer@example.com' } });
+    fireEvent.change(screen.getByLabelText('Search by name, email, or phone'), { target: { value: 'buyer@example.com' } });
     expect(await screen.findByText(/buyer@example.com/)).toBeInTheDocument();
     fireEvent.click(screen.getByText(/buyer@example.com/));
     expect(await screen.findByText(/MTN-1GB/)).toBeInTheDocument();
@@ -50,9 +50,9 @@ describe('PrivatePricingPage', () => {
 
   it('submits the selected user, product, amount, and reason', async () => {
     render(<PrivatePricingPage />);
-    await screen.findByText(/MTN-1GB/);
-    fireEvent.change(screen.getByLabelText('User'), { target: { value: 'buyer@example.com' } });
+    fireEvent.change(screen.getByLabelText('Search by name, email, or phone'), { target: { value: 'buyer@example.com' } });
     fireEvent.click(await screen.findByText(/buyer@example.com/));
+    await screen.findByText(/MTN-1GB/);
     fireEvent.change(screen.getByLabelText('Product'), { target: { value: 'p1' } });
     fireEvent.change(screen.getByLabelText('Private amount'), { target: { value: '275.50' } });
     fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'Enterprise agreement' } });
@@ -69,7 +69,7 @@ describe('PrivatePricingPage', () => {
         ? Promise.resolve({ data: { data: { items: [{ id: 'pp1', userId: 'u1', operatorProductId: 'p1', productName: 'MTN 1GB', productCode: 'MTN-1GB', amount: 275, reason: 'Old agreement', priceTags: { api: 450 } }] } } })
         : Promise.resolve({ data: { data: { products: [{ id: 'p1', name: 'MTN 1GB', productCode: 'MTN-1GB', priceTags: { api: 450 } }] } } }));
     render(<PrivatePricingPage />);
-    fireEvent.change(screen.getByLabelText('User'), { target: { value: 'buyer@example.com' } });
+    fireEvent.change(screen.getByLabelText('Search by name, email, or phone'), { target: { value: 'buyer@example.com' } });
     fireEvent.click(await screen.findByText(/buyer@example.com/));
     expect(await screen.findByText(/Old agreement/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Edit MTN 1GB/i }));
@@ -80,8 +80,10 @@ describe('PrivatePricingPage', () => {
 
   it('does not submit a negative amount or missing reason', async () => {
     render(<PrivatePricingPage />);
+    fireEvent.change(screen.getByLabelText('Search by name, email, or phone'), { target: { value: 'buyer@example.com' } });
+    fireEvent.click(await screen.findByText(/buyer@example.com/));
     await screen.findByText(/MTN-1GB/);
-    fireEvent.change(screen.getByLabelText('User'), { target: { value: 'buyer@example.com' } });
+    fireEvent.change(screen.getByLabelText('Product'), { target: { value: 'p1' } });
     fireEvent.change(screen.getByLabelText('Private amount'), { target: { value: '-1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Set private price' }));
     expect(apiPost).not.toHaveBeenCalled();
