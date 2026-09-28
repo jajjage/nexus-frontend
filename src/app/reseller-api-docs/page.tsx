@@ -409,7 +409,7 @@ Airtime: { "network": 2, "amount": "100", "mobile_number": "08162269770", "Porte
   -H "Content-Type: application/json"`}</pre>
                   <pre className="mt-3 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-emerald-400">{`{
   "status": "success",
-  "AccessToken": "49f9a142-37aa-4d19-bc34-865e062d620a",
+  "AccessToken": "db43174b6f8e6748a799ee45159434ce7c72ad2d658b0fe14ce3828a606c",
   "balance": "0.00",
   "username": "nx_adex_example"
 }`}</pre>
