@@ -401,6 +401,21 @@ Airtime: { "network": 2, "amount": "100", "mobile_number": "08162269770", "Porte
                   </ul>
                 </div>
 
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
+                  <h4 className="font-bold">ADEX-compatible client authentication</h4>
+                  <p className="mt-2">If your application asks for an endpoint, username, and password, create an ADEX client credential in the API Console and use the following connection test. The returned access token can then authenticate data and airtime requests.</p>
+                  <pre className="mt-3 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-slate-100">{`curl -X POST "https://api.nexusdatasub.com/api/user" \\
+  -H "Authorization: Basic $(printf '%s' 'username:password' | base64)" \\
+  -H "Content-Type: application/json"`}</pre>
+                  <pre className="mt-3 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-emerald-400">{`{
+  "status": "success",
+  "AccessToken": "49f9a142-37aa-4d19-bc34-865e062d620a",
+  "balance": "0.00",
+  "username": "nx_adex_example"
+}`}</pre>
+                  <p className="mt-2">Use the returned value as <code>Authorization: Token AccessToken</code> for <code>/api/data</code> and <code>/api/topup</code>. Existing <code>nx_live_...</code> API keys remain supported.</p>
+                </div>
+
                 {/* Account & Wallet Endpoints */}
                 <div className="mt-6 space-y-4">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white">
