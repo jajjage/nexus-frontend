@@ -104,7 +104,9 @@ describe("UserListTable", () => {
 
     expect(screen.getByText("John Doe")).toBeInTheDocument();
     expect(screen.getByText("john@example.com")).toBeInTheDocument();
-    expect(screen.getByText("Active")).toBeInTheDocument();
+    expect(
+      screen.getByText("Active", { selector: '[data-slot="badge"]' })
+    ).toBeInTheDocument();
   });
 
   it("should render suspended badge for suspended users", () => {
