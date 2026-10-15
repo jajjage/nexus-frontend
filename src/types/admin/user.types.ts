@@ -38,11 +38,34 @@ export interface AdminUser {
   balance: string;
   createdAt?: string;
   updatedAt?: string;
+  lifecycleSegment?: UserLifecycleSegment | null;
+  activatedAt?: string | null;
+  lastMeaningfulActivityAt?: string | null;
+  daysInactive?: number | null;
+  lastReactivatedAt?: string | null;
+  lifecycleHistory?: UserLifecycleTransition[];
 }
+
+export type UserLifecycleSegment =
+  | "never_activated"
+  | "active"
+  | "at_risk"
+  | "churned"
+  | "dormant";
+
+export interface UserLifecycleTransition {
+  fromSegment: UserLifecycleSegment | null;
+  toSegment: UserLifecycleSegment;
+  transitionedAt: string;
+}
+
+export type UserLifecycleCounts = Record<UserLifecycleSegment, number>;
 
 export interface AdminUserListResponse {
   users: AdminUser[];
   pagination: PaginationInfo;
+  lifecycleCounts: UserLifecycleCounts;
+  lifecycleTimezone: string;
 }
 
 export interface PaginationInfo {
@@ -87,6 +110,7 @@ export interface AdminUserQueryParams {
   search?: string;
   role?: string;
   status?: "active" | "suspended";
+  lifecycleSegment?: UserLifecycleSegment;
 }
 
 // ============= 2FA Types =============

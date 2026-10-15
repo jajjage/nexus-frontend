@@ -12,6 +12,7 @@ import {
   CreateUserRequest,
   UpdateUserRequest,
   UserSessionsResponse,
+  UserLifecycleSegment,
   WalletTransactionRequest,
 } from "@/types/admin/user.types";
 import { ApiResponse } from "@/types/api.types";
@@ -33,6 +34,18 @@ const mapFromApiUser = (apiUser: any): AdminUser => {
     balance: apiUser.balance,
     createdAt: apiUser.created_at || apiUser.createdAt,
     updatedAt: apiUser.updated_at || apiUser.updatedAt,
+    lifecycleSegment:
+      apiUser.lifecycle_segment ?? apiUser.lifecycleSegment ?? null,
+    activatedAt: apiUser.activated_at ?? apiUser.activatedAt ?? null,
+    lastMeaningfulActivityAt:
+      apiUser.last_meaningful_activity_at ??
+      apiUser.lastMeaningfulActivityAt ??
+      null,
+    daysInactive: apiUser.days_inactive ?? apiUser.daysInactive ?? null,
+    lastReactivatedAt:
+      apiUser.last_reactivated_at ?? apiUser.lastReactivatedAt ?? null,
+    lifecycleHistory:
+      apiUser.lifecycle_history ?? apiUser.lifecycleHistory ?? [],
   };
 };
 
@@ -50,6 +63,18 @@ export const adminUserService = {
       response.data.data.users = response.data.data.users.map(mapFromApiUser);
     }
 
+    return response.data;
+  },
+
+  exportUsers: async (params: {
+    search?: string;
+    role?: string;
+    lifecycleSegment: UserLifecycleSegment;
+  }): Promise<Blob> => {
+    const response = await apiClient.get<Blob>(`${BASE_PATH}/export`, {
+      params,
+      responseType: "blob",
+    });
     return response.data;
   },
 

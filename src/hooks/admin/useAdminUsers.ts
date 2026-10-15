@@ -35,11 +35,24 @@ const adminUserKeys = {
  * Fetch paginated list of users
  */
 export function useAdminUsers(params?: AdminUserQueryParams) {
-  const { page = 1, limit = 10, search, role } = params || {};
+  const { page = 1, limit = 10, search, role, lifecycleSegment } = params || {};
 
   return useQuery({
-    queryKey: adminUserKeys.list({ page, limit, search, role }),
-    queryFn: () => adminUserService.getUsers({ page, limit, search, role }),
+    queryKey: adminUserKeys.list({
+      page,
+      limit,
+      search,
+      role,
+      lifecycleSegment,
+    }),
+    queryFn: () =>
+      adminUserService.getUsers({
+        page,
+        limit,
+        search,
+        role,
+        lifecycleSegment,
+      }),
     placeholderData: keepPreviousData,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });

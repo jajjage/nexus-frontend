@@ -80,6 +80,14 @@ describe("Admin User Hooks", () => {
           hasNextPage: false,
           hasPrevPage: false,
         },
+        lifecycleCounts: {
+          never_activated: 0,
+          active: 1,
+          at_risk: 0,
+          churned: 0,
+          dormant: 0,
+        },
+        lifecycleTimezone: "Africa/Lagos",
       },
     };
 

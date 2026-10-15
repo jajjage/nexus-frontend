@@ -15,10 +15,12 @@ import {
 } from "@/components/ui/table";
 import { useAdminUsers } from "@/hooks/admin/useAdminUsers";
 import { useDebounce } from "@/hooks/useDebounce";
-import { AdminUser } from "@/types/admin/user.types";
+import { adminUserService } from "@/services/admin/user.service";
+import { AdminUser, UserLifecycleSegment } from "@/types/admin/user.types";
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   MessageCircle,
   Search,
   UserPlus,
@@ -26,6 +28,37 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+const lifecycleSegments: Array<{ id: UserLifecycleSegment; label: string }> = [
+  { id: "never_activated", label: "Never activated" },
+  { id: "active", label: "Active" },
+  { id: "at_risk", label: "At risk" },
+  { id: "churned", label: "Churned" },
+  { id: "dormant", label: "Dormant" },
+];
+
+const lifecycleLabels: Record<UserLifecycleSegment, string> = {
+  never_activated: "Never activated",
+  active: "Active",
+  at_risk: "At risk",
+  churned: "Churned",
+  dormant: "Dormant",
+};
+
+function formatLifecycleDate(
+  value: string | null | undefined,
+  timeZone: string
+) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-NG", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone,
+  }).format(date);
+}
 
 const formatForWhatsApp = (phone: string) => {
   if (!phone) return "";
@@ -49,6 +82,15 @@ export function UserListTable() {
   const [roleFilter, setRoleFilter] = useState<string>(
     searchParams.get("role") || "all"
   );
+  const initialLifecycle = searchParams.get("lifecycleSegment");
+  const [lifecycleFilter, setLifecycleFilter] = useState<
+    UserLifecycleSegment | "all"
+  >(
+    lifecycleSegments.some((segment) => segment.id === initialLifecycle)
+      ? (initialLifecycle as UserLifecycleSegment)
+      : "all"
+  );
+  const [isExporting, setIsExporting] = useState(false);
   const isSearchActive = !!debouncedSearch.trim();
 
   const limit = 10;
@@ -62,6 +104,9 @@ export function UserListTable() {
     if (page > 1) params.set("page", page.toString());
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (roleFilter !== "all") params.set("role", roleFilter);
+    if (lifecycleFilter !== "all") {
+      params.set("lifecycleSegment", lifecycleFilter);
+    }
 
     const queryString = params.toString();
     const newUrl = `${pathname}${queryString ? `?${queryString}` : ""}`;
@@ -71,7 +116,15 @@ export function UserListTable() {
     if (queryString !== currentQueryString) {
       router.replace(newUrl, { scroll: false });
     }
-  }, [page, debouncedSearch, roleFilter, pathname, router, searchParams]);
+  }, [
+    page,
+    debouncedSearch,
+    roleFilter,
+    lifecycleFilter,
+    pathname,
+    router,
+    searchParams,
+  ]);
 
   // Reset page when search term changes
   if (debouncedSearch !== prevSearch) {
@@ -84,12 +137,40 @@ export function UserListTable() {
     limit,
     role: roleFilter === "all" ? undefined : roleFilter,
     search: debouncedSearch,
+    lifecycleSegment: lifecycleFilter === "all" ? undefined : lifecycleFilter,
   });
 
   const pagination = data?.data?.pagination;
 
   // Server is source of truth for search/filter/pagination.
   const users = data?.data?.users || [];
+  const lifecycleCounts = data?.data?.lifecycleCounts;
+  const lifecycleTimezone = data?.data?.lifecycleTimezone || "Africa/Lagos";
+
+  const exportFilteredUsers = async () => {
+    if (lifecycleFilter === "all") return;
+    setIsExporting(true);
+    try {
+      const blob = await adminUserService.exportUsers({
+        lifecycleSegment: lifecycleFilter,
+        role: roleFilter === "all" ? undefined : roleFilter,
+        search: debouncedSearch || undefined,
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `nexus-${lifecycleFilter}-users.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      toast.success("Filtered users exported");
+    } catch {
+      toast.error("Could not export users");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const tabs = [
     { id: "all", label: "All Users" },
@@ -103,12 +184,23 @@ export function UserListTable() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Users</CardTitle>
-        <Button asChild size="sm">
-          <Link href="/admin/dashboard/users/new">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add User
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={exportFilteredUsers}
+            disabled={lifecycleFilter === "all" || isExporting}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {isExporting ? "Exporting..." : "Export segment"}
+          </Button>
+          <Button asChild size="sm">
+            <Link href="/admin/dashboard/users/new">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add User
+            </Link>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {/* Filters */}
@@ -141,6 +233,31 @@ export function UserListTable() {
           </div>
         </div>
 
+        <div
+          className="mb-5 flex flex-wrap gap-2"
+          aria-label="Lifecycle segment"
+        >
+          {lifecycleSegments.map((segment) => (
+            <Button
+              key={segment.id}
+              variant={lifecycleFilter === segment.id ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setLifecycleFilter(
+                  lifecycleFilter === segment.id ? "all" : segment.id
+                );
+                setPage(1);
+              }}
+              className="whitespace-nowrap"
+            >
+              {segment.label}
+              <span className="ml-2 tabular-nums">
+                {lifecycleCounts?.[segment.id] ?? "—"}
+              </span>
+            </Button>
+          ))}
+        </div>
+
         {/* Table */}
         <div className="rounded-md border">
           <Table>
@@ -150,6 +267,7 @@ export function UserListTable() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Lifecycle and activity</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -170,6 +288,9 @@ export function UserListTable() {
                     <TableCell>
                       <Skeleton className="h-4 w-16" />
                     </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-10 w-56" />
+                    </TableCell>
                     <TableCell className="text-right">
                       <Skeleton className="ml-auto h-8 w-16" />
                     </TableCell>
@@ -177,7 +298,7 @@ export function UserListTable() {
                 ))
               ) : isError ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-8 text-center">
+                  <TableCell colSpan={6} className="py-8 text-center">
                     <p className="text-muted-foreground">
                       Failed to load users
                     </p>
@@ -192,7 +313,7 @@ export function UserListTable() {
                 </TableRow>
               ) : users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-8 text-center">
+                  <TableCell colSpan={6} className="py-8 text-center">
                     {searchInput
                       ? "No matching users found"
                       : "No users found in this category"}
@@ -228,6 +349,52 @@ export function UserListTable() {
                         <Badge variant="destructive">Suspended</Badge>
                       ) : (
                         <Badge variant="default">Active</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="min-w-64 text-xs">
+                      {user.lifecycleSegment ? (
+                        <div className="space-y-1">
+                          <Badge variant="outline">
+                            {lifecycleLabels[user.lifecycleSegment]}
+                          </Badge>
+                          <p className="text-muted-foreground">
+                            {user.lifecycleSegment === "never_activated"
+                              ? "No meaningful activity yet"
+                              : `Last activity: ${formatLifecycleDate(user.lastMeaningfulActivityAt, lifecycleTimezone)} · ${user.daysInactive ?? 0} days inactive`}
+                          </p>
+                          {user.activatedAt && (
+                            <p className="text-muted-foreground">
+                              First activity:{" "}
+                              {formatLifecycleDate(
+                                user.activatedAt,
+                                lifecycleTimezone
+                              )}
+                            </p>
+                          )}
+                          {user.lastReactivatedAt && (
+                            <p className="text-muted-foreground">
+                              Last reactivated:{" "}
+                              {formatLifecycleDate(
+                                user.lastReactivatedAt,
+                                lifecycleTimezone
+                              )}
+                            </p>
+                          )}
+                          {!!user.lifecycleHistory?.length && (
+                            <p className="text-muted-foreground">
+                              History:{" "}
+                              {user.lifecycleHistory
+                                .slice(0, 3)
+                                .map(
+                                  (transition) =>
+                                    `${transition.fromSegment ? lifecycleLabels[transition.fromSegment] : "Initial"} → ${lifecycleLabels[transition.toSegment]} (${formatLifecycleDate(transition.transitionedAt, lifecycleTimezone)})`
+                                )
+                                .join("; ")}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
