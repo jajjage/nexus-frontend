@@ -95,7 +95,7 @@ export function UserListTable() {
   const [isExporting, setIsExporting] = useState(false);
   const isSearchActive = !!debouncedSearch.trim();
 
-  const limit = 10;
+  const limit = 25;
 
   const [prevSearch, setPrevSearch] = useState(debouncedSearch);
 
