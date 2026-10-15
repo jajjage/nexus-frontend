@@ -29,8 +29,12 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const lifecycleSegments: Array<{ id: UserLifecycleSegment; label: string }> = [
+type LifecycleFilter = UserLifecycleSegment | "all";
+
+const lifecycleSegments: Array<{ id: LifecycleFilter; label: string }> = [
+  { id: "all", label: "All customers" },
   { id: "never_activated", label: "Never activated" },
   { id: "active", label: "Active" },
   { id: "at_risk", label: "At risk" },
@@ -83,11 +87,9 @@ export function UserListTable() {
     searchParams.get("role") || "all"
   );
   const initialLifecycle = searchParams.get("lifecycleSegment");
-  const [lifecycleFilter, setLifecycleFilter] = useState<
-    UserLifecycleSegment | "all"
-  >(
+  const [lifecycleFilter, setLifecycleFilter] = useState<LifecycleFilter>(
     lifecycleSegments.some((segment) => segment.id === initialLifecycle)
-      ? (initialLifecycle as UserLifecycleSegment)
+      ? (initialLifecycle as LifecycleFilter)
       : "all"
   );
   const [isExporting, setIsExporting] = useState(false);
@@ -233,216 +235,227 @@ export function UserListTable() {
           </div>
         </div>
 
-        <div
-          className="mb-5 flex flex-wrap gap-2"
-          aria-label="Lifecycle segment"
+        <Tabs
+          value={lifecycleFilter}
+          onValueChange={(value) => {
+            setLifecycleFilter(value as LifecycleFilter);
+            setPage(1);
+          }}
+          className="mb-5"
         >
-          {lifecycleSegments.map((segment) => (
-            <Button
-              key={segment.id}
-              variant={lifecycleFilter === segment.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                setLifecycleFilter(
-                  lifecycleFilter === segment.id ? "all" : segment.id
-                );
-                setPage(1);
-              }}
-              className="whitespace-nowrap"
-            >
-              {segment.label}
-              <span className="ml-2 tabular-nums">
-                {lifecycleCounts?.[segment.id] ?? "—"}
-              </span>
-            </Button>
-          ))}
-        </div>
-
-        {/* Table */}
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Lifecycle and activity</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {!data && isLoading ? (
-                // Loading Skeletons for Rows
-                [...Array(5)].map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <Skeleton className="h-4 w-32" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-48" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-20" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-16" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-10 w-56" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Skeleton className="ml-auto h-8 w-16" />
-                    </TableCell>
+          <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-md bg-transparent p-0 pb-1">
+            {lifecycleSegments.map((segment) => (
+              <TabsTrigger
+                key={segment.id}
+                value={segment.id}
+                className="data-[state=active]:border-border data-[state=active]:bg-background min-h-9 shrink-0 gap-2 rounded-md border border-transparent px-3 data-[state=active]:shadow-sm"
+              >
+                {segment.label}
+                {segment.id === "all" ? (
+                  lifecycleCounts && (
+                    <span className="text-muted-foreground text-xs tabular-nums">
+                      {Object.values(lifecycleCounts).reduce(
+                        (total, count) => total + count,
+                        0
+                      )}
+                    </span>
+                  )
+                ) : (
+                  <span className="text-muted-foreground text-xs tabular-nums">
+                    {lifecycleCounts?.[segment.id] ?? "—"}
+                  </span>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsContent value={lifecycleFilter} className="outline-none">
+            {/* Table */}
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Lifecycle and activity</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))
-              ) : isError ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center">
-                    <p className="text-muted-foreground">
-                      Failed to load users
-                    </p>
-                    <Button
-                      variant="outline"
-                      className="mt-4"
-                      onClick={() => refetch()}
-                    >
-                      Retry
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ) : users.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center">
-                    {searchInput
-                      ? "No matching users found"
-                      : "No users found in this category"}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                users.map((user: AdminUser) => (
-                  <TableRow key={user.id || user.userId}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {user.fullName}
-                        {user.phoneNumber && (
-                          <a
-                            href={`https://wa.me/${formatForWhatsApp(user.phoneNumber)}?text=${encodeURIComponent(`Hello ${user.fullName}, this is Nexus Data admin. `)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded-full p-1 text-green-600 transition-colors hover:bg-green-50 hover:text-green-700"
-                            title={`Message ${user.phoneNumber} on WhatsApp`}
-                          >
-                            <MessageCircle className="h-4 w-4" />
-                          </a>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {user.isSuspended ? (
-                        <Badge variant="destructive">Suspended</Badge>
-                      ) : (
-                        <Badge variant="default">Active</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="min-w-64 text-xs">
-                      {user.lifecycleSegment ? (
-                        <div className="space-y-1">
-                          <Badge variant="outline">
-                            {lifecycleLabels[user.lifecycleSegment]}
-                          </Badge>
-                          <p className="text-muted-foreground">
-                            {user.lifecycleSegment === "never_activated"
-                              ? "No meaningful activity yet"
-                              : `Last activity: ${formatLifecycleDate(user.lastMeaningfulActivityAt, lifecycleTimezone)} · ${user.daysInactive ?? 0} days inactive`}
-                          </p>
-                          {user.activatedAt && (
-                            <p className="text-muted-foreground">
-                              First activity:{" "}
-                              {formatLifecycleDate(
-                                user.activatedAt,
-                                lifecycleTimezone
-                              )}
-                            </p>
-                          )}
-                          {user.lastReactivatedAt && (
-                            <p className="text-muted-foreground">
-                              Last reactivated:{" "}
-                              {formatLifecycleDate(
-                                user.lastReactivatedAt,
-                                lifecycleTimezone
-                              )}
-                            </p>
-                          )}
-                          {!!user.lifecycleHistory?.length && (
-                            <p className="text-muted-foreground">
-                              History:{" "}
-                              {user.lifecycleHistory
-                                .slice(0, 3)
-                                .map(
-                                  (transition) =>
-                                    `${transition.fromSegment ? lifecycleLabels[transition.fromSegment] : "Initial"} → ${lifecycleLabels[transition.toSegment]} (${formatLifecycleDate(transition.transitionedAt, lifecycleTimezone)})`
-                                )
-                                .join("; ")}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link
-                          href={`/admin/dashboard/users/${user.id || user.userId}`}
+                </TableHeader>
+                <TableBody>
+                  {!data && isLoading ? (
+                    // Loading Skeletons for Rows
+                    [...Array(5)].map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell>
+                          <Skeleton className="h-4 w-32" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-48" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-20" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-16" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-10 w-56" />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Skeleton className="ml-auto h-8 w-16" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : isError ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-8 text-center">
+                        <p className="text-muted-foreground">
+                          Failed to load users
+                        </p>
+                        <Button
+                          variant="outline"
+                          className="mt-4"
+                          onClick={() => refetch()}
                         >
-                          View
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        {isSearchActive && isFetching && (
-          <p className="text-muted-foreground mt-3 text-xs">Searching...</p>
-        )}
-
-        {/* Pagination */}
-        {!!data && !isError && pagination && (
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-muted-foreground text-sm">
-              Page {pagination.page} of {pagination.totalPages} (
-              {pagination.total} users)
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={!pagination.hasPrevPage}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={!pagination.hasNextPage}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                          Retry
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ) : users.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-8 text-center">
+                        {searchInput
+                          ? "No matching users found"
+                          : "No users found in this category"}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    users.map((user: AdminUser) => (
+                      <TableRow key={user.id || user.userId}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {user.fullName}
+                            {user.phoneNumber && (
+                              <a
+                                href={`https://wa.me/${formatForWhatsApp(user.phoneNumber)}?text=${encodeURIComponent(`Hello ${user.fullName}, this is Nexus Data admin. `)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded-full p-1 text-green-600 transition-colors hover:bg-green-50 hover:text-green-700"
+                                title={`Message ${user.phoneNumber} on WhatsApp`}
+                              >
+                                <MessageCircle className="h-4 w-4" />
+                              </a>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {user.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.isSuspended ? (
+                            <Badge variant="destructive">Suspended</Badge>
+                          ) : (
+                            <Badge variant="default">Active</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="min-w-64 text-xs">
+                          {user.lifecycleSegment ? (
+                            <div className="space-y-1">
+                              <Badge variant="outline">
+                                {lifecycleLabels[user.lifecycleSegment]}
+                              </Badge>
+                              <p className="text-muted-foreground">
+                                {user.lifecycleSegment === "never_activated"
+                                  ? "No meaningful activity yet"
+                                  : `Last activity: ${formatLifecycleDate(user.lastMeaningfulActivityAt, lifecycleTimezone)} · ${user.daysInactive ?? 0} days inactive`}
+                              </p>
+                              {user.activatedAt && (
+                                <p className="text-muted-foreground">
+                                  First activity:{" "}
+                                  {formatLifecycleDate(
+                                    user.activatedAt,
+                                    lifecycleTimezone
+                                  )}
+                                </p>
+                              )}
+                              {user.lastReactivatedAt && (
+                                <p className="text-muted-foreground">
+                                  Last reactivated:{" "}
+                                  {formatLifecycleDate(
+                                    user.lastReactivatedAt,
+                                    lifecycleTimezone
+                                  )}
+                                </p>
+                              )}
+                              {!!user.lifecycleHistory?.length && (
+                                <p className="text-muted-foreground">
+                                  History:{" "}
+                                  {user.lifecycleHistory
+                                    .slice(0, 3)
+                                    .map(
+                                      (transition) =>
+                                        `${transition.fromSegment ? lifecycleLabels[transition.fromSegment] : "Initial"} → ${lifecycleLabels[transition.toSegment]} (${formatLifecycleDate(transition.transitionedAt, lifecycleTimezone)})`
+                                    )
+                                    .join("; ")}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link
+                              href={`/admin/dashboard/users/${user.id || user.userId}`}
+                            >
+                              View
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </div>
-          </div>
-        )}
+            {isSearchActive && isFetching && (
+              <p className="text-muted-foreground mt-3 text-xs">Searching...</p>
+            )}
+
+            {/* Pagination */}
+            {!!data && !isError && pagination && (
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-muted-foreground text-sm">
+                  Page {pagination.page} of {pagination.totalPages} (
+                  {pagination.total} users)
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={!pagination.hasPrevPage}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={!pagination.hasNextPage}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
