@@ -129,6 +129,25 @@ export const adminUserService = {
     return response.data;
   },
 
+  resetPin: async (userId: string, newPin: string): Promise<ApiResponse> => {
+    const response = await apiClient.post<ApiResponse>(
+      `${BASE_PATH}/${userId}/reset-pin`,
+      { newPin }
+    );
+    return response.data;
+  },
+
+  resetPasscode: async (
+    userId: string,
+    newPasscode: string
+  ): Promise<ApiResponse> => {
+    const response = await apiClient.post<ApiResponse>(
+      `${BASE_PATH}/${userId}/reset-passcode`,
+      { newPasscode }
+    );
+    return response.data;
+  },
+
   updateUser: async (
     userId: string,
     data: UpdateUserRequest

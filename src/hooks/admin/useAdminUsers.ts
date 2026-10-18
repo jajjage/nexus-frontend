@@ -401,3 +401,40 @@ export function useResetUserPassword() {
     },
   });
 }
+
+export function useResetUserPin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, newPin }: { userId: string; newPin: string }) =>
+      adminUserService.resetPin(userId, newPin),
+    onSuccess: (response, { userId }) => {
+      toast.success(response.message || "Transaction PIN updated successfully");
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.detail(userId) });
+    },
+    onError: (error: AxiosError<any>) =>
+      toast.error(
+        error.response?.data?.message || "Failed to update transaction PIN"
+      ),
+  });
+}
+
+export function useResetUserPasscode() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      newPasscode,
+    }: {
+      userId: string;
+      newPasscode: string;
+    }) => adminUserService.resetPasscode(userId, newPasscode),
+    onSuccess: (response, { userId }) => {
+      toast.success(response.message || "App passcode updated successfully");
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.detail(userId) });
+    },
+    onError: (error: AxiosError<any>) =>
+      toast.error(
+        error.response?.data?.message || "Failed to update app passcode"
+      ),
+  });
+}
