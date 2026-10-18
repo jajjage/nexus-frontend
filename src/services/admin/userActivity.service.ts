@@ -16,6 +16,14 @@ export interface AdminActivityOverview {
     paymentEventsCount: number;
     paymentEventsAmount: number;
   };
+  bonusHistory: Array<{
+    id: string;
+    monthYear: string;
+    totalSpend: number;
+    bonusAmount: number;
+    transactionId: string | null;
+    createdAt: string;
+  }>;
   latestTopups: any[];
   latestPaymentEvents: any[];
 }

@@ -11,6 +11,7 @@ import {
   Calendar,
   CreditCard,
   DollarSign,
+  Gift,
   Wallet,
 } from "lucide-react";
 
@@ -59,6 +60,7 @@ export function AdminActivityOverviewCard({
     lifetimeTotals,
     latestTopups,
     latestPaymentEvents,
+    bonusHistory,
   } = overview;
 
   return (
@@ -141,6 +143,58 @@ export function AdminActivityOverviewCard({
               {lifetimeTotals?.paymentEventsCount || 0} payment events
             </p>
           </div>
+        </div>
+
+        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/60 dark:bg-amber-950/20">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h4 className="flex items-center gap-2 text-sm font-semibold">
+                <Gift className="h-4 w-4 text-amber-600" />
+                Performance Bonus
+              </h4>
+              <p className="text-muted-foreground mt-1 text-xs">
+                Based on successful and completed top-up spend. Failed and
+                reversed top-ups are excluded.
+              </p>
+            </div>
+            <Badge
+              variant="outline"
+              className="border-amber-300 bg-white/70 dark:bg-transparent"
+            >
+              {bonusHistory?.length
+                ? `${bonusHistory.length} awarded`
+                : "No bonus yet"}
+            </Badge>
+          </div>
+          {bonusHistory?.length ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {bonusHistory.slice(0, 3).map((bonus) => (
+                <div
+                  key={bonus.id}
+                  className="bg-background/80 rounded-lg border border-amber-200/80 p-3 dark:border-amber-900/60"
+                >
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">
+                      {bonus.monthYear}
+                    </span>
+                    <Badge variant="default" className="text-[10px]">
+                      Awarded
+                    </Badge>
+                  </div>
+                  <p className="mt-2 text-lg font-bold">
+                    ₦{bonus.bonusAmount.toLocaleString()}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    Spend: ₦{bonus.totalSpend.toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-xs">
+              No monthly performance bonus has been awarded.
+            </p>
+          )}
         </div>
 
         {/* Latest Activity Preview */}
